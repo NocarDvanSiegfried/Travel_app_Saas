@@ -1,0 +1,9 @@
+export { RouteIcon } from './route-icon'
+export { HotelIcon } from './hotel-icon'
+export { CarIcon } from './car-icon'
+export { ServicesIcon } from './services-icon'
+export { MammothIcon } from './mammoth-icon'
+export { HeartIcon } from './heart-icon'
+export { ProfileIcon } from './profile-icon'
+export { SettingsIcon } from './settings-icon'
+
