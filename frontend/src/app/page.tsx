@@ -9,16 +9,23 @@ import { HotelsSection } from '@/components/hotels-section'
 import { TransportSection } from '@/components/transport-section'
 import { ServicesSection } from '@/components/services-section'
 import { FavoritesSection } from '@/components/favorites-section'
+import { Footer } from '@/components/footer'
 
 type ActiveSection = 'routes' | 'hotels' | 'transport' | 'services' | 'favorites'
 
 export default function Home() {
+  const [mounted, setMounted] = useState(false)
   const [activeSection, setActiveSection] = useState<ActiveSection>('routes')
   const [displaySection, setDisplaySection] = useState<ActiveSection>('routes')
   const [isTransitioning, setIsTransitioning] = useState(false)
 
+  // Убеждаемся, что компонент смонтирован на клиенте
   useEffect(() => {
-    if (activeSection !== displaySection) {
+    setMounted(true)
+  }, [])
+
+  useEffect(() => {
+    if (activeSection !== displaySection && mounted) {
       setIsTransitioning(true)
       setTimeout(() => {
         setDisplaySection(activeSection)
@@ -27,7 +34,7 @@ export default function Home() {
         }, 50)
       }, 400)
     }
-  }, [activeSection, displaySection])
+  }, [activeSection, displaySection, mounted])
 
   const handleSectionChange = (section: ActiveSection) => {
     if (section === activeSection) return
@@ -50,11 +57,28 @@ export default function Home() {
     }
   }
 
+  // Показываем контент только после монтирования на клиенте
+  if (!mounted) {
+    return (
+      <div className="min-h-screen yakutia-pattern relative flex flex-col">
+        <Header />
+        <main className="container mx-auto px-4 py-6 md:py-8 relative z-10 max-w-[1300px] flex-1">
+          <div className="text-center mb-4">
+            <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold mb-3 leading-tight text-balance" style={{ color: 'var(--color-text-dark)' }}>
+              Путешествия, которые соединяют Якутию и Россию
+            </h1>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    )
+  }
+
   return (
-    <div className="min-h-screen yakutia-pattern relative">
+    <div className="min-h-screen yakutia-pattern relative flex flex-col">
       <Header />
 
-      <main className="container mx-auto px-4 py-6 md:py-8 relative z-10 max-w-[1300px]">
+      <main className="container mx-auto px-4 py-6 md:py-8 relative z-10 max-w-[1300px] flex-1">
         {/* Центральный заголовок */}
         <div className="text-center mb-4">
           <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold mb-3 leading-tight text-balance" style={{ color: 'var(--color-text-dark)' }}>
@@ -79,6 +103,7 @@ export default function Home() {
             style={{
               opacity: isTransitioning ? 0 : 1,
               transition: 'opacity 0.4s ease-in-out',
+              pointerEvents: isTransitioning ? 'none' : 'auto',
             }}
           >
             {renderContent()}
@@ -88,6 +113,9 @@ export default function Home() {
 
       {/* Анимированный мамонтёнок */}
       <AssistantButton />
+
+      {/* Footer */}
+      <Footer />
     </div>
   )
 }

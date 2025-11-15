@@ -8,4 +8,5 @@ export { HotelsSection } from './hotels-section'
 export { TransportSection } from './transport-section'
 export { ServicesSection } from './services-section'
 export { FavoritesSection } from './favorites-section'
+export { Footer } from './footer'
 

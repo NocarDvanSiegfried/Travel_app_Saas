@@ -54,12 +54,18 @@ export function TransportSection() {
               <button
                 key={tab.id}
                 type="button"
-                onClick={() => setActiveTab(tab.id)}
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  setActiveTab(tab.id)
+                }}
                 className="px-4 py-2 rounded-yakutia yakutia-transition font-medium text-sm border"
                 style={{
                   backgroundColor: isActive ? 'var(--color-primary)' : 'var(--color-input-bg)',
                   color: isActive ? '#FFFFFF' : 'var(--color-text-light)',
                   borderColor: isActive ? 'var(--color-primary)' : 'var(--color-input-border)',
+                  pointerEvents: 'auto',
+                  cursor: 'pointer',
                 }}
                 onMouseEnter={(e) => {
                   if (!isActive) {
@@ -84,6 +90,7 @@ export function TransportSection() {
         style={{
           opacity: isTransitioning ? 0 : 1,
           transition: 'opacity 0.22s ease-in-out',
+          pointerEvents: isTransitioning ? 'none' : 'auto',
         }}
       >
         {renderTabContent()}

@@ -150,6 +150,7 @@ export function HotelsSection() {
           style={{
             opacity: isAnimating || isContentAnimating ? 0 : 1,
             transition: 'opacity 0.3s ease-in-out',
+            pointerEvents: isAnimating || isContentAnimating ? 'none' : 'auto',
           }}
         >
           {showNoResults ? (

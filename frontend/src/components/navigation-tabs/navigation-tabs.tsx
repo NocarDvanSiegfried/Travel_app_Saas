@@ -18,7 +18,9 @@ interface NavigationTabsProps {
 }
 
 export function NavigationTabs({ onSectionChange, activeSection }: NavigationTabsProps) {
-  const handleTabClick = (tab: typeof tabs[0]) => {
+  const handleTabClick = (tab: typeof tabs[0], e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
     if (onSectionChange) {
       onSectionChange(tab.id)
     }
@@ -34,7 +36,7 @@ export function NavigationTabs({ onSectionChange, activeSection }: NavigationTab
             <button
               key={tab.id}
               type="button"
-              onClick={() => handleTabClick(tab)}
+              onClick={(e) => handleTabClick(tab, e)}
               className={`
                 flex items-center space-x-3 px-6 py-3 border-b-2 yakutia-smooth cursor-pointer
                 ${isActive
@@ -42,6 +44,7 @@ export function NavigationTabs({ onSectionChange, activeSection }: NavigationTab
                   : 'border-transparent text-[#e7fafd]/80 hover:text-[#e7fafd] hover:border-white/30'
                 }
               `}
+              style={{ pointerEvents: 'auto' }}
             >
               <Icon
                 className="w-5 h-5 yakutia-smooth"
