@@ -7,6 +7,7 @@ import { AssistantButton } from '@/components/assistant-button'
 import { RoutesSection } from '@/components/routes-section'
 import { HotelsSection } from '@/components/hotels-section'
 import { TransportSection } from '@/components/transport-section'
+import { ServicesSection } from '@/components/services-section'
 
 type ActiveSection = 'routes' | 'hotels' | 'transport' | 'services' | 'favorites'
 
@@ -38,6 +39,8 @@ export default function Home() {
         return <HotelsSection />
       case 'transport':
         return <TransportSection />
+      case 'services':
+        return <ServicesSection />
       case 'routes':
       default:
         return <RoutesSection />
