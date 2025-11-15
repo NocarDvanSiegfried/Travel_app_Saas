@@ -7,4 +7,5 @@ export interface ApiResponse<T> {
   };
 }
 
+export * from './hotel'
 
