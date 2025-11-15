@@ -352,3 +352,4 @@ docker-compose -f docker-compose.prod.yml up -d
 - Проверка сетевого подключения
 - Проверка состояния сервисов
 
+

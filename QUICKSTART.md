@@ -109,3 +109,5 @@ docker compose logs minio
 
 См. [README.md](./README.md) и [architecture/README.md](./architecture/README.md) для подробной документации.
 
+
+

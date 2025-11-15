@@ -3,6 +3,23 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    /* Цветовая палитра */
+    --color-primary: #13c1d8;
+    --color-primary-hover: #0e9bad;
+    --color-header: #1f5667;
+    --color-text-dark: #0f2d33;
+    --color-text-light: #e7fafd;
+    --color-background-start: #4ba6b8;
+    --color-background-mid: #3d9eb1;
+    --color-background-end: #2c8593;
+    --color-card-bg: rgba(255, 255, 255, 0.13);
+    --color-card-border: rgba(255, 255, 255, 0.18);
+    --color-input-bg: rgba(255, 255, 255, 0.2);
+    --color-input-border: rgba(255, 255, 255, 0.35);
+    --color-map-stroke: #0aa5b8;
+  }
+
   * {
     @apply box-border p-0 m-0;
   }
@@ -14,7 +31,7 @@
 
   body {
     @apply text-white antialiased;
-    background: linear-gradient(to bottom, #5fb8ca, #3d9fb0);
+    background: linear-gradient(to bottom, var(--color-background-start), var(--color-background-mid), var(--color-background-end));
     background-attachment: fixed;
     min-height: 100vh;
     position: relative;
@@ -28,26 +45,18 @@
     right: 0;
     bottom: 0;
     background-image: 
+      url('/background-image.png'),
       repeating-linear-gradient(
         45deg,
         transparent,
         transparent 20px,
-        rgba(26, 170, 194, 0.04) 20px,
-        rgba(26, 170, 194, 0.04) 21px
+        rgba(255, 255, 255, 0.08) 20px,
+        rgba(255, 255, 255, 0.08) 21px
       );
-    background-size: 40px 40px;
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  body::after {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: radial-gradient(ellipse at center, transparent 0%, rgba(0, 0, 0, 0.05) 100%);
+    background-size: cover, 40px 40px;
+    background-position: center center;
+    background-blend-mode: overlay;
+    opacity: 0.15;
     pointer-events: none;
     z-index: 0;
   }
@@ -84,13 +93,12 @@
 
   /* Блок с объёмом */
   .yakutia-card {
-    background: rgba(255, 255, 255, 0.18);
-    border: 1px solid rgba(255, 255, 255, 0.35);
-    border-radius: 16px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    background: var(--color-card-bg);
+    border: 1px solid var(--color-card-border);
+    border-radius: 20px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
     position: relative;
     z-index: 1;
-    backdrop-filter: blur(10px);
   }
 
   /* Анимация мигания */

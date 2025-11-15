@@ -26,33 +26,31 @@ export function NavigationTabs() {
   }
 
   return (
-    <nav className="yakutia-card mt-5">
-      <div className="container mx-auto px-4">
-        <div className="flex items-center justify-center md:justify-start overflow-x-auto">
-          {tabs.map((tab) => {
-            const isActive = pathname === tab.href || (tab.href === '/' && pathname === '/')
-            const Icon = tab.Icon
-            return (
-              <Link
-                key={tab.id}
-                href={tab.href}
-                className={`
-                  flex items-center space-x-3 px-6 py-3 border-b-2 yakutia-smooth
-                  ${isActive
-                    ? 'border-[#0f9eb1] text-[#0f9eb1] font-semibold'
-                    : 'border-transparent text-white/80 hover:text-white hover:border-white/30'
-                  }
-                `}
-              >
-                <Icon 
-                  className="w-5 h-5 yakutia-smooth" 
-                  color={isActive ? '#0f9eb1' : 'rgba(255, 255, 255, 0.8)'}
-                />
-                <span className="text-sm whitespace-nowrap">{tab.label}</span>
-              </Link>
-            )
-          })}
-        </div>
+    <nav className="yakutia-card p-[18px] w-full">
+      <div className="flex items-center justify-center overflow-x-auto w-full">
+        {tabs.map((tab) => {
+          const isActive = pathname === tab.href || (tab.href === '/' && pathname === '/')
+          const Icon = tab.Icon
+          return (
+            <Link
+              key={tab.id}
+              href={tab.href}
+              className={`
+                flex items-center space-x-3 px-6 py-3 border-b-2 yakutia-smooth
+                ${isActive
+                  ? 'border-[#13c1d8] text-[#0f2d33] font-semibold'
+                  : 'border-transparent text-[#e7fafd]/80 hover:text-[#e7fafd] hover:border-white/30'
+                }
+              `}
+            >
+              <Icon 
+                className="w-5 h-5 yakutia-smooth" 
+                color={isActive ? '#13c1d8' : '#e7fafd'}
+              />
+              <span className="text-sm whitespace-nowrap">{tab.label}</span>
+            </Link>
+          )
+        })}
       </div>
     </nav>
   )

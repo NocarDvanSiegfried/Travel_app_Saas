@@ -470,3 +470,4 @@ Dependency Rule: Dependencies point INWARD
 3. **Component** — Компоненты внутри контейнера
 4. **Code** — Код (не показан в архитектуре)
 
+

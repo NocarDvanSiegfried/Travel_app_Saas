@@ -15,7 +15,6 @@ export function SearchForm() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     // TODO: Implement search logic
-    console.log('Search:', formData)
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -28,12 +27,12 @@ export function SearchForm() {
   return (
     <form
       onSubmit={handleSubmit}
-      className="yakutia-card p-5 md:p-7 lg:p-8 w-full"
+      className="yakutia-card p-[18px] w-full"
     >
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-5">
         {/* Откуда */}
         <div className="space-y-2">
-          <label htmlFor="from" className="block text-sm font-medium text-white/90 text-left">
+          <label htmlFor="from" className="block text-sm font-medium text-left" style={{ color: 'var(--color-text-light)' }}>
             Откуда
           </label>
           <input
@@ -43,13 +42,18 @@ export function SearchForm() {
             value={formData.from}
             onChange={handleChange}
             placeholder="Город отправления"
-            className="w-full px-4 py-3 rounded-yakutia border-[1.5px] border-[#c1eef4] focus:border-[#c1eef4] focus:ring-2 focus:ring-[#c1eef4]/30 outline-none yakutia-transition text-[#102a32] placeholder:text-[#102a32]/60 bg-white/15 shadow-sm"
+            className="w-full px-4 py-3 rounded-yakutia focus:ring-2 focus:ring-white/20 outline-none yakutia-transition placeholder:text-white/60 shadow-sm"
+            style={{ 
+              color: 'var(--color-text-light)', 
+              backgroundColor: 'var(--color-input-bg)', 
+              borderColor: 'var(--color-input-border)' 
+            }}
           />
         </div>
 
         {/* Куда */}
         <div className="space-y-2">
-          <label htmlFor="to" className="block text-sm font-medium text-white/90 text-left">
+          <label htmlFor="to" className="block text-sm font-medium text-left" style={{ color: 'var(--color-text-light)' }}>
             Куда
           </label>
           <input
@@ -59,13 +63,18 @@ export function SearchForm() {
             value={formData.to}
             onChange={handleChange}
             placeholder="Город назначения"
-            className="w-full px-4 py-3 rounded-yakutia border-[1.5px] border-[#c1eef4] focus:border-[#c1eef4] focus:ring-2 focus:ring-[#c1eef4]/30 outline-none yakutia-transition text-[#102a32] placeholder:text-[#102a32]/60 bg-white/15 shadow-sm"
+            className="w-full px-4 py-3 rounded-yakutia focus:ring-2 focus:ring-white/20 outline-none yakutia-transition placeholder:text-white/60 shadow-sm border"
+            style={{ 
+              color: 'var(--color-text-light)', 
+              backgroundColor: 'var(--color-input-bg)', 
+              borderColor: 'var(--color-input-border)' 
+            }}
           />
         </div>
 
         {/* Когда */}
         <div className="space-y-2">
-          <label htmlFor="date" className="block text-sm font-medium text-white/90 text-left">
+          <label htmlFor="date" className="block text-sm font-medium text-left" style={{ color: 'var(--color-text-light)' }}>
             Когда
           </label>
           <input
@@ -74,13 +83,18 @@ export function SearchForm() {
             name="date"
             value={formData.date}
             onChange={handleChange}
-            className="w-full px-4 py-3 rounded-yakutia border-[1.5px] border-[#c1eef4] focus:border-[#c1eef4] focus:ring-2 focus:ring-[#c1eef4]/30 outline-none yakutia-transition text-[#102a32] bg-white/15 shadow-sm"
+            className="w-full px-4 py-3 rounded-yakutia focus:ring-2 focus:ring-white/20 outline-none yakutia-transition shadow-sm border [color-scheme:dark]"
+            style={{ 
+              color: 'var(--color-text-light)', 
+              backgroundColor: 'var(--color-input-bg)', 
+              borderColor: 'var(--color-input-border)' 
+            }}
           />
         </div>
 
         {/* Обратно */}
         <div className="space-y-2">
-          <label htmlFor="returnDate" className="block text-sm font-medium text-white/90 text-left">
+          <label htmlFor="returnDate" className="block text-sm font-medium text-left" style={{ color: 'var(--color-text-light)' }}>
             Обратно
           </label>
           <input
@@ -89,13 +103,18 @@ export function SearchForm() {
             name="returnDate"
             value={formData.returnDate}
             onChange={handleChange}
-            className="w-full px-4 py-3 rounded-yakutia border-[1.5px] border-[#c1eef4] focus:border-[#c1eef4] focus:ring-2 focus:ring-[#c1eef4]/30 outline-none yakutia-transition text-[#102a32] bg-white/15 shadow-sm"
+            className="w-full px-4 py-3 rounded-yakutia focus:ring-2 focus:ring-white/20 outline-none yakutia-transition shadow-sm border [color-scheme:dark]"
+            style={{ 
+              color: 'var(--color-text-light)', 
+              backgroundColor: 'var(--color-input-bg)', 
+              borderColor: 'var(--color-input-border)' 
+            }}
           />
         </div>
 
         {/* Пассажиры */}
         <div className="space-y-2">
-          <label htmlFor="passengers" className="block text-sm font-medium text-white/90 text-left">
+          <label htmlFor="passengers" className="block text-sm font-medium text-left" style={{ color: 'var(--color-text-light)' }}>
             Пассажиры
           </label>
           <input
@@ -106,13 +125,18 @@ export function SearchForm() {
             onChange={handleChange}
             min="1"
             max="9"
-            className="w-full px-4 py-3 rounded-yakutia border-[1.5px] border-[#c1eef4] focus:border-[#c1eef4] focus:ring-2 focus:ring-[#c1eef4]/30 outline-none yakutia-transition text-[#102a32] bg-white/15 shadow-sm"
+            className="w-full px-4 py-3 rounded-yakutia focus:ring-2 focus:ring-white/20 outline-none yakutia-transition shadow-sm border"
+            style={{ 
+              color: 'var(--color-text-light)', 
+              backgroundColor: 'var(--color-input-bg)', 
+              borderColor: 'var(--color-input-border)' 
+            }}
           />
         </div>
 
         {/* Класс поездки */}
         <div className="space-y-2">
-          <label htmlFor="class" className="block text-sm font-medium text-white/90 text-left">
+          <label htmlFor="class" className="block text-sm font-medium text-left" style={{ color: 'var(--color-text-light)' }}>
             Класс поездки
           </label>
           <select
@@ -120,11 +144,16 @@ export function SearchForm() {
             name="class"
             value={formData.class}
             onChange={handleChange}
-            className="w-full px-4 py-3 rounded-yakutia border-[1.5px] border-[#c1eef4] focus:border-[#c1eef4] focus:ring-2 focus:ring-[#c1eef4]/30 outline-none yakutia-transition text-[#102a32] bg-white/15 shadow-sm"
+            className="w-full px-4 py-3 rounded-yakutia focus:ring-2 focus:ring-white/20 outline-none yakutia-transition shadow-sm border"
+            style={{ 
+              color: 'var(--color-text-light)', 
+              backgroundColor: 'var(--color-input-bg)', 
+              borderColor: 'var(--color-input-border)' 
+            }}
           >
-            <option value="economy">Эконом</option>
-            <option value="comfort">Комфорт</option>
-            <option value="business">Бизнес</option>
+            <option value="economy" style={{ color: 'var(--color-text-dark)' }}>Эконом</option>
+            <option value="comfort" style={{ color: 'var(--color-text-dark)' }}>Комфорт</option>
+            <option value="business" style={{ color: 'var(--color-text-dark)' }}>Бизнес</option>
           </select>
         </div>
       </div>
@@ -133,7 +162,10 @@ export function SearchForm() {
       <div className="flex justify-center md:justify-start">
         <button
           type="submit"
-          className="w-full md:w-auto px-12 py-6 text-lg font-bold bg-[#13b5c9] text-white rounded-yakutia-lg shadow-lg hover:bg-[#0fa5b8] hover:shadow-xl hover:scale-[1.02] yakutia-transition"
+          className="w-full md:w-auto px-12 py-4 text-lg font-bold text-white rounded-yakutia-lg shadow-lg hover:shadow-xl hover:scale-[1.02] yakutia-transition"
+          style={{ backgroundColor: 'var(--color-primary)' }}
+          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-primary-hover)'}
+          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--color-primary)'}
         >
           Найти маршрут
         </button>

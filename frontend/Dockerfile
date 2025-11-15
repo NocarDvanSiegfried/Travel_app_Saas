@@ -1,68 +1,101 @@
+# Base stage - общий базовый образ
 FROM node:18-alpine AS base
 
-# Install dependencies only when needed
-FROM base AS deps
+# Установка системных зависимостей
 RUN apk add --no-cache libc6-compat curl wget
+
+# Установка рабочей директории
 WORKDIR /app
 
-# Copy package files
+# Отключение telemetry
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Dependencies stage - установка всех зависимостей для разработки
+FROM base AS deps
+
+# Копирование файлов зависимостей
 COPY package.json package-lock.json* ./
-# Use npm ci if package-lock.json exists, otherwise use npm install
-# This allows the Dockerfile to work both with and without lock file
-RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
 
-# Development stage
+# Установка всех зависимостей (включая devDependencies)
+RUN if [ -f package-lock.json ]; then \
+      npm ci; \
+    else \
+      npm install; \
+    fi
+
+# Development stage - для разработки
 FROM base AS development
-WORKDIR /app
 
+# Переменные окружения для разработки
 ENV NODE_ENV=development
 ENV NEXT_TELEMETRY_DISABLED=1
 
-RUN apk add --no-cache curl wget
-
+# Копирование node_modules из deps stage
 COPY --from=deps /app/node_modules ./node_modules
+
+# Копирование всех файлов проекта
 COPY . .
 
+# Открытие порта
 EXPOSE 3000
 
+# Переменные окружения для Next.js
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
+# Запуск dev сервера
 CMD ["npm", "run", "dev"]
 
-# Build stage (for production)
+# Builder stage - для production сборки
 FROM base AS builder
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
-COPY . .
 
-# Set environment variables for build
-ENV NEXT_TELEMETRY_DISABLED=1
-
-# Build Next.js
-RUN npm run build
-
-# Production stage
-FROM base AS runner
-WORKDIR /app
-
+# Переменные окружения для сборки
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+# Копирование файлов зависимостей
+COPY package.json package-lock.json* ./
 
-COPY --from=builder /app/public ./public
+# Установка всех зависимостей (включая devDependencies для сборки)
+RUN if [ -f package-lock.json ]; then \
+      npm ci; \
+    else \
+      npm install; \
+    fi
 
-# Copy standalone build if exists, otherwise copy full build
+# Копирование исходного кода
+COPY . .
+
+# Сборка Next.js приложения
+RUN npm run build
+
+# Runner stage - для production запуска
+FROM base AS runner
+
+# Переменные окружения для production
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Создание системного пользователя
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
+
+# Копирование публичных файлов
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+
+# Копирование standalone build если существует, иначе полный build
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
+# Переключение на пользователя nextjs
 USER nextjs
 
+# Открытие порта
 EXPOSE 3000
 
+# Переменные окружения для Next.js
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
+# Запуск приложения
 CMD ["node", "server.js"]
