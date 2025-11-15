@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { initializeDatabase } from './infrastructure/database/init-db';
+import { RedisConnection } from './infrastructure/cache';
 import apiRoutes from './presentation/routes';
 
 dotenv.config();
@@ -39,6 +40,20 @@ async function start() {
   try {
     // Initialize database (run migrations)
     await initializeDatabase();
+    
+    // Initialize Redis connection
+    const redis = RedisConnection.getInstance();
+    try {
+      await redis.connect();
+      const isConnected = await redis.ping();
+      if (isConnected) {
+        console.log('✅ Redis cache initialized');
+      } else {
+        console.warn('⚠️ Redis connection failed, continuing without cache');
+      }
+    } catch (error) {
+      console.warn('⚠️ Redis initialization failed, continuing without cache:', error);
+    }
     
     // Start server
     app.listen(PORT, () => {

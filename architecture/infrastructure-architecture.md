@@ -51,6 +51,7 @@ Docker Compose управляет всеми сервисами:
 **Зависимости:**
 - PostgreSQL
 - MinIO
+- Redis
 
 **Переменные окружения:**
 - `DATABASE_URL` — строка подключения к PostgreSQL
@@ -58,6 +59,16 @@ Docker Compose управляет всеми сервисами:
 - `S3_ACCESS_KEY` — ключ доступа
 - `S3_SECRET_KEY` — секретный ключ
 - `S3_BUCKET` — имя bucket
+- `REDIS_HOST` — хост Redis
+- `REDIS_PORT` — порт Redis
+- `REDIS_PASSWORD` — пароль Redis
+- `REDIS_DB` — номер базы данных Redis
+- `REDIS_TTL_DEFAULT` — время жизни кеша по умолчанию (секунды)
+- `REDIS_TTL_ROUTES` — время жизни кеша маршрутов
+- `REDIS_TTL_HOTELS` — время жизни кеша гостиниц
+- `REDIS_TTL_TRANSPORT` — время жизни кеша транспорта
+- `REDIS_TTL_FAVORITES` — время жизни кеша избранного
+- `REDIS_TTL_SESSION` — время жизни сессий пользователей
 - `JWT_SECRET` — секрет для JWT
 - `NODE_ENV` — окружение
 
@@ -108,6 +119,32 @@ Docker Compose управляет всеми сервисами:
   - `images/` — изображения
   - `documents/` — документы
 
+### 2.5 Redis Container
+**Образ:** redis:7-alpine
+
+**Конфигурация:**
+- In-memory хранилище для кеширования
+- Персистентность через AOF (Append Only File)
+- Пароль для безопасности
+
+**Порты:**
+- 6379 (Redis API)
+
+**Тома:**
+- `redis_data` — данные Redis (AOF файлы)
+
+**Переменные окружения:**
+- `REDIS_PASSWORD` — пароль для доступа к Redis
+
+**Использование:**
+- Кеширование результатов поиска маршрутов
+- Кеширование данных о гостиницах
+- Кеширование данных транспорта
+- Кеширование раздела "Путешествуйте выгодно"
+- Хранение пользовательских сессий
+- Хранение черновиков заказов
+- Хранение состояния фильтров
+
 ### 2.5 MinIO Console Container
 **Образ:** minio/mc:latest (или встроенная консоль)
 
@@ -136,6 +173,9 @@ services:
     
   minio:
     # MinIO конфигурация
+    
+  redis:
+    # Redis конфигурация
 ```
 
 ### 3.2 Сети
@@ -146,6 +186,7 @@ services:
 ### 3.3 Тома
 - `postgres_data` — персистентные данные PostgreSQL
 - `minio_data` — персистентные данные MinIO
+- `redis_data` — персистентные данные Redis (AOF)
 - `backend_mock_data` — mock-данные для Backend
 
 ## 4. Переменные окружения
@@ -166,6 +207,18 @@ POSTGRES_PASSWORD=secure_password
 # MinIO
 MINIO_ROOT_USER=minioadmin
 MINIO_ROOT_PASSWORD=minioadmin
+
+# Redis
+REDIS_HOST=redis
+REDIS_PORT=6379
+REDIS_PASSWORD=redis_password
+REDIS_DB=0
+REDIS_TTL_DEFAULT=3600
+REDIS_TTL_ROUTES=1800
+REDIS_TTL_HOTELS=1800
+REDIS_TTL_TRANSPORT=1800
+REDIS_TTL_FAVORITES=3600
+REDIS_TTL_SESSION=86400
 
 # Backend
 DATABASE_URL=postgresql://travel_user:secure_password@postgres:5432/travel_app
@@ -197,7 +250,13 @@ REACT_APP_API_URL=http://localhost:5000/api
 - Структура bucket'ов
 - Резервное копирование (будущее)
 
-### 5.3 Mock-данные
+### 5.3 Redis
+- Данные хранятся в памяти
+- Персистентность через AOF (Append Only File)
+- Автоматическое восстановление при перезапуске
+- TTL для автоматической очистки устаревших данных
+
+### 5.4 Mock-данные
 - Хранятся в volume или в образе
 - Загружаются при старте Backend
 - Возможность обновления без пересборки
@@ -217,6 +276,7 @@ REACT_APP_API_URL=http://localhost:5000/api
 ### 6.3 Внутренние порты
 - PostgreSQL: 5432 (только внутри сети)
 - MinIO API: 9000 (только внутри сети)
+- Redis: 6379 (только внутри сети, опционально публичный для разработки)
 
 ## 7. Безопасность
 

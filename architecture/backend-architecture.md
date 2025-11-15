@@ -319,10 +319,13 @@ Dependency Rule: Dependencies point INWARD
 - `PostgreSQLClient` — клиент БД
 - `S3Client` — клиент MinIO/S3
 - `MockDataLoader` — загрузка mock-данных из файлов
+- `RedisConnection` — подключение к Redis (Singleton)
+- `RedisCacheService` — реализация ICacheService
 
 #### Конфигурация
 - `DatabaseConfig` — настройки БД
 - `S3Config` — настройки S3
+- `RedisConfig` — настройки Redis (host, port, password, TTL)
 - `JWTConfig` — настройки JWT
 - `AppConfig` — общие настройки
 
@@ -554,18 +557,21 @@ Application/
 ### 13.1 Горизонтальное масштабирование
 - Stateless API — можно масштабировать горизонтально
 - Shared session storage (Redis) — для сессий
+- Shared cache (Redis) — для кеширования данных
 - Load balancer — распределение нагрузки
 
 ### 13.2 Вертикальное масштабирование
 - Оптимизация запросов к БД
-- Кэширование
+- Кэширование через Redis
 - Асинхронная обработка
 
 ### 13.3 Оптимизация
-- Кэширование часто запрашиваемых данных
+- Кэширование часто запрашиваемых данных в Redis
 - Индексы в БД
 - Пагинация результатов
 - Ленивая загрузка данных
+- TTL для автоматической очистки кеша
+- Инвалидация кеша при обновлении данных
 
 ## 14. Чистота кода (SOLID принципы)
 
