@@ -1,43 +1,36 @@
 FROM node:18-alpine AS base
 
-# Install dependencies only when needed
-FROM base AS deps
+# Install system dependencies
 RUN apk add --no-cache libc6-compat curl wget
+
+# Dependencies stage
+FROM base AS deps
 WORKDIR /app
 
 # Copy package files
 COPY package.json package-lock.json* ./
-# Use npm ci if package-lock.json exists, otherwise use npm install
-# This allows the Dockerfile to work both with and without lock file
-RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
 
-# Development stage
-FROM base AS development
-WORKDIR /app
+# Install dependencies - use npm ci if package-lock.json exists, otherwise npm install
+RUN if [ -f package-lock.json ]; then \
+      npm ci && npm cache clean --force; \
+    else \
+      npm install && npm cache clean --force; \
+    fi
 
-ENV NODE_ENV=development
-ENV NEXT_TELEMETRY_DISABLED=1
-
-RUN apk add --no-cache curl wget
-
-COPY --from=deps /app/node_modules ./node_modules
-COPY . .
-
-EXPOSE 3000
-
-ENV PORT=3000
-ENV HOSTNAME="0.0.0.0"
-
-CMD ["npm", "run", "dev"]
-
-# Build stage (for production)
+# Builder stage - build Next.js
 FROM base AS builder
 WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
-COPY . .
 
-# Set environment variables for build
 ENV NEXT_TELEMETRY_DISABLED=1
+
+# Copy dependencies
+COPY --from=deps /app/node_modules ./node_modules
+
+# Copy package files
+COPY package.json package-lock.json* ./
+
+# Copy source code and config files
+COPY . .
 
 # Build Next.js
 RUN npm run build
@@ -52,9 +45,10 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
+# Copy public folder
 COPY --from=builder /app/public ./public
 
-# Copy standalone build if exists, otherwise copy full build
+# Copy standalone build
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
@@ -65,4 +59,5 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
+# Use standalone server
 CMD ["node", "server.js"]

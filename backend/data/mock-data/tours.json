@@ -1,0 +1,195 @@
+[
+  {
+    "id": "tour-1",
+    "title": "Тур по Якутии \"Северное сияние\"",
+    "description": "Незабываемое путешествие по Якутии с посещением достопримечательностей, знакомством с культурой и природой региона",
+    "destination": "Якутск",
+    "durationDays": 4,
+    "price": {
+      "amount": 20000,
+      "currency": "RUB"
+    },
+    "status": "available",
+    "maxParticipants": 20,
+    "currentParticipants": 5,
+    "startDate": "2024-06-15T00:00:00Z",
+    "endDate": "2024-06-18T23:59:59Z",
+    "images": [],
+    "tags": ["культура", "природа", "экскурсии"],
+    "components": [
+      {
+        "id": "comp-1",
+        "type": "accommodation",
+        "name": "Размещение в отеле",
+        "description": "3 ночи в отеле \"Полярная звезда\"",
+        "price": {
+          "amount": 15000,
+          "currency": "RUB"
+        },
+        "accommodation": {
+          "id": "acc-1",
+          "name": "Отель \"Полярная звезда\"",
+          "type": "hotel",
+          "address": "г. Якутск, ул. Ленина, 1",
+          "coordinates": {
+            "latitude": 62.0355,
+            "longitude": 129.6755
+          },
+          "rating": 4.5,
+          "amenities": ["Wi-Fi", "Завтрак", "Парковка", "Кондиционер"],
+          "checkIn": "2024-06-15T14:00:00Z",
+          "checkOut": "2024-06-18T12:00:00Z",
+          "roomType": "Стандартный номер",
+          "images": []
+        },
+        "startDate": "2024-06-15T14:00:00Z",
+        "endDate": "2024-06-18T12:00:00Z"
+      },
+      {
+        "id": "comp-2",
+        "type": "activity",
+        "name": "Экскурсия по Якутску",
+        "description": "Обзорная экскурсия по столице Якутии",
+        "price": {
+          "amount": 2000,
+          "currency": "RUB"
+        },
+        "activity": {
+          "id": "act-1",
+          "name": "Экскурсия по Якутску",
+          "type": "cultural",
+          "description": "Обзорная экскурсия по столице Якутии с посещением музеев и достопримечательностей",
+          "location": "г. Якутск",
+          "coordinates": {
+            "latitude": 62.0355,
+            "longitude": 129.6755
+          },
+          "durationHours": 3,
+          "startTime": "2024-06-16T10:00:00Z",
+          "endTime": "2024-06-16T13:00:00Z",
+          "difficulty": "easy",
+          "images": [],
+          "requirements": []
+        },
+        "startDate": "2024-06-16T10:00:00Z",
+        "endDate": "2024-06-16T13:00:00Z"
+      },
+      {
+        "id": "comp-3",
+        "type": "meal",
+        "name": "Завтраки",
+        "description": "3 завтрака в отеле",
+        "price": {
+          "amount": 3000,
+          "currency": "RUB"
+        },
+        "meal": {
+          "id": "meal-1",
+          "type": "breakfast",
+          "name": "Завтрак в отеле",
+          "description": "Континентальный завтрак",
+          "restaurant": "Отель \"Полярная звезда\"",
+          "location": "г. Якутск",
+          "time": "2024-06-16T08:00:00Z",
+          "dietaryOptions": [],
+          "menu": []
+        }
+      }
+    ]
+  },
+  {
+    "id": "tour-2",
+    "title": "Экспедиция \"Ленские столбы\"",
+    "description": "Приключенческий тур к природному парку Ленские столбы - одному из чудес России",
+    "destination": "Ленские столбы",
+    "durationDays": 3,
+    "price": {
+      "amount": 25000,
+      "currency": "RUB"
+    },
+    "status": "available",
+    "maxParticipants": 15,
+    "currentParticipants": 8,
+    "startDate": "2024-07-01T00:00:00Z",
+    "endDate": "2024-07-03T23:59:59Z",
+    "images": [],
+    "tags": ["природа", "приключения", "экспедиция"],
+    "components": [
+      {
+        "id": "comp-4",
+        "type": "accommodation",
+        "name": "Размещение в кемпинге",
+        "description": "2 ночи в кемпинге",
+        "price": {
+          "amount": 5000,
+          "currency": "RUB"
+        },
+        "accommodation": {
+          "id": "acc-2",
+          "name": "Кемпинг \"Ленские столбы\"",
+          "type": "camping",
+          "address": "Природный парк Ленские столбы",
+          "coordinates": {
+            "latitude": 61.0833,
+            "longitude": 127.4167
+          },
+          "rating": 4.0,
+          "amenities": ["Палатки", "Кухня", "Туалет"],
+          "checkIn": "2024-07-01T14:00:00Z",
+          "checkOut": "2024-07-03T12:00:00Z",
+          "roomType": "Палатка на 2 человек",
+          "images": []
+        },
+        "startDate": "2024-07-01T14:00:00Z",
+        "endDate": "2024-07-03T12:00:00Z"
+      },
+      {
+        "id": "comp-5",
+        "type": "activity",
+        "name": "Пеший поход",
+        "description": "Пеший поход по тропам парка",
+        "price": {
+          "amount": 3000,
+          "currency": "RUB"
+        },
+        "activity": {
+          "id": "act-2",
+          "name": "Пеший поход по Ленским столбам",
+          "type": "nature",
+          "description": "Пеший поход по живописным тропам природного парка",
+          "location": "Природный парк Ленские столбы",
+          "coordinates": {
+            "latitude": 61.0833,
+            "longitude": 127.4167
+          },
+          "durationHours": 6,
+          "startTime": "2024-07-02T09:00:00Z",
+          "endTime": "2024-07-02T15:00:00Z",
+          "difficulty": "medium",
+          "images": [],
+          "requirements": ["Удобная обувь", "Вода"]
+        },
+        "startDate": "2024-07-02T09:00:00Z",
+        "endDate": "2024-07-02T15:00:00Z"
+      },
+      {
+        "id": "comp-6",
+        "type": "transport",
+        "name": "Трансфер",
+        "description": "Трансфер из Якутска и обратно",
+        "price": {
+          "amount": 17000,
+          "currency": "RUB"
+        },
+        "transportDetails": {
+          "type": "bus",
+          "from": "Якутск",
+          "to": "Ленские столбы",
+          "departureTime": "2024-07-01T08:00:00Z",
+          "arrivalTime": "2024-07-01T12:00:00Z"
+        }
+      }
+    ]
+  }
+]
+

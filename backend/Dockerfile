@@ -1,40 +1,53 @@
 FROM node:18-alpine AS base
 
-# Install dependencies only when needed
-FROM base AS deps
+# Install system dependencies
 RUN apk add --no-cache libc6-compat curl wget
+
+# Dependencies stage - install all dependencies (including dev)
+FROM base AS deps
 WORKDIR /app
 
 # Copy package files
 COPY package.json package-lock.json* ./
-RUN npm ci || npm install
 
-# Build stage
+# Install dependencies - use npm ci if package-lock.json exists, otherwise npm install
+RUN if [ -f package-lock.json ]; then \
+      npm ci && npm cache clean --force; \
+    else \
+      npm install && npm cache clean --force; \
+    fi
+
+# Production dependencies only
+FROM base AS deps-prod
+WORKDIR /app
+
+# Copy package files
+COPY package.json package-lock.json* ./
+
+# Install only production dependencies
+RUN if [ -f package-lock.json ]; then \
+      npm ci --only=production && npm cache clean --force; \
+    else \
+      npm install --only=production && npm cache clean --force; \
+    fi
+
+# Builder stage - compile TypeScript
 FROM base AS builder
 WORKDIR /app
+
+# Copy all dependencies (including dev dependencies for TypeScript)
 COPY --from=deps /app/node_modules ./node_modules
-COPY . .
 
-# Generate Prisma client if using Prisma
-# RUN npx prisma generate
+# Copy package files
+COPY package.json package-lock.json* ./
 
-# Development stage
-FROM base AS development
-WORKDIR /app
+# Copy source code and config files
+COPY tsconfig.json ./
+COPY src ./src
+COPY data ./data
 
-ENV NODE_ENV=development
-
-RUN apk add --no-cache curl
-
-COPY --from=deps /app/node_modules ./node_modules
-COPY . .
-
-# Install nodemon for hot reload
-RUN npm install -g nodemon ts-node
-
-EXPOSE 5000
-
-CMD ["npm", "run", "dev"]
+# Build TypeScript
+RUN npm run build
 
 # Production stage
 FROM base AS production
@@ -42,15 +55,16 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-RUN apk add --no-cache curl
+# Copy only production dependencies
+COPY --from=deps-prod /app/node_modules ./node_modules
 
-COPY --from=deps /app/node_modules ./node_modules
-COPY . .
-
-# Build TypeScript
-RUN npm run build
+# Copy built files and config
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/data ./data
+COPY --from=builder /app/tsconfig.json ./tsconfig.json
+COPY package.json ./
 
 EXPOSE 5000
 
-CMD ["npm", "start"]
-
+# Start the application with tsconfig-paths for path alias resolution
+CMD ["node", "-r", "tsconfig-paths/register", "dist/index.js"]

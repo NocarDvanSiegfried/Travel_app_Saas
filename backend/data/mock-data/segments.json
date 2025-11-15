@@ -1,0 +1,51 @@
+[
+  {
+    "id": "seg-msk-ykt-air",
+    "transportType": "air",
+    "fromCityId": "moscow",
+    "toCityId": "yakutsk",
+    "departureTime": "2024-06-15T08:00:00Z",
+    "arrivalTime": "2024-06-15T18:30:00Z",
+    "priceAmount": 25000,
+    "priceCurrency": "RUB",
+    "carrier": "Аэрофлот",
+    "vehicleNumber": "SU-1234"
+  },
+  {
+    "id": "seg-msk-ykt-rail",
+    "transportType": "rail",
+    "fromCityId": "moscow",
+    "toCityId": "yakutsk",
+    "departureTime": "2024-06-15T10:00:00Z",
+    "arrivalTime": "2024-06-17T14:00:00Z",
+    "priceAmount": 12000,
+    "priceCurrency": "RUB",
+    "carrier": "РЖД",
+    "vehicleNumber": "001М"
+  },
+  {
+    "id": "seg-ykt-olk-river",
+    "transportType": "river",
+    "fromCityId": "yakutsk",
+    "toCityId": "olekminsk",
+    "departureTime": "2024-06-16T06:00:00Z",
+    "arrivalTime": "2024-06-16T20:00:00Z",
+    "priceAmount": 3500,
+    "priceCurrency": "RUB",
+    "carrier": "Ленское речное пароходство",
+    "vehicleNumber": "Лена-42"
+  },
+  {
+    "id": "seg-ykt-sang-river",
+    "transportType": "river",
+    "fromCityId": "yakutsk",
+    "toCityId": "sangar",
+    "departureTime": "2024-06-16T08:00:00Z",
+    "arrivalTime": "2024-06-16T22:00:00Z",
+    "priceAmount": 3200,
+    "priceCurrency": "RUB",
+    "carrier": "Ленское речное пароходство",
+    "vehicleNumber": "Лена-38"
+  }
+]
+

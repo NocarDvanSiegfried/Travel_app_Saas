@@ -52,7 +52,7 @@ export class UserRepository implements IUserRepository {
   async update(user: User): Promise<User> {
     const result = await pool.query(
       `UPDATE users 
-       SET email = $2, password_hash = $3, full_name = $4, phone = $5, avatar_url = $6, updated_at = $7
+       SET email = $2, password_hash = $3, full_name = $4, phone = $5, avatar_url = $6, updated_at = $7, last_login_at = $8
        WHERE id = $1
        RETURNING *`,
       [
@@ -62,7 +62,8 @@ export class UserRepository implements IUserRepository {
         user.fullName,
         user.phone || null,
         user.avatarUrl || null,
-        new Date()
+        new Date(),
+        user.lastLoginAt || null
       ]
     );
     

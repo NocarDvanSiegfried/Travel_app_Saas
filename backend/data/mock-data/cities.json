@@ -1,0 +1,35 @@
+[
+  {
+    "id": "moscow",
+    "name": "Москва",
+    "coordinates": {
+      "latitude": 55.7558,
+      "longitude": 37.6173
+    }
+  },
+  {
+    "id": "yakutsk",
+    "name": "Якутск",
+    "coordinates": {
+      "latitude": 62.0355,
+      "longitude": 129.6755
+    }
+  },
+  {
+    "id": "olekminsk",
+    "name": "Олёкминск",
+    "coordinates": {
+      "latitude": 60.3733,
+      "longitude": 120.4264
+    }
+  },
+  {
+    "id": "sangar",
+    "name": "Сангар",
+    "coordinates": {
+      "latitude": 63.9244,
+      "longitude": 127.4739
+    }
+  }
+]
+

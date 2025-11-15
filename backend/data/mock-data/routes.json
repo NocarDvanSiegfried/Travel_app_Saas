@@ -1,0 +1,23 @@
+[
+  {
+    "id": "route-msk-ykt-olk",
+    "segments": ["seg-msk-ykt-air", "seg-ykt-olk-river"],
+    "riskScore": 0.15
+  },
+  {
+    "id": "route-msk-ykt-olk-rail",
+    "segments": ["seg-msk-ykt-rail", "seg-ykt-olk-river"],
+    "riskScore": 0.12
+  },
+  {
+    "id": "route-msk-ykt-sang",
+    "segments": ["seg-msk-ykt-air", "seg-ykt-sang-river"],
+    "riskScore": 0.18
+  },
+  {
+    "id": "route-msk-ykt-sang-rail",
+    "segments": ["seg-msk-ykt-rail", "seg-ykt-sang-river"],
+    "riskScore": 0.14
+  }
+]
+
