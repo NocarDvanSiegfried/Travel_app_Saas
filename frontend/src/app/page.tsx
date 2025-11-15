@@ -2,10 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import { Header } from '@/components/header'
-import { SearchForm } from '@/components/search-form'
 import { NavigationTabs } from '@/components/navigation-tabs'
 import { AssistantButton } from '@/components/assistant-button'
-import { RussiaMap } from '@/components/russia-map'
+import { RoutesSection } from '@/components/routes-section'
 import { HotelsSection } from '@/components/hotels-section'
 
 type ActiveSection = 'routes' | 'hotels' | 'cars' | 'services' | 'favorites'
@@ -38,7 +37,7 @@ export default function Home() {
         return <HotelsSection />
       case 'routes':
       default:
-        return <RussiaMap />
+        return <RoutesSection />
     }
   }
 
@@ -48,18 +47,15 @@ export default function Home() {
 
       <main className="container mx-auto px-4 py-6 md:py-8 relative z-10 max-w-[1300px]">
         {/* Центральный заголовок */}
-        <div className="text-center mb-5 md:mb-7">
+        <div className="text-center mb-4">
           <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold mb-3 leading-tight text-balance" style={{ color: 'var(--color-text-dark)' }}>
             Путешествия, которые соединяют Якутию и Россию
           </h1>
-          <p className="text-lg md:text-xl lg:text-2xl text-balance" style={{ color: 'var(--color-text-dark)' }}>
-            Ваш маршрут начинается здесь
-          </p>
-        </div>
-
-        {/* Поисковая форма */}
-        <div className="mb-5">
-          <SearchForm />
+          {displaySection === 'routes' && (
+            <h2 className="text-2xl md:text-3xl font-semibold" style={{ color: 'var(--color-text-dark)' }}>
+              Ваш маршрут начинается здесь
+            </h2>
+          )}
         </div>
 
         {/* Навигационные табы */}

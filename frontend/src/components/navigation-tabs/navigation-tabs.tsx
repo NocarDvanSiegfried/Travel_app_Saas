@@ -1,6 +1,5 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import { RouteIcon, HotelIcon, CarIcon, ServicesIcon, HeartIcon } from '@/shared/icons'
 
 type ActiveSection = 'routes' | 'hotels' | 'cars' | 'services' | 'favorites'
@@ -19,16 +18,6 @@ interface NavigationTabsProps {
 }
 
 export function NavigationTabs({ onSectionChange, activeSection }: NavigationTabsProps) {
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  if (!mounted) {
-    return null
-  }
-
   const handleTabClick = (tab: typeof tabs[0]) => {
     if (onSectionChange) {
       onSectionChange(tab.id)

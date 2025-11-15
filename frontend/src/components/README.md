@@ -8,7 +8,8 @@ React компоненты для Travel App.
 - `search-form/` - Форма поиска маршрутов
 - `navigation-tabs/` - Навигационные табы
 - `assistant-button/` - Кнопка помощника (мамонтёнок)
-- `russia-map/` - Карта России
+- `routes-section/` - Раздел маршрутов с формой поиска
+- `hotels-section/` - Раздел гостиниц
 
 ## Стиль
 
