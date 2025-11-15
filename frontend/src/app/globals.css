@@ -1,0 +1,150 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply box-border p-0 m-0;
+  }
+
+  html,
+  body {
+    @apply max-w-full overflow-x-hidden;
+  }
+
+  body {
+    @apply text-white antialiased;
+    background: linear-gradient(to bottom, #5fb8ca, #3d9fb0);
+    background-attachment: fixed;
+    min-height: 100vh;
+    position: relative;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: 
+      repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 20px,
+        rgba(26, 170, 194, 0.04) 20px,
+        rgba(26, 170, 194, 0.04) 21px
+      );
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(ellipse at center, transparent 0%, rgba(0, 0, 0, 0.05) 100%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  a {
+    @apply no-underline;
+  }
+}
+
+@layer components {
+  /* Якутский орнамент - тонкий узорный бордер */
+  .yakutia-border {
+    @apply border border-yakutia-border-light;
+    background-image: 
+      repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 2px,
+        rgba(26, 170, 194, 0.05) 2px,
+        rgba(26, 170, 194, 0.05) 4px
+      );
+  }
+
+  /* Плавные переходы */
+  .yakutia-transition {
+    @apply transition-all duration-300 ease-in-out;
+  }
+
+  /* Якутский паттерн на фоне */
+  .yakutia-pattern {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Блок с объёмом */
+  .yakutia-card {
+    background: rgba(255, 255, 255, 0.18);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: 16px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    position: relative;
+    z-index: 1;
+    backdrop-filter: blur(10px);
+  }
+
+  /* Анимация мигания */
+  @keyframes yakutia-blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
+
+  .yakutia-blink {
+    animation: yakutia-blink 2s ease-in-out infinite;
+  }
+
+  /* Анимация покачивания */
+  @keyframes yakutia-sway {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(-3deg); }
+    75% { transform: rotate(3deg); }
+  }
+
+  .yakutia-sway {
+    animation: yakutia-sway 3s ease-in-out infinite;
+  }
+
+  /* Анимация покачивания вверх-вниз */
+  @keyframes yakutia-bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+  }
+
+  .yakutia-bounce {
+    animation: yakutia-bounce 2s ease-in-out infinite;
+  }
+
+  /* Анимация свечения */
+  @keyframes yakutia-glow {
+    0%, 100% { 
+      box-shadow: 0 0 10px rgba(19, 181, 201, 0.5),
+                  0 0 20px rgba(19, 181, 201, 0.3),
+                  0 0 30px rgba(19, 181, 201, 0.2);
+    }
+    50% { 
+      box-shadow: 0 0 20px rgba(19, 181, 201, 0.8),
+                  0 0 30px rgba(19, 181, 201, 0.5),
+                  0 0 40px rgba(19, 181, 201, 0.3);
+    }
+  }
+
+  .yakutia-glow {
+    animation: yakutia-glow 2s ease-in-out infinite;
+  }
+
+  /* Плавные переходы для меню */
+  .yakutia-smooth {
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+

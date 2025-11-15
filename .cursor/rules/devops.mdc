@@ -1,0 +1,51 @@
+ ERROR [frontend deps 4/4] RUN npm ci                                                                                  1.9s
+ => CACHED [backend deps 3/4] COPY package.json package-lock.json* ./                                                     0.0s
+ => CANCELED [backend deps 4/4] RUN npm ci || npm install                                                                 2.0s
+------
+ > [frontend deps 4/4] RUN npm ci:
+1.444 npm error code EUSAGE
+1.445 npm error
+1.445 npm error The `npm ci` command can only install with an existing package-lock.json or
+1.445 npm error npm-shrinkwrap.json with lockfileVersion >= 1. Run an install with npm@5 or
+1.445 npm error later to generate a package-lock.json file, then try again.
+1.445 npm error
+1.445 npm error Clean install a project
+1.445 npm error
+1.445 npm error Usage:
+1.445 npm error npm ci
+1.445 npm error
+1.445 npm error Options:
+1.445 npm error [--install-strategy <hoisted|nested|shallow|linked>] [--legacy-bundling]
+1.445 npm error [--global-style] [--omit <dev|optional|peer> [--omit <dev|optional|peer> ...]]
+1.445 npm error [--include <prod|dev|optional|peer> [--include <prod|dev|optional|peer> ...]]
+1.445 npm error [--strict-peer-deps] [--foreground-scripts] [--ignore-scripts] [--no-audit]
+1.445 npm error [--no-bin-links] [--no-fund] [--dry-run]
+1.445 npm error [-w|--workspace <workspace-name> [-w|--workspace <workspace-name> ...]]
+1.445 npm error [-ws|--workspaces] [--include-workspace-root] [--install-links]
+1.445 npm error
+1.445 npm error aliases: clean-install, ic, install-clean, isntall-clean
+1.445 npm error
+1.445 npm error Run "npm help ci" for more info
+1.447 npm error A complete log of this run can be found in: /root/.npm/_logs/2025-11-14T16_19_00_762Z-debug-0.log
+------
+Dockerfile:10
+
+--------------------
+
+   8 |     # Copy package files
+
+   9 |     COPY package.json package-lock.json* ./
+
+  10 | >>> RUN npm ci
+
+  11 |
+
+  12 |     # Build stage
+
+--------------------
+
+target frontend: failed to solve: process "/bin/sh -c npm ci" did not complete successfully: exit code: 1
+
+
+
+View build details: docker-desktop://dashboard/build/default/default/mt9l9ub98sl0tgnxrzj5kw1yu
