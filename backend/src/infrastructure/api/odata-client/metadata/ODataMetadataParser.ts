@@ -76,17 +76,44 @@ export class ODataMetadataParser {
    */
   private parseXMLString(xmlString: string): IODataMetadata {
     // Простой парсер XML через регулярные выражения
-    const edmxMatch = xmlString.match(/<Edmx[^>]*>([\s\S]*?)<\/Edmx>/i);
+    // Поддержка как <Edmx>, так и <edmx:Edmx> с namespace
+    const edmxMatch = xmlString.match(/<(?:edmx:)?Edmx[^>]*>([\s\S]*?)<\/(?:edmx:)?Edmx>/i);
     if (!edmxMatch) {
-      throw new Error('Edmx element not found');
+      // Попробуем найти без namespace
+      const edmxMatchAlt = xmlString.match(/<[^:]*:?Edmx[^>]*>([\s\S]*?)<\/[^:]*:?Edmx>/i);
+      if (!edmxMatchAlt) {
+        throw new Error('Edmx element not found in metadata XML');
+      }
+      return this.parseWithMatch(edmxMatchAlt[1]);
     }
 
-    const dataServicesMatch = edmxMatch[1].match(/<DataServices[^>]*>([\s\S]*?)<\/DataServices>/i);
+    return this.parseWithMatch(edmxMatch[1]);
+  }
+
+  /**
+   * Парсить содержимое Edmx элемента
+   */
+  private parseWithMatch(edmxContent: string): IODataMetadata {
+    // Поддержка как <DataServices>, так и <edmx:DataServices> с namespace
+    const dataServicesMatch = edmxContent.match(/<(?:edmx:)?DataServices[^>]*>([\s\S]*?)<\/(?:edmx:)?DataServices>/i);
     if (!dataServicesMatch) {
-      throw new Error('DataServices element not found');
+      // Попробуем найти без namespace
+      const dataServicesMatchAlt = edmxContent.match(/<[^:]*:?DataServices[^>]*>([\s\S]*?)<\/[^:]*:?DataServices>/i);
+      if (!dataServicesMatchAlt) {
+        throw new Error('DataServices element not found in metadata XML');
+      }
+      return this.parseSchemas(dataServicesMatchAlt[1]);
     }
 
-    const schemaMatches = dataServicesMatch[1].matchAll(/<Schema[^>]*>([\s\S]*?)<\/Schema>/gi);
+    return this.parseSchemas(dataServicesMatch[1]);
+  }
+
+  /**
+   * Парсить схемы из содержимого DataServices
+   */
+  private parseSchemas(dataServicesContent: string): IODataMetadata {
+
+    const schemaMatches = Array.from(dataServicesContent.matchAll(/<Schema[^>]*>([\s\S]*?)<\/Schema>/gi));
     const schemas: IODataSchema[] = [];
 
     for (const schemaMatch of schemaMatches) {

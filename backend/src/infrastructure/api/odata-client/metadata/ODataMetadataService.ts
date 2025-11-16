@@ -35,10 +35,24 @@ export class ODataMetadataService {
     const response = await this.odataClient.makeRequest(metadataUrl);
     
     if (!response.ok) {
-      throw new Error(`Failed to load metadata: ${response.statusText}`);
+      const errorText = await response.text().catch(() => response.statusText);
+      throw new Error(`Failed to load metadata: HTTP ${response.status} - ${errorText}`);
     }
 
-    const xmlText = await response.text();
+    const contentType = response.headers.get('content-type') || '';
+    let xmlText: string;
+    
+    if (contentType.includes('xml')) {
+      xmlText = await response.text();
+    } else {
+      // Попробуем как текст, если content-type не указан
+      xmlText = await response.text();
+    }
+
+    if (!xmlText || xmlText.trim().length === 0) {
+      throw new Error('Metadata XML is empty');
+    }
+
     const parser = new ODataMetadataParser();
     const parsedMetadata = await parser.parseMetadata(xmlText);
 
@@ -137,12 +151,14 @@ export class ODataMetadataService {
     let baseUrl = this.odataClient.getBaseUrl().trim();
     baseUrl = baseUrl.replace(/\s+/g, '');
     baseUrl = baseUrl.replace(/\/+$/, '');
-    
+
     if (!baseUrl.match(/^https?:\/\//i)) {
       throw new Error(`Invalid baseUrl format: ${baseUrl}. Must start with http:// or https://`);
     }
-    
-    return `${baseUrl}/$metadata`;
+
+    // Убеждаемся, что $metadata добавляется корректно
+    const metadataPath = baseUrl.endsWith('/$metadata') ? '' : '/$metadata';
+    return `${baseUrl}${metadataPath}`;
   }
 
   /**

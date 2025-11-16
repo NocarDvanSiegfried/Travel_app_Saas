@@ -31,39 +31,10 @@ export async function buildRoute(req: Request, res: Response): Promise<void> {
     });
 
     if (result.routes.length === 0) {
-      // Fallback на тестовые данные
-      const { createFallbackRoute } = await import('../../infrastructure/api/odata-client/fallback-data');
-      const fallbackRoute = createFallbackRoute(
-        String(from),
-        String(to),
-        String(date)
-      );
-      if (fallbackRoute) {
-        res.json({
-          routes: [fallbackRoute],
-          alternatives: [],
-          fallback: true,
-        });
-        return;
-      }
-
-      res.status(404).json({
-        error: {
-          code: 'ROUTES_NOT_FOUND',
-          message: 'Маршруты не найдены',
-        },
-      });
-      return;
-    }
-
-    res.json(result);
-  } catch (error) {
-    console.error('Error building route:', error);
-    
-    // Fallback на тестовые данные
-    const { from, to, date } = req.query;
-    if (from && to && date) {
-      try {
+      // Fallback только если OData недоступен
+      const { createODataClient } = await import('../../infrastructure/api/odata-client');
+      const odataClient = createODataClient();
+      if (!odataClient) {
         const { createFallbackRoute } = await import('../../infrastructure/api/odata-client/fallback-data');
         const fallbackRoute = createFallbackRoute(
           String(from),
@@ -78,16 +49,56 @@ export async function buildRoute(req: Request, res: Response): Promise<void> {
           });
           return;
         }
-      } catch (fallbackError) {
-        console.error('Fallback route creation failed:', fallbackError);
+      }
+
+      res.status(404).json({
+        error: {
+          code: 'ROUTES_NOT_FOUND',
+          message: 'Маршруты не найдены',
+        },
+      });
+      return;
+    }
+
+    res.json(result);
+  } catch (error) {
+    // Fallback только если OData недоступен
+    const { createODataClient } = await import('../../infrastructure/api/odata-client');
+    const odataClient = createODataClient();
+    if (!odataClient) {
+      const { from, to, date } = req.query;
+      if (from && to && date) {
+        try {
+          const { createFallbackRoute } = await import('../../infrastructure/api/odata-client/fallback-data');
+          const fallbackRoute = createFallbackRoute(
+            String(from),
+            String(to),
+            String(date)
+          );
+          if (fallbackRoute) {
+            res.json({
+              routes: [fallbackRoute],
+              alternatives: [],
+              fallback: true,
+            });
+            return;
+          }
+        } catch (fallbackError) {
+          // Fallback не удался, возвращаем ошибку
+        }
       }
     }
+
+    const errorMessage = error instanceof Error 
+      ? (error.message.includes('OData') || error.message.includes('authentication') || error.message.includes('timeout')
+          ? error.message 
+          : 'Ошибка при построении маршрута')
+      : 'Внутренняя ошибка сервера';
 
     res.status(500).json({
       error: {
         code: 'INTERNAL_ERROR',
-        message:
-          error instanceof Error ? error.message : 'Внутренняя ошибка сервера',
+        message: errorMessage,
       },
     });
   }

@@ -201,32 +201,38 @@ export async function getRouteDetails(req: Request, res: Response): Promise<void
       routes: routeData,
     });
   } catch (error) {
-    console.error('Error fetching route details:', error);
-    
-    // Fallback на тестовые данные
-    const { from, to, date } = req.query;
-    if (from && to && date) {
-      const fromStr = String(from);
-      const toStr = String(to);
-      const dateStr = String(date);
-      const fallbackRoute = createFallbackRoute(fromStr, toStr, dateStr);
-      if (fallbackRoute) {
-        res.json({
-          from: { Наименование: fromStr, Код: fromStr.toUpperCase() },
-          to: { Наименование: toStr, Код: toStr.toUpperCase() },
-          date: dateStr,
-          routes: [fallbackRoute],
-          fallback: true,
-        });
-        return;
+    // Fallback только если OData недоступен
+    const odataClient = createODataClient();
+    if (!odataClient) {
+      const { from, to, date } = req.query;
+      if (from && to && date) {
+        const fromStr = String(from);
+        const toStr = String(to);
+        const dateStr = String(date);
+        const fallbackRoute = createFallbackRoute(fromStr, toStr, dateStr);
+        if (fallbackRoute) {
+          res.json({
+            from: { Наименование: fromStr, Код: fromStr.toUpperCase() },
+            to: { Наименование: toStr, Код: toStr.toUpperCase() },
+            date: dateStr,
+            routes: [fallbackRoute],
+            fallback: true,
+          });
+          return;
+        }
       }
     }
+
+    const errorMessage = error instanceof Error 
+      ? (error.message.includes('OData') || error.message.includes('authentication') || error.message.includes('timeout')
+          ? error.message 
+          : 'Ошибка при получении данных маршрута')
+      : 'Внутренняя ошибка сервера';
 
     res.status(500).json({
       error: {
         code: 'INTERNAL_ERROR',
-        message:
-          error instanceof Error ? error.message : 'Внутренняя ошибка сервера',
+        message: errorMessage,
       },
     });
   }
@@ -258,19 +264,22 @@ export async function searchRoute(req: Request, res: Response): Promise<void> {
     });
 
     if (result.routes.length === 0) {
-      // Fallback на тестовые данные
-      const fallbackRoute = createFallbackRoute(
-        String(from),
-        String(to),
-        String(date)
-      );
-      if (fallbackRoute) {
-        res.json({
-          routes: [fallbackRoute],
-          alternatives: [],
-          fallback: true,
-        });
-        return;
+      // Fallback только если OData недоступен
+      const odataClient = createODataClient();
+      if (!odataClient) {
+        const fallbackRoute = createFallbackRoute(
+          String(from),
+          String(to),
+          String(date)
+        );
+        if (fallbackRoute) {
+          res.json({
+            routes: [fallbackRoute],
+            alternatives: [],
+            fallback: true,
+          });
+          return;
+        }
       }
 
       res.status(404).json({
@@ -284,30 +293,36 @@ export async function searchRoute(req: Request, res: Response): Promise<void> {
 
     res.json(result);
   } catch (error) {
-    console.error('Error searching route:', error);
-    
-    // Fallback на тестовые данные
-    const { from, to, date } = req.query;
-    if (from && to && date) {
-      const fromStr = String(from);
-      const toStr = String(to);
-      const dateStr = String(date);
-      const fallbackRoute = createFallbackRoute(fromStr, toStr, dateStr);
-      if (fallbackRoute) {
-        res.json({
-          routes: [fallbackRoute],
-          alternatives: [],
-          fallback: true,
-        });
-        return;
+    // Fallback только если OData недоступен
+    const odataClient = createODataClient();
+    if (!odataClient) {
+      const { from, to, date } = req.query;
+      if (from && to && date) {
+        const fromStr = String(from);
+        const toStr = String(to);
+        const dateStr = String(date);
+        const fallbackRoute = createFallbackRoute(fromStr, toStr, dateStr);
+        if (fallbackRoute) {
+          res.json({
+            routes: [fallbackRoute],
+            alternatives: [],
+            fallback: true,
+          });
+          return;
+        }
       }
     }
+
+    const errorMessage = error instanceof Error 
+      ? (error.message.includes('OData') || error.message.includes('authentication') || error.message.includes('timeout')
+          ? error.message 
+          : 'Ошибка при поиске маршрута')
+      : 'Внутренняя ошибка сервера';
 
     res.status(500).json({
       error: {
         code: 'INTERNAL_ERROR',
-        message:
-          error instanceof Error ? error.message : 'Внутренняя ошибка сервера',
+        message: errorMessage,
       },
     });
   }
@@ -362,12 +377,19 @@ export async function getRouteGraphDiagnostics(
     const graph = await graphBuilder.buildGraph(targetDate);
 
     const allNodes = graph.getAllNodes();
-    const allEdges: any[] = [];
+    interface IEdgeInfo {
+      from: string;
+      to: string;
+      routeId: string;
+      transportType: string;
+      availableFlights: number;
+    }
+    const allEdges: IEdgeInfo[] = [];
     
     // Собираем все рёбра из всех узлов
     allNodes.forEach((node) => {
       const edges = graph.getEdgesFrom(node.stopId);
-      allEdges.push(...edges.map((edge) => ({
+      allEdges.push(...edges.map((edge): IEdgeInfo => ({
         from: edge.fromStopId,
         to: edge.toStopId,
         routeId: edge.segment?.routeId || '',
@@ -392,12 +414,16 @@ export async function getRouteGraphDiagnostics(
       },
     });
   } catch (error) {
-    console.error('Error getting route graph diagnostics:', error);
+    const errorMessage = error instanceof Error 
+      ? (error.message.includes('OData') || error.message.includes('authentication') || error.message.includes('timeout')
+          ? error.message 
+          : 'Ошибка при получении диагностики графа маршрутов')
+      : 'Внутренняя ошибка сервера';
+
     res.status(500).json({
       error: {
         code: 'INTERNAL_ERROR',
-        message:
-          error instanceof Error ? error.message : 'Внутренняя ошибка сервера',
+        message: errorMessage,
       },
     });
   }

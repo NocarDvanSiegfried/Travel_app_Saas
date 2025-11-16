@@ -36,7 +36,7 @@ export class RiskFeatureBuilder {
 
     const transportTypes = route.transportTypes ?? [];
     const hasFerry = transportTypes.includes(TransportType.FERRY);
-    const hasRiverTransport = transportTypes.includes(TransportType.FERRY);
+    const hasRiverTransport = transportTypes.includes(TransportType.FERRY) || transportTypes.some(t => t.toString().toLowerCase().includes('river'));
     const hasMixedTransport = transportTypes.length > 1;
 
     const segments = route.segments ?? [];

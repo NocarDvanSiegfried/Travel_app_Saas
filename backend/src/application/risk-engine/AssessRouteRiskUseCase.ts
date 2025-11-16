@@ -25,7 +25,6 @@ export class AssessRouteRiskUseCase {
     try {
       const odataClient = createODataClient();
       if (!odataClient) {
-        console.warn('⚠️ OData client not available for risk assessment. Will use default risk values.');
         return;
       }
 
@@ -57,7 +56,7 @@ export class AssessRouteRiskUseCase {
         riskModel
       );
     } catch (error) {
-      console.warn('⚠️ Failed to create OData client for risk assessment:', error);
+      // OData client не создан, будет использоваться fallback
     }
   }
 
@@ -109,7 +108,6 @@ export class AssessRouteRiskUseCase {
     try {
       return await this.riskService.assessRisk(route);
     } catch (error) {
-      console.error('Error assessing route risk:', error);
       // Возвращаем дефолтную оценку при ошибке
       return {
         routeId: route.routeId,

@@ -30,7 +30,6 @@ export function createODataClient(cache?: ICacheService): ODataClient | null {
     baseUrl = baseUrl.replace(/\s+/g, '');
     // Проверка, что URL начинается с http:// или https://
     if (!baseUrl.match(/^https?:\/\//i)) {
-      console.warn('⚠️ ODATA_BASE_URL должен начинаться с http:// или https://');
       return null;
     }
     // Удаление завершающего слеша
@@ -52,7 +51,6 @@ export function createODataClient(cache?: ICacheService): ODataClient | null {
 
   // Если baseUrl не указан или некорректен, возвращаем null для использования fallback
   if (!config.baseUrl) {
-    console.warn('⚠️ ODATA_BASE_URL not configured. OData client will not be available.');
     return null;
   }
 
@@ -60,7 +58,6 @@ export function createODataClient(cache?: ICacheService): ODataClient | null {
     const cacheService = cache || (config.enableCache ? new RedisCacheService() : undefined);
     return new ODataClient(config, cacheService);
   } catch (error) {
-    console.error('⚠️ Failed to create OData client:', error);
     return null;
   }
 }

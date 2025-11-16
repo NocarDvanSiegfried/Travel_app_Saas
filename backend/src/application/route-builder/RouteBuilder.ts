@@ -95,7 +95,7 @@ export class RouteBuilder {
         const riskUseCase = new AssessRouteRiskUseCase();
         riskAssessment = await riskUseCase.execute(primaryRoute);
       } catch (error) {
-        console.warn('Failed to assess route risk:', error);
+        // Оценка риска не удалась, продолжаем без неё
       }
     }
 

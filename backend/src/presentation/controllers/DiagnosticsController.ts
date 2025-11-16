@@ -149,16 +149,37 @@ export async function checkOData(req: Request, res: Response): Promise<void> {
     let testQuerySuccess = false;
     let testQueryError: any = null;
     try {
-      await odataClient.get('Catalog_Маршруты', {
+      const testResult = await odataClient.get('Catalog_Маршруты', {
         $top: 1,
         $format: 'json',
       });
-      testQuerySuccess = true;
+      testQuerySuccess = testResult && Array.isArray(testResult.data);
     } catch (error: any) {
-      testQueryError = {
-        code: error?.code || 'QUERY_ERROR',
-        message: error?.message || 'Test query failed',
-      };
+      const errorName = error?.name || '';
+      const errorMessage = error?.message || 'Test query failed';
+      
+      // Формируем понятное сообщение об ошибке
+      if (errorName.includes('Authentication') || errorMessage.includes('401') || errorMessage.includes('403')) {
+        testQueryError = {
+          code: 'AUTHENTICATION_ERROR',
+          message: 'Ошибка аутентификации. Проверьте ODATA_USERNAME и ODATA_PASSWORD.',
+        };
+      } else if (errorName.includes('Timeout') || errorMessage.includes('timeout')) {
+        testQueryError = {
+          code: 'TIMEOUT_ERROR',
+          message: 'Превышено время ожидания ответа от OData API.',
+        };
+      } else if (errorName.includes('NotFound') || errorMessage.includes('404')) {
+        testQueryError = {
+          code: 'NOT_FOUND_ERROR',
+          message: 'Сущность Catalog_Маршруты не найдена в OData API.',
+        };
+      } else {
+        testQueryError = {
+          code: error?.code || 'QUERY_ERROR',
+          message: errorMessage,
+        };
+      }
     }
 
     const responseTime = Date.now() - startTime;
@@ -207,8 +228,57 @@ export async function checkOData(req: Request, res: Response): Promise<void> {
 /**
  * Полная диагностика системы
  */
+interface IDiagnosticsResponse {
+  status: 'ok' | 'partial' | 'error';
+  timestamp: string;
+  services: {
+    database?: {
+      status: 'ok' | 'error';
+      connected?: boolean;
+      responseTime?: string;
+      error?: {
+        code: string;
+        message: string;
+      };
+    };
+    redis?: {
+      status: 'ok' | 'error';
+      responseTime?: string;
+      error?: {
+        code: string;
+        message: string;
+      };
+    };
+    odata?: {
+      status: 'ok' | 'partial' | 'error';
+      baseUrl?: string;
+      responseTime?: string;
+      warning?: {
+        code: string;
+        message: string;
+      };
+      error?: {
+        code: string;
+        message: string;
+      };
+    };
+  };
+  endpoints?: {
+    riskAssessment?: {
+      path: string;
+      method: string;
+      available: boolean;
+      description?: string;
+      error?: {
+        code: string;
+        message: string;
+      };
+    };
+  };
+}
+
 export async function fullDiagnostics(req: Request, res: Response): Promise<void> {
-  const diagnostics: any = {
+  const diagnostics: IDiagnosticsResponse = {
     status: 'ok',
     timestamp: new Date().toISOString(),
     services: {},
@@ -273,15 +343,79 @@ export async function fullDiagnostics(req: Request, res: Response): Promise<void
       try {
         const odataClient = createODataClient();
         if (odataClient) {
-          const metadataService = odataClient.getMetadataService();
-          if (metadataService) {
-            await metadataService.loadMetadata();
+          try {
+            const metadataService = odataClient.getMetadataService();
+            if (metadataService) {
+              await metadataService.loadMetadata();
+            }
+            // Тестовый запрос для проверки доступности
+            try {
+              await odataClient.get('Catalog_Маршруты', { $top: 1 });
+            } catch (queryError: any) {
+              // Запрос не удался, но клиент создан
+              const errorName = queryError?.name || '';
+              const errorMessage = queryError?.message || 'Test query failed';
+              
+              let warningCode = 'QUERY_FAILED';
+              let warningMessage = errorMessage;
+              
+              if (errorName.includes('Authentication') || errorMessage.includes('401') || errorMessage.includes('403')) {
+                warningCode = 'AUTHENTICATION_ERROR';
+                warningMessage = 'Ошибка аутентификации. Проверьте ODATA_USERNAME и ODATA_PASSWORD.';
+              } else if (errorName.includes('Timeout') || errorMessage.includes('timeout')) {
+                warningCode = 'TIMEOUT_ERROR';
+                warningMessage = 'Превышено время ожидания ответа от OData API.';
+              } else if (errorName.includes('NotFound') || errorMessage.includes('404')) {
+                warningCode = 'NOT_FOUND_ERROR';
+                warningMessage = 'Сущность Catalog_Маршруты не найдена в OData API.';
+              }
+              
+              diagnostics.services.odata = {
+                status: 'partial',
+                baseUrl,
+                responseTime: `${Date.now() - odataStartTime}ms`,
+                warning: {
+                  code: warningCode,
+                  message: warningMessage,
+                },
+              };
+              diagnostics.status = 'partial';
+              return;
+            }
+            diagnostics.services.odata = {
+              status: 'ok',
+              baseUrl,
+              responseTime: `${Date.now() - odataStartTime}ms`,
+            };
+          } catch (metadataError: any) {
+            const errorName = metadataError?.name || '';
+            const errorMessage = metadataError?.message || 'Failed to load metadata';
+            
+            let warningCode = 'METADATA_ERROR';
+            let warningMessage = errorMessage;
+            
+            if (errorMessage.includes('Edmx element not found')) {
+              warningCode = 'METADATA_PARSE_ERROR';
+              warningMessage = 'Не удалось распарсить метаданные OData. Проверьте формат XML.';
+            } else if (errorName.includes('Authentication') || errorMessage.includes('401') || errorMessage.includes('403')) {
+              warningCode = 'METADATA_AUTH_ERROR';
+              warningMessage = 'Ошибка аутентификации при загрузке метаданных. Проверьте ODATA_USERNAME и ODATA_PASSWORD.';
+            } else if (errorName.includes('Timeout') || errorMessage.includes('timeout')) {
+              warningCode = 'METADATA_TIMEOUT_ERROR';
+              warningMessage = 'Превышено время ожидания при загрузке метаданных.';
+            }
+            
+            diagnostics.services.odata = {
+              status: 'partial',
+              baseUrl,
+              responseTime: `${Date.now() - odataStartTime}ms`,
+              warning: {
+                code: warningCode,
+                message: warningMessage,
+              },
+            };
+            diagnostics.status = 'partial';
           }
-          diagnostics.services.odata = {
-            status: 'ok',
-            baseUrl,
-            responseTime: `${Date.now() - odataStartTime}ms`,
-          };
         } else {
           diagnostics.services.odata = {
             status: 'error',

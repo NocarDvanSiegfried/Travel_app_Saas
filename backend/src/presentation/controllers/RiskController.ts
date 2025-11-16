@@ -47,12 +47,16 @@ export async function assessRouteRisk(req: Request, res: Response): Promise<void
 
     res.json(assessment);
   } catch (error) {
-    console.error('Error assessing route risk:', error);
+    const errorMessage = error instanceof Error 
+      ? (error.message.includes('OData') || error.message.includes('authentication') || error.message.includes('timeout')
+          ? error.message 
+          : 'Ошибка при оценке риска маршрута')
+      : 'Внутренняя ошибка сервера';
+
     res.status(500).json({
       error: {
         code: 'INTERNAL_ERROR',
-        message:
-          error instanceof Error ? error.message : 'Внутренняя ошибка сервера',
+        message: errorMessage,
       },
     });
   }

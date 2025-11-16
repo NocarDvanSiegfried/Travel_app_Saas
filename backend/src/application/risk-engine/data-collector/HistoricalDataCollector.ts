@@ -64,46 +64,68 @@ export class HistoricalDataCollector {
       if (!segment.selectedFlight) continue;
 
       const routeId = segment.segment.routeId;
-      const schedule = await this.scheduleService.getScheduleByRoute(routeId);
+      if (!routeId) continue;
 
-      for (const sched of schedule) {
-        const scheduleDate = sched.Дата
-          ? new Date(sched.Дата)
-          : new Date(route.date);
+      try {
+        const schedule = await this.scheduleService.getScheduleByRoute(routeId);
+        if (!schedule || schedule.length === 0) continue;
 
-        if (scheduleDate < date90DaysAgo) continue;
+        for (const sched of schedule) {
+          const scheduleDate = sched.Дата
+            ? new Date(sched.Дата)
+            : new Date(route.date);
 
-        const flights = await this.flightsService.getFlightsByRouteAndDate(
-          routeId,
-          scheduleDate.toISOString().split('T')[0]
-        );
+          if (scheduleDate < date90DaysAgo) continue;
 
-        for (const flight of flights) {
-          if (
-            !flight.ВремяОтправления ||
-            !flight.ВремяПрибытия ||
-            flight.Статус === 'Отменен'
-          ) {
+          try {
+            const flights = await this.flightsService.getFlightsByRouteAndDate(
+              routeId,
+              scheduleDate.toISOString().split('T')[0]
+            );
+            if (!flights || flights.length === 0) continue;
+
+            for (const flight of flights) {
+              if (
+                !flight.ВремяОтправления ||
+                !flight.ВремяПрибытия ||
+                flight.Статус === 'Отменен'
+              ) {
+                continue;
+              }
+
+              try {
+                const scheduledDep = new Date(sched.ВремяОтправления || '');
+                const actualDep = new Date(flight.ВремяОтправления);
+                if (isNaN(scheduledDep.getTime()) || isNaN(actualDep.getTime())) {
+                  continue;
+                }
+                const delay = Math.max(
+                  0,
+                  (actualDep.getTime() - scheduledDep.getTime()) / (1000 * 60)
+                );
+
+                if (scheduleDate >= date30DaysAgo) {
+                  delays30.push(delay);
+                }
+                if (scheduleDate >= date60DaysAgo) {
+                  delays60.push(delay);
+                }
+                if (scheduleDate >= date90DaysAgo) {
+                  delays90.push(delay);
+                }
+              } catch (dateError) {
+                // Пропускаем рейс с некорректными датами
+                continue;
+              }
+            }
+          } catch (flightError) {
+            // Пропускаем ошибки получения рейсов
             continue;
           }
-
-          const scheduledDep = new Date(sched.ВремяОтправления || '');
-          const actualDep = new Date(flight.ВремяОтправления);
-          const delay = Math.max(
-            0,
-            (actualDep.getTime() - scheduledDep.getTime()) / (1000 * 60)
-          );
-
-          if (scheduleDate >= date30DaysAgo) {
-            delays30.push(delay);
-          }
-          if (scheduleDate >= date60DaysAgo) {
-            delays60.push(delay);
-          }
-          if (scheduleDate >= date90DaysAgo) {
-            delays90.push(delay);
-          }
         }
+      } catch (scheduleError) {
+        // Пропускаем ошибки получения расписания
+        continue;
       }
     }
 
@@ -153,36 +175,50 @@ export class HistoricalDataCollector {
       if (!segment.selectedFlight) continue;
 
       const routeId = segment.segment.routeId;
-      const schedule = await this.scheduleService.getScheduleByRoute(routeId);
+      if (!routeId) continue;
 
-      for (const sched of schedule) {
-        const scheduleDate = sched.Дата
-          ? new Date(sched.Дата)
-          : new Date(route.date);
+      try {
+        const schedule = await this.scheduleService.getScheduleByRoute(routeId);
+        if (!schedule || schedule.length === 0) continue;
 
-        if (scheduleDate < date90DaysAgo) continue;
+        for (const sched of schedule) {
+          const scheduleDate = sched.Дата
+            ? new Date(sched.Дата)
+            : new Date(route.date);
 
-        const flights = await this.flightsService.getFlightsByRouteAndDate(
-          routeId,
-          scheduleDate.toISOString().split('T')[0]
-        );
+          if (scheduleDate < date90DaysAgo) continue;
 
-        for (const flight of flights) {
-          const isCancelled = flight.Статус === 'Отменен';
+          try {
+            const flights = await this.flightsService.getFlightsByRouteAndDate(
+              routeId,
+              scheduleDate.toISOString().split('T')[0]
+            );
+            if (!flights || flights.length === 0) continue;
 
-          if (scheduleDate >= date30DaysAgo) {
-            total30++;
-            if (isCancelled) cancelled30++;
-          }
-          if (scheduleDate >= date60DaysAgo) {
-            total60++;
-            if (isCancelled) cancelled60++;
-          }
-          if (scheduleDate >= date90DaysAgo) {
-            total90++;
-            if (isCancelled) cancelled90++;
+            for (const flight of flights) {
+              const isCancelled = flight.Статус === 'Отменен' || flight.Статус === 'отменен';
+
+              if (scheduleDate >= date30DaysAgo) {
+                total30++;
+                if (isCancelled) cancelled30++;
+              }
+              if (scheduleDate >= date60DaysAgo) {
+                total60++;
+                if (isCancelled) cancelled60++;
+              }
+              if (scheduleDate >= date90DaysAgo) {
+                total90++;
+                if (isCancelled) cancelled90++;
+              }
+            }
+          } catch (flightError) {
+            // Пропускаем ошибки получения рейсов
+            continue;
           }
         }
+      } catch (scheduleError) {
+        // Пропускаем ошибки получения расписания
+        continue;
       }
     }
 
@@ -208,24 +244,41 @@ export class HistoricalDataCollector {
       if (!segment.selectedFlight) continue;
 
       const flightId = segment.selectedFlight.flightId;
-      const occupancy = await this.seatOccupancyService.getSeatOccupancyByFlight(
-        flightId
-      );
+      if (!flightId) continue;
 
-      const totalSeats = occupancy.length;
-      const occupiedSeats = occupancy.filter((s) => s.Занято === true).length;
-      const occupancyRate =
-        totalSeats > 0 ? occupiedSeats / totalSeats : 0;
+      try {
+        const occupancy = await this.seatOccupancyService.getSeatOccupancyByFlight(
+          flightId
+        );
+        if (!occupancy || occupancy.length === 0) continue;
 
-      occupancies.push(occupancyRate);
+        const totalSeats = occupancy.length;
+        const occupiedSeats = occupancy.filter((s) => {
+          const занято: unknown = s.Занято;
+          if (typeof занято === 'boolean') {
+            return занято === true;
+          }
+          if (typeof занято === 'string') {
+            return занято.toLowerCase() === 'true';
+          }
+          return false;
+        }).length;
+        const occupancyRate =
+          totalSeats > 0 ? occupiedSeats / totalSeats : 0;
 
-      if (occupancyRate > 0.8) {
-        highOccupancyCount++;
-      }
+        occupancies.push(occupancyRate);
 
-      const availableSeats = totalSeats - occupiedSeats;
-      if (availableSeats < 10) {
-        lowAvailabilityCount++;
+        if (occupancyRate > 0.8) {
+          highOccupancyCount++;
+        }
+
+        const availableSeats = totalSeats - occupiedSeats;
+        if (availableSeats < 10) {
+          lowAvailabilityCount++;
+        }
+      } catch (occupancyError) {
+        // Пропускаем ошибки получения занятости
+        continue;
       }
     }
 

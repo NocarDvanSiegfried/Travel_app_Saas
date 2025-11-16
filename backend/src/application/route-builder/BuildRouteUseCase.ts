@@ -31,7 +31,6 @@ export class BuildRouteUseCase {
     try {
       const odataClient = createODataClient();
       if (!odataClient) {
-        console.warn('⚠️ OData client not available. Route builder will use fallback mode.');
         return;
       }
 
@@ -55,7 +54,7 @@ export class BuildRouteUseCase {
 
       this.routeBuilder = new RouteBuilder(graphBuilder, pathFinder);
     } catch (error) {
-      console.warn('⚠️ Failed to initialize OData client. Route builder will use fallback mode:', error);
+      // OData client не создан, будет использоваться fallback
     }
   }
 
@@ -87,13 +86,12 @@ export class BuildRouteUseCase {
           const riskAssessment = await riskUseCase.execute(result.routes[0]);
           result.riskAssessment = riskAssessment;
         } catch (error) {
-          console.warn('Failed to assess route risk:', error);
+          // Оценка риска не удалась, продолжаем без неё
         }
       }
 
       return result;
     } catch (error) {
-      console.error('Error building route:', error);
       return {
         routes: [],
       };

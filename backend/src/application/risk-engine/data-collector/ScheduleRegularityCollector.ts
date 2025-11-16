@@ -17,15 +17,25 @@ export class ScheduleRegularityCollector {
 
     for (const segment of route.segments) {
       const routeId = segment.segment.routeId;
-      const schedule = await this.scheduleService.getScheduleByRoute(routeId);
-
-      if (schedule.length === 0) {
+      if (!routeId) {
         regularities.push(0);
         continue;
       }
 
-      const regularity = this.calculateSegmentRegularity(schedule);
-      regularities.push(regularity);
+      try {
+        const schedule = await this.scheduleService.getScheduleByRoute(routeId);
+        if (!schedule || schedule.length === 0) {
+          regularities.push(0);
+          continue;
+        }
+
+        const regularity = this.calculateSegmentRegularity(schedule);
+        regularities.push(regularity);
+      } catch (error) {
+        // Пропускаем ошибки получения расписания
+        regularities.push(0);
+        continue;
+      }
     }
 
     if (regularities.length === 0) {

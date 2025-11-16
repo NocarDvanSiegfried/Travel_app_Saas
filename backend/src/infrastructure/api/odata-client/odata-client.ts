@@ -138,9 +138,10 @@ export class ODataClient {
     try {
       const headers: Record<string, string> = {
         'Accept': 'application/json',
-        'Content-Type': 'application/json',
       };
 
+      // Content-Type только для POST/PUT/PATCH запросов
+      // Для GET запросов (включая метаданные) не нужен
       if (this.config.username && this.config.password) {
         const credentials = Buffer.from(
           `${this.config.username}:${this.config.password}`
@@ -188,7 +189,23 @@ export class ODataClient {
       await this.handleErrorResponse(response);
     }
 
-    const jsonData = await response.json() as unknown;
+    let jsonData: unknown;
+    try {
+      const responseText = await response.text();
+      if (!responseText || responseText.trim().length === 0) {
+        throw new ODataClientError('Empty response from OData API', response.status);
+      }
+      jsonData = JSON.parse(responseText);
+    } catch (parseError) {
+      if (parseError instanceof ODataClientError) {
+        throw parseError;
+      }
+      throw new ODataClientError(
+        `Failed to parse JSON response: ${parseError instanceof Error ? parseError.message : String(parseError)}`,
+        response.status
+      );
+    }
+
     const data = jsonData as IODataResponse<T>;
 
     if (data.error) {
@@ -201,11 +218,13 @@ export class ODataClient {
 
     const results = data.d?.results || data.value || [];
     const countValue = data['@odata.count'] ?? results.length;
-    const count = typeof countValue === 'number' ? countValue : (typeof countValue === 'string' ? parseInt(countValue, 10) : results.length);
+    const count = typeof countValue === 'number' 
+      ? countValue 
+      : (typeof countValue === 'string' ? parseInt(countValue, 10) : results.length);
 
     return {
-      data: results as T[],
-      count,
+      data: Array.isArray(results) ? results as T[] : [],
+      count: typeof count === 'number' ? count : results.length,
       hasMore: false,
     };
   }
