@@ -24,3 +24,5 @@ export function SettingsIcon({ className = 'w-5 h-5', color = 'currentColor' }: 
   )
 }
 
+
+

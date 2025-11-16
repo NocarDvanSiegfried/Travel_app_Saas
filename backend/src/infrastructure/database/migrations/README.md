@@ -10,3 +10,5 @@ SQL migration files for database schema initialization.
 
 Migrations are automatically run on backend startup via `init-db.ts`.
 
+
+

@@ -822,3 +822,4 @@ const weather = mockData.weather.find(w => w.cityId === cityId);
 - Обновление данных в реальном времени
 - Синхронизация с внешними источниками
 
+

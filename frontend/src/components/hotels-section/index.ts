@@ -1,0 +1,6 @@
+export { HotelsSection } from './hotels-section'
+export { HotelCard } from './hotel-card'
+export { HotelCardSkeleton } from './hotel-card-skeleton'
+export { HotelsSearchForm } from './hotels-search-form'
+export { HotelsFilters } from './hotels-filters'
+export { HotelsSortDropdown } from './hotels-sort-dropdown'

@@ -6,4 +6,7 @@ export { MammothIcon } from './mammoth-icon'
 export { HeartIcon } from './heart-icon'
 export { ProfileIcon } from './profile-icon'
 export { SettingsIcon } from './settings-icon'
+export { default as VkIcon } from './vk-icon'
+export { default as OkIcon } from './ok-icon'
+export { default as TelegramIcon } from './telegram-icon'
 

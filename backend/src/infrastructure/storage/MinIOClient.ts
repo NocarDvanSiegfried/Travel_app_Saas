@@ -30,3 +30,5 @@ const BUCKET_NAME = process.env.MINIO_BUCKET || 'travel-app';
 
 export { minioClient, BUCKET_NAME };
 
+
+

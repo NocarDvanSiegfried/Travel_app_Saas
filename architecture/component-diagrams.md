@@ -517,3 +517,4 @@ travel-app (bucket)
    - MinIO Console на :9001
 ```
 
+

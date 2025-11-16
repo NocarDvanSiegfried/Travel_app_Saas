@@ -1,60 +1,60 @@
 'use client'
 
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { useEffect, useState } from 'react'
 import { RouteIcon, HotelIcon, CarIcon, ServicesIcon, HeartIcon } from '@/shared/icons'
 
+type ActiveSection = 'routes' | 'hotels' | 'transport' | 'services' | 'favorites'
+
 const tabs = [
-  { id: 'routes', label: 'Маршруты', Icon: RouteIcon, href: '/' },
-  { id: 'hotels', label: 'Гостиницы', Icon: HotelIcon, href: '/hotels' },
-  { id: 'cars', label: 'Авто', Icon: CarIcon, href: '/cars' },
-  { id: 'services', label: 'Услуги', Icon: ServicesIcon, href: '/services' },
-  { id: 'favorites', label: 'Путешествуйте выгодно', Icon: HeartIcon, href: '/favorites' },
+  { id: 'routes' as ActiveSection, label: 'Маршруты', Icon: RouteIcon },
+  { id: 'hotels' as ActiveSection, label: 'Гостиницы', Icon: HotelIcon },
+  { id: 'transport' as ActiveSection, label: 'Транспорт', Icon: CarIcon },
+  { id: 'services' as ActiveSection, label: 'Услуги', Icon: ServicesIcon },
+  { id: 'favorites' as ActiveSection, label: 'Путешествуйте выгодно', Icon: HeartIcon },
 ]
 
-export function NavigationTabs() {
-  const pathname = usePathname()
-  const [mounted, setMounted] = useState(false)
+interface NavigationTabsProps {
+  onSectionChange: (section: ActiveSection) => void
+  activeSection: ActiveSection
+}
 
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  if (!mounted) {
-    return null
+export function NavigationTabs({ onSectionChange, activeSection }: NavigationTabsProps) {
+  const handleTabClick = (tab: typeof tabs[0], e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (onSectionChange) {
+      onSectionChange(tab.id)
+    }
   }
 
   return (
-    <nav className="yakutia-card mt-5">
-      <div className="container mx-auto px-4">
-        <div className="flex items-center justify-center md:justify-start overflow-x-auto">
-          {tabs.map((tab) => {
-            const isActive = pathname === tab.href || (tab.href === '/' && pathname === '/')
-            const Icon = tab.Icon
-            return (
-              <Link
-                key={tab.id}
-                href={tab.href}
-                className={`
-                  flex items-center space-x-3 px-6 py-3 border-b-2 yakutia-smooth
-                  ${isActive
-                    ? 'border-[#0f9eb1] text-[#0f9eb1] font-semibold'
-                    : 'border-transparent text-white/80 hover:text-white hover:border-white/30'
-                  }
-                `}
-              >
-                <Icon 
-                  className="w-5 h-5 yakutia-smooth" 
-                  color={isActive ? '#0f9eb1' : 'rgba(255, 255, 255, 0.8)'}
-                />
-                <span className="text-sm whitespace-nowrap">{tab.label}</span>
-              </Link>
-            )
-          })}
-        </div>
+    <nav className="yakutia-card p-[18px] w-full">
+      <div className="flex items-center justify-center overflow-x-auto w-full">
+        {tabs.map((tab) => {
+          const isActive = activeSection === tab.id
+          const Icon = tab.Icon
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={(e) => handleTabClick(tab, e)}
+              className={`
+                flex items-center space-x-3 px-6 py-3 border-b-2 yakutia-smooth cursor-pointer
+                ${isActive
+                  ? 'border-[#13c1d8] text-[#0f2d33] font-semibold'
+                  : 'border-transparent text-[#e7fafd]/80 hover:text-[#e7fafd] hover:border-white/30'
+                }
+              `}
+              style={{ pointerEvents: 'auto' }}
+            >
+              <Icon
+                className="w-5 h-5 yakutia-smooth"
+                color={isActive ? '#13c1d8' : '#e7fafd'}
+              />
+              <span className="text-sm whitespace-nowrap">{tab.label}</span>
+            </button>
+          )
+        })}
       </div>
     </nav>
   )
 }
-
