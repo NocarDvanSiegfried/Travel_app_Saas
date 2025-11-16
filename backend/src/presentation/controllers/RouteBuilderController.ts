@@ -31,6 +31,22 @@ export async function buildRoute(req: Request, res: Response): Promise<void> {
     });
 
     if (result.routes.length === 0) {
+      // Fallback на тестовые данные
+      const { createFallbackRoute } = await import('../../infrastructure/api/odata-client/fallback-data');
+      const fallbackRoute = createFallbackRoute(
+        String(from),
+        String(to),
+        String(date)
+      );
+      if (fallbackRoute) {
+        res.json({
+          routes: [fallbackRoute],
+          alternatives: [],
+          fallback: true,
+        });
+        return;
+      }
+
       res.status(404).json({
         error: {
           code: 'ROUTES_NOT_FOUND',
@@ -43,6 +59,30 @@ export async function buildRoute(req: Request, res: Response): Promise<void> {
     res.json(result);
   } catch (error) {
     console.error('Error building route:', error);
+    
+    // Fallback на тестовые данные
+    const { from, to, date } = req.query;
+    if (from && to && date) {
+      try {
+        const { createFallbackRoute } = await import('../../infrastructure/api/odata-client/fallback-data');
+        const fallbackRoute = createFallbackRoute(
+          String(from),
+          String(to),
+          String(date)
+        );
+        if (fallbackRoute) {
+          res.json({
+            routes: [fallbackRoute],
+            alternatives: [],
+            fallback: true,
+          });
+          return;
+        }
+      } catch (fallbackError) {
+        console.error('Fallback route creation failed:', fallbackError);
+      }
+    }
+
     res.status(500).json({
       error: {
         code: 'INTERNAL_ERROR',

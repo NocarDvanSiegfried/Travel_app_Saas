@@ -3,7 +3,7 @@
  */
 
 import { IBuiltRoute } from '../../domain/entities/BuiltRoute';
-import { IRiskAssessment } from '../../domain/entities/RiskAssessment';
+import { IRiskAssessment, RiskLevel } from '../../domain/entities/RiskAssessment';
 import { RiskService } from './risk-service/RiskService';
 import { HistoricalDataCollector } from './data-collector/HistoricalDataCollector';
 import { ScheduleRegularityCollector } from './data-collector/ScheduleRegularityCollector';
@@ -19,14 +19,20 @@ import {
 } from '../../infrastructure/api/odata-client';
 
 export class AssessRouteRiskUseCase {
-  private riskService: RiskService;
+  private riskService: RiskService | null = null;
 
   constructor() {
-    const odataClient = createODataClient();
-    const flightsService = new FlightsService(odataClient);
-    const routesService = new RoutesService(odataClient);
-    const scheduleService = new ScheduleService(odataClient);
-    const seatOccupancyService = new SeatOccupancyService(odataClient);
+    try {
+      const odataClient = createODataClient();
+      if (!odataClient) {
+        console.warn('⚠️ OData client not available for risk assessment. Will use default risk values.');
+        return;
+      }
+
+      const flightsService = new FlightsService(odataClient);
+      const routesService = new RoutesService(odataClient);
+      const scheduleService = new ScheduleService(odataClient);
+      const seatOccupancyService = new SeatOccupancyService(odataClient);
 
     const historicalDataCollector = new HistoricalDataCollector(
       flightsService,
@@ -43,20 +49,106 @@ export class AssessRouteRiskUseCase {
     const featureBuilder = new RiskFeatureBuilder();
     const riskModel = new RuleBasedRiskModel();
 
-    this.riskService = new RiskService(
-      historicalDataCollector,
-      scheduleRegularityCollector,
-      weatherDataCollector,
-      featureBuilder,
-      riskModel
-    );
+      this.riskService = new RiskService(
+        historicalDataCollector,
+        scheduleRegularityCollector,
+        weatherDataCollector,
+        featureBuilder,
+        riskModel
+      );
+    } catch (error) {
+      console.warn('⚠️ Failed to create OData client for risk assessment:', error);
+    }
   }
 
   /**
    * Выполнить оценку риска маршрута
    */
   async execute(route: IBuiltRoute): Promise<IRiskAssessment> {
-    return this.riskService.assessRisk(route);
+    // Если riskService не инициализирован, возвращаем дефолтную оценку
+    if (!this.riskService) {
+      return {
+        routeId: route.routeId,
+        riskScore: {
+          value: 5,
+          level: RiskLevel.MEDIUM,
+          description: 'Средний риск (оценка по умолчанию, OData недоступен)',
+        },
+        factors: {
+          transferCount: route.transferCount || 0,
+          transportTypes: route.transportTypes || [],
+          totalDuration: route.totalDuration || 0,
+          historicalDelays: {
+            averageDelay30Days: 0,
+            averageDelay60Days: 0,
+            averageDelay90Days: 0,
+            delayFrequency: 0,
+          },
+          cancellations: {
+            cancellationRate30Days: 0,
+            cancellationRate60Days: 0,
+            cancellationRate90Days: 0,
+            totalCancellations: 0,
+          },
+          occupancy: {
+            averageOccupancy: 0,
+            highOccupancySegments: 0,
+            lowAvailabilitySegments: 0,
+          },
+          seasonality: {
+            month: new Date(route.date).getMonth() + 1,
+            dayOfWeek: new Date(route.date).getDay(),
+            seasonFactor: 1,
+          },
+          scheduleRegularity: 0,
+        },
+        recommendations: ['OData API недоступен. Используется оценка по умолчанию.'],
+      };
+    }
+
+    try {
+      return await this.riskService.assessRisk(route);
+    } catch (error) {
+      console.error('Error assessing route risk:', error);
+      // Возвращаем дефолтную оценку при ошибке
+      return {
+        routeId: route.routeId,
+        riskScore: {
+          value: 5,
+          level: RiskLevel.MEDIUM,
+          description: 'Средний риск (ошибка при оценке)',
+        },
+        factors: {
+          transferCount: route.transferCount || 0,
+          transportTypes: route.transportTypes || [],
+          totalDuration: route.totalDuration || 0,
+          historicalDelays: {
+            averageDelay30Days: 0,
+            averageDelay60Days: 0,
+            averageDelay90Days: 0,
+            delayFrequency: 0,
+          },
+          cancellations: {
+            cancellationRate30Days: 0,
+            cancellationRate60Days: 0,
+            cancellationRate90Days: 0,
+            totalCancellations: 0,
+          },
+          occupancy: {
+            averageOccupancy: 0,
+            highOccupancySegments: 0,
+            lowAvailabilitySegments: 0,
+          },
+          seasonality: {
+            month: new Date(route.date).getMonth() + 1,
+            dayOfWeek: new Date(route.date).getDay(),
+            seasonFactor: 1,
+          },
+          scheduleRegularity: 0,
+        },
+        recommendations: ['Ошибка при оценке риска. Используется оценка по умолчанию.'],
+      };
+    }
   }
 }
 

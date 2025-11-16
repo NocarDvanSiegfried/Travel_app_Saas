@@ -43,4 +43,5 @@ export {
   createODataClientWithoutCache,
 } from './odata-client-factory';
 export * from './metadata';
+export * from './fallback-data';
 

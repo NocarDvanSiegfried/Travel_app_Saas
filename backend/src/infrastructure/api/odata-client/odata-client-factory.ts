@@ -22,11 +22,25 @@ if (fs.existsSync(rootEnvPath)) {
 /**
  * Создать OData клиент с конфигурацией из переменных окружения
  */
-export function createODataClient(cache?: ICacheService): ODataClient {
+export function createODataClient(cache?: ICacheService): ODataClient | null {
+  let baseUrl = (process.env.ODATA_BASE_URL || '').trim();
+  
+  // Очистка baseUrl от пробелов и проверка формата
+  if (baseUrl) {
+    baseUrl = baseUrl.replace(/\s+/g, '');
+    // Проверка, что URL начинается с http:// или https://
+    if (!baseUrl.match(/^https?:\/\//i)) {
+      console.warn('⚠️ ODATA_BASE_URL должен начинаться с http:// или https://');
+      return null;
+    }
+    // Удаление завершающего слеша
+    baseUrl = baseUrl.replace(/\/+$/, '');
+  }
+
   const config: IODataClientConfig = {
-    baseUrl: process.env.ODATA_BASE_URL || '',
-    username: process.env.ODATA_USERNAME,
-    password: process.env.ODATA_PASSWORD,
+    baseUrl,
+    username: process.env.ODATA_USERNAME?.trim(),
+    password: process.env.ODATA_PASSWORD?.trim(),
     timeout: parseInt(process.env.ODATA_TIMEOUT || '30000', 10),
     retryAttempts: parseInt(process.env.ODATA_RETRY_ATTEMPTS || '3', 10),
     retryDelay: parseInt(process.env.ODATA_RETRY_DELAY || '1000', 10),
@@ -36,13 +50,19 @@ export function createODataClient(cache?: ICacheService): ODataClient {
     validateFields: process.env.ODATA_VALIDATE_FIELDS !== 'false',
   };
 
+  // Если baseUrl не указан или некорректен, возвращаем null для использования fallback
   if (!config.baseUrl) {
-    throw new Error('ODATA_BASE_URL environment variable is required');
+    console.warn('⚠️ ODATA_BASE_URL not configured. OData client will not be available.');
+    return null;
   }
 
-  const cacheService = cache || (config.enableCache ? new RedisCacheService() : undefined);
-
-  return new ODataClient(config, cacheService);
+  try {
+    const cacheService = cache || (config.enableCache ? new RedisCacheService() : undefined);
+    return new ODataClient(config, cacheService);
+  } catch (error) {
+    console.error('⚠️ Failed to create OData client:', error);
+    return null;
+  }
 }
 
 /**

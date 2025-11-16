@@ -261,18 +261,33 @@ export class ODataClient {
     entitySet: string,
     params?: IODataQueryParams
   ): string {
-    const baseUrl = this.config.baseUrl.replace(/\/$/, '');
-    const entityPath = entitySet.startsWith('/') ? entitySet : `/${entitySet}`;
+    // Очистка baseUrl от пробелов и завершающих слешей
+    let baseUrl = this.config.baseUrl.trim().replace(/\s+/g, '');
+    baseUrl = baseUrl.replace(/\/+$/, '');
+    
+    // Проверка формата URL
+    if (!baseUrl.match(/^https?:\/\//i)) {
+      throw new Error(`Invalid baseUrl format: ${baseUrl}. Must start with http:// or https://`);
+    }
+
+    // Очистка entitySet от пробелов
+    const cleanEntitySet = entitySet.trim();
+    const entityPath = cleanEntitySet.startsWith('/') ? cleanEntitySet : `/${cleanEntitySet}`;
+    
+    // Формирование URL без лишних пробелов
     let url = `${baseUrl}${entityPath}`;
 
     if (params && Object.keys(params).length > 0) {
       const queryParams = new URLSearchParams();
       Object.entries(params).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
-          queryParams.append(key, String(value));
+          queryParams.append(key.trim(), String(value).trim());
         }
       });
-      url += `?${queryParams.toString()}`;
+      const queryString = queryParams.toString();
+      if (queryString) {
+        url += `?${queryString}`;
+      }
     }
 
     return url;

@@ -8,16 +8,35 @@ import { IBuiltRoute } from '../../domain/entities/BuiltRoute';
 
 /**
  * Оценить риск маршрута
+ * Принимает тело в формате: { "route": { ... } } или { ... } (маршрут напрямую)
  */
 export async function assessRouteRisk(req: Request, res: Response): Promise<void> {
   try {
-    const route = req.body as IBuiltRoute;
+    // Поддержка формата { "route": { ... } } и прямого формата { ... }
+    const body = req.body || {};
+    const route: IBuiltRoute = (body.route || body) as IBuiltRoute;
 
-    if (!route || !route.routeId || !route.segments || route.segments.length === 0) {
+    if (!route) {
       res.status(400).json({
         error: {
           code: 'VALIDATION_ERROR',
-          message: 'Неверный формат маршрута',
+          message: 'Тело запроса должно содержать маршрут в формате { "route": { ... } } или { ... }',
+        },
+      });
+      return;
+    }
+
+    // Валидация обязательных полей маршрута
+    if (!route.routeId || !route.segments || !Array.isArray(route.segments) || route.segments.length === 0) {
+      res.status(400).json({
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Маршрут должен содержать routeId и непустой массив segments',
+          details: {
+            hasRouteId: !!route.routeId,
+            hasSegments: !!route.segments,
+            segmentsLength: route.segments?.length || 0,
+          },
         },
       });
       return;

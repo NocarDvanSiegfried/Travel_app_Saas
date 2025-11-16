@@ -134,9 +134,15 @@ export class ODataMetadataService {
    * Построить URL для метаданных
    */
   private buildMetadataUrl(): string {
-    const baseUrl = this.odataClient.getBaseUrl();
-    const cleanBaseUrl = baseUrl.replace(/\/$/, '');
-    return `${cleanBaseUrl}/$metadata`;
+    let baseUrl = this.odataClient.getBaseUrl().trim();
+    baseUrl = baseUrl.replace(/\s+/g, '');
+    baseUrl = baseUrl.replace(/\/+$/, '');
+    
+    if (!baseUrl.match(/^https?:\/\//i)) {
+      throw new Error(`Invalid baseUrl format: ${baseUrl}. Must start with http:// or https://`);
+    }
+    
+    return `${baseUrl}/$metadata`;
   }
 
   /**
