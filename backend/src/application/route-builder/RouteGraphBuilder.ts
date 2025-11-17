@@ -38,11 +38,13 @@ export class RouteGraphBuilder {
 
     for (const stop of allStops) {
       const coordinates = this.parseCoordinates(stop.Координаты);
+      const stopName = stop.Наименование || stop.Код || '';
+      const cityName = this.extractCityName(stop.Наименование, stop.Адрес, stop.Код);
       const node = new RouteNode(
         stop.Ref_Key,
-        stop.Наименование || stop.Код || '',
+        stopName,
         coordinates,
-        stop.Наименование
+        cityName
       );
       graph.addNode(node);
     }
@@ -267,6 +269,44 @@ export class RouteGraphBuilder {
     const avgDuration =
       durations.reduce((sum, d) => sum + d, 0) / durations.length;
     return Math.round(avgDuration);
+  }
+
+  /**
+   * Извлечь название города из наименования остановки или адреса
+   */
+  private extractCityName(
+    наименование?: string,
+    адрес?: string,
+    код?: string
+  ): string {
+    if (наименование) {
+      const name = наименование.trim();
+      const parts = name.split(',');
+      if (parts.length > 1) {
+        return parts[parts.length - 1].trim();
+      }
+      if (parts.length === 1) {
+        const firstPart = parts[0].trim();
+        const words = firstPart.split(/\s+/);
+        if (words.length > 1) {
+          return words[words.length - 1];
+        }
+        return firstPart;
+      }
+    }
+
+    if (адрес) {
+      const addressParts = адрес.split(',');
+      if (addressParts.length > 0) {
+        return addressParts[addressParts.length - 1].trim();
+      }
+    }
+
+    if (код) {
+      return код.trim();
+    }
+
+    return наименование || '';
   }
 
   /**

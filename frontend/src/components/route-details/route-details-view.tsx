@@ -31,19 +31,35 @@ interface RouteDetailsData {
       Description?: string;
     };
     segments: Array<{
-      from: unknown;
-      to: unknown;
+      from: {
+        Наименование?: string;
+        Код?: string;
+        Адрес?: string;
+      } | null;
+      to: {
+        Наименование?: string;
+        Код?: string;
+        Адрес?: string;
+      } | null;
       order: number;
     }>;
-    schedule: unknown[];
+    schedule: Array<{
+      type: 'departure' | 'arrival';
+      time: string;
+      stop: string;
+    }>;
     flights: Array<{
       Ref_Key: string;
       НомерРейса?: string;
       ВремяОтправления?: string;
       ВремяПрибытия?: string;
       Статус?: string;
-      tariffs: unknown[];
-      occupancy: unknown[];
+      tariffs: Array<{
+        Цена?: number;
+        Наименование?: string;
+        Код?: string;
+      }>;
+      occupancy: Array<unknown>;
       availableSeats: number;
     }>;
   }>;

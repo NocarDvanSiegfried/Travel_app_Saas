@@ -302,7 +302,6 @@ export function SearchForm() {
             onChange={(value) => {
               setFormData({ ...formData, class: value })
             }}
-            onKeyDown={handleKeyDown}
           />
         </div>
       </div>

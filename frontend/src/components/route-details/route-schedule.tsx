@@ -9,8 +9,14 @@ interface Flight {
   availableSeats: number;
 }
 
+interface ScheduleEvent {
+  type: 'departure' | 'arrival';
+  time: string;
+  stop: string;
+}
+
 interface RouteScheduleProps {
-  schedule: unknown[];
+  schedule: ScheduleEvent[];
   flights: Flight[];
 }
 

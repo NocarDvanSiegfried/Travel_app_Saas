@@ -50,15 +50,36 @@ export class RouteGraph {
   }
 
   /**
+   * Нормализовать название города для поиска
+   */
+  private normalizeCityName(name: string): string {
+    return name
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, ' ')
+      .replace(/[ё]/g, 'е')
+      .replace(/[ъь]/g, '');
+  }
+
+  /**
    * Найти ближайшие узлы к городу
    */
   findNodesByCity(cityName: string): IRouteNode[] {
-    const lowerCityName = cityName.toLowerCase();
-    return Array.from(this.nodes.values()).filter(
-      (node) =>
-        node.cityName?.toLowerCase().includes(lowerCityName) ||
-        node.stopName.toLowerCase().includes(lowerCityName)
-    );
+    const normalizedQuery = this.normalizeCityName(cityName);
+    
+    return Array.from(this.nodes.values()).filter((node) => {
+      const normalizedCityName = node.cityName
+        ? this.normalizeCityName(node.cityName)
+        : '';
+      const normalizedStopName = this.normalizeCityName(node.stopName);
+      
+      return (
+        normalizedCityName.includes(normalizedQuery) ||
+        normalizedStopName.includes(normalizedQuery) ||
+        normalizedQuery.includes(normalizedCityName) ||
+        normalizedQuery.includes(normalizedStopName)
+      );
+    });
   }
 
   /**

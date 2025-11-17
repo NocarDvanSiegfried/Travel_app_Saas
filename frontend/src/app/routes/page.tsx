@@ -1,10 +1,12 @@
 'use client'
 
 import { useState, useEffect, Suspense } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { Header } from '@/components/header'
 import { Footer } from '@/components/footer'
 import { fetchApi } from '@/shared/utils/api'
+import { RouteRiskBadge } from '@/components/route-risk-badge'
+import { IBuiltRoute, IRiskAssessment, IRouteBuilderResult } from '@/shared/types/route-adapter'
 
 interface RouteSegment {
   segment: {
@@ -28,24 +30,11 @@ interface RouteSegment {
   transferTime?: number
 }
 
-interface Route {
-  routeId: string
-  fromCity: string
-  toCity: string
-  date: string
-  passengers: number
-  segments: RouteSegment[]
-  totalDuration: number
-  totalPrice: number
-  transferCount: number
-  transportTypes: string[]
-  departureTime: string
-  arrivalTime: string
+interface Route extends IBuiltRoute {
+  riskAssessment?: IRiskAssessment
 }
 
-interface RouteSearchResult {
-  routes?: Route[]
-  alternatives?: Route[]
+interface RouteSearchResult extends IRouteBuilderResult {
   fallback?: boolean
   error?: {
     code: string
@@ -55,6 +44,7 @@ interface RouteSearchResult {
 
 function RoutesContent() {
   const searchParams = useSearchParams()
+  const router = useRouter()
   const [routes, setRoutes] = useState<Route[]>([])
   const [alternatives, setAlternatives] = useState<Route[]>([])
   const [loading, setLoading] = useState(true)
@@ -92,8 +82,16 @@ function RoutesContent() {
           setRoutes([])
           setAlternatives([])
         } else {
-          setRoutes(result.routes || [])
-          setAlternatives(result.alternatives || [])
+          const routesWithRisk = (result.routes || []).map((route) => ({
+            ...route,
+            riskAssessment: result.riskAssessment,
+          }))
+          const alternativesWithRisk = (result.alternatives || []).map((route) => ({
+            ...route,
+            riskAssessment: result.riskAssessment,
+          }))
+          setRoutes(routesWithRisk)
+          setAlternatives(alternativesWithRisk)
           setIsFallback(result.fallback || false)
         }
       } catch (err) {
@@ -107,6 +105,14 @@ function RoutesContent() {
 
     searchRoutes()
   }, [from, to, date, passengers])
+
+  const handleSelectRoute = (route: Route) => {
+    localStorage.setItem(`route-${route.routeId}`, JSON.stringify({
+      route,
+      riskAssessment: route.riskAssessment,
+    }))
+    router.push(`/routes/details?routeId=${route.routeId}`)
+  }
 
   const formatDuration = (minutes: number): string => {
     const hours = Math.floor(minutes / 60)
@@ -141,6 +147,11 @@ function RoutesContent() {
 
   const getTransportTypeLabel = (type: string): string => {
     const labels: Record<string, string> = {
+      'airplane': 'Самолёт',
+      'bus': 'Автобус',
+      'train': 'Поезд',
+      'ferry': 'Паром',
+      'taxi': 'Такси',
       'AIR': 'Самолёт',
       'BUS': 'Автобус',
       'TRAIN': 'Поезд',
@@ -226,8 +237,13 @@ function RoutesContent() {
                           </div>
                         </div>
                         <div className="text-right">
-                          <div className="text-2xl font-bold" style={{ color: 'var(--color-primary)' }}>
-                            {route.totalPrice.toLocaleString('ru-RU')} ₽
+                          <div className="flex items-center justify-end gap-3 mb-2">
+                            <div className="text-2xl font-bold" style={{ color: 'var(--color-primary)' }}>
+                              {route.totalPrice.toLocaleString('ru-RU')} ₽
+                            </div>
+                            {route.riskAssessment && (
+                              <RouteRiskBadge riskScore={route.riskAssessment.riskScore} compact />
+                            )}
                           </div>
                           <div className="text-sm" style={{ color: 'var(--color-text-dark)' }}>
                             {formatDuration(route.totalDuration)}
@@ -266,6 +282,7 @@ function RoutesContent() {
                       {/* Кнопка выбора */}
                       <div className="flex justify-end pt-2">
                         <button
+                          onClick={() => handleSelectRoute(route)}
                           className="px-6 py-2 rounded-yakutia yakutia-transition font-semibold"
                           style={{
                             backgroundColor: 'var(--color-primary)',
@@ -327,8 +344,13 @@ function RoutesContent() {
                           </div>
                         </div>
                         <div className="text-right">
-                          <div className="text-2xl font-bold" style={{ color: 'var(--color-primary)' }}>
-                            {route.totalPrice.toLocaleString('ru-RU')} ₽
+                          <div className="flex items-center justify-end gap-3 mb-2">
+                            <div className="text-2xl font-bold" style={{ color: 'var(--color-primary)' }}>
+                              {route.totalPrice.toLocaleString('ru-RU')} ₽
+                            </div>
+                            {route.riskAssessment && (
+                              <RouteRiskBadge riskScore={route.riskAssessment.riskScore} compact />
+                            )}
                           </div>
                           <div className="text-sm" style={{ color: 'var(--color-text-dark)' }}>
                             {formatDuration(route.totalDuration)}
@@ -367,6 +389,7 @@ function RoutesContent() {
                       {/* Кнопка выбора */}
                       <div className="flex justify-end pt-2">
                         <button
+                          onClick={() => handleSelectRoute(route)}
                           className="px-6 py-2 rounded-yakutia yakutia-transition font-semibold"
                           style={{
                             backgroundColor: 'var(--color-primary)',
