@@ -18,17 +18,16 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 shadow-lg border-b border-black/20" style={{ backgroundColor: 'var(--color-header)' }}>
-      <div className="container mx-auto px-4 py-3">
-        <div className="flex items-center justify-between">
+    <header className="w-full h-14 flex items-center justify-between px-6 bg-[#1F5767] shadow-md">
+      <div className="container mx-auto w-full">
+        <div className="flex items-center justify-between w-full">
           {/* Logo */}
-          <div className="flex items-center space-x-2">
-            <div className="w-10 h-10 bg-white/20 rounded-yakutia flex items-center justify-center border border-white/30">
-              <span className="text-white text-xl font-bold">Т</span>
-            </div>
-            <span className="text-white font-semibold text-lg hidden sm:block">
-              Travel App
-            </span>
+          <div className="flex items-center gap-2">
+            <img
+              src="/logo.svg"
+              alt="AAL Logo"
+              className="h-10 w-auto scale-[2.0] origin-left drop-shadow-xl"
+            />
           </div>
 
           {/* Right side - Auth, Profile and Settings */}

@@ -51,10 +51,16 @@ module.exports = {
           "0%": { opacity: 0, transform: "scale(0.7)" },
           "100%": { opacity: 1, transform: "scale(1)" },
         },
+        logoPop: {
+          "0%": { opacity: 0, transform: "scale(0.8)" },
+          "50%": { transform: "scale(1.05)" },
+          "100%": { opacity: 1, transform: "scale(1)" },
+        },
       },
       animation: {
         fadeUp: "fadeUp 0.6s ease-out forwards",
         softPop: "softPop 0.5s ease-out forwards",
+        logoPop: "logoPop 0.6s ease-out forwards",
       },
     },
   },

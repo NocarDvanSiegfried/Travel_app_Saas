@@ -1,7 +1,6 @@
 'use client'
 
 import Link from 'next/link'
-import { VkIcon, OkIcon, TelegramIcon } from '@/shared/icons'
 
 export function Footer() {
   const handleSupportClick = () => {
@@ -17,13 +16,18 @@ export function Footer() {
       <div className="container mx-auto px-4 py-3 max-w-[1300px]">
         <div className="flex items-center justify-between">
           {/* Логотип слева - точно как в header */}
-          <div className="flex items-center space-x-2">
-            <div className="w-10 h-10 bg-white/20 rounded-yakutia flex items-center justify-center border border-white/30">
-              <span className="text-white text-xl font-bold">Т</span>
-            </div>
-            <span className="text-white font-semibold text-lg hidden sm:block">
-              Travel App
-            </span>
+          <div className="flex items-center gap-2">
+            <img
+              src="/logo.svg"
+              alt="AAL Logo"
+              className="
+                h-8
+                w-auto
+                scale-[1.8]
+                origin-left
+                drop-shadow-xl
+              "
+            />
           </div>
 
           {/* Центр - ссылки */}
@@ -59,9 +63,12 @@ export function Footer() {
               rel="noopener noreferrer"
               className="yakutia-transition hover:opacity-70"
               aria-label="VK"
-              style={{ color: 'var(--color-text-light)' }}
             >
-              <VkIcon className="w-5 h-5" color="currentColor" />
+              <img
+                src="/icons/vk.svg"
+                alt="VK"
+                className="w-6 h-6"
+              />
             </a>
             <a
               href="https://ok.ru"
@@ -69,9 +76,12 @@ export function Footer() {
               rel="noopener noreferrer"
               className="yakutia-transition hover:opacity-70"
               aria-label="Одноклассники"
-              style={{ color: 'var(--color-text-light)' }}
             >
-              <OkIcon className="w-5 h-5" color="currentColor" />
+              <img
+                src="/icons/ok.svg"
+                alt="Одноклассники"
+                className="w-6 h-6"
+              />
             </a>
             <a
               href="https://t.me"
@@ -79,12 +89,15 @@ export function Footer() {
               rel="noopener noreferrer"
               className="yakutia-transition hover:opacity-70"
               aria-label="Telegram"
-              style={{ color: 'var(--color-text-light)' }}
             >
-              <TelegramIcon className="w-5 h-5" color="currentColor" />
+              <img
+                src="/icons/telegram.svg"
+                alt="Telegram"
+                className="w-6 h-6"
+              />
             </a>
-            <span className="text-white/60 text-sm">
-              © 2025 Travel App
+            <span className="text-white text-sm">
+              © 2025 AAЛ
             </span>
           </div>
         </div>
