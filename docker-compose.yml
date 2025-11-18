@@ -14,7 +14,11 @@ services:
     networks:
       - travel-app-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-travel_user} -d ${POSTGRES_DB:-travel_app}"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-travel_user} -d ${POSTGRES_DB:-travel_app}",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -42,15 +46,23 @@ services:
   redis:
     image: redis:7-alpine
     container_name: travel-app-redis
-    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redis_password}
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-123456S}
     ports:
-      - "${REDIS_PORT:-6379}:6379"
+      - "6380:6379"
     volumes:
       - redis_data:/data
     networks:
       - travel-app-network
     healthcheck:
-      test: ["CMD", "redis-cli", "--raw", "-a", "${REDIS_PASSWORD:-redis_password}", "ping"]
+      test:
+        [
+          "CMD",
+          "redis-cli",
+          "--raw",
+          "-a",
+          "${REDIS_PASSWORD:-redis_password}",
+          "ping",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -109,7 +121,15 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:5000/health",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -135,7 +155,15 @@ services:
     depends_on:
       - backend
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000"]
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:3000",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -148,4 +176,3 @@ volumes:
   postgres_data:
   minio_data:
   redis_data:
-
