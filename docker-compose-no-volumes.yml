@@ -1,0 +1,172 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: travel-app-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-travel_app}
+      POSTGRES_USER: ${POSTGRES_USER:-travel_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-travel_password}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - travel-app-network
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-travel_user} -d ${POSTGRES_DB:-travel_app}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    container_name: travel-app-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    ports:
+      - "${MINIO_API_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - travel-app-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  redis:
+    image: redis:7-alpine
+    container_name: travel-app-redis
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-123456S}
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - travel-app-network
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "redis-cli",
+          "--raw",
+          "-a",
+          "${REDIS_PASSWORD:-123456S}",
+          "ping",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: development
+    container_name: travel-app-backend
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      PORT: ${BACKEND_PORT:-5000}
+      API_VERSION: ${API_VERSION:-v1}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${POSTGRES_DB:-travel_app}
+      DB_USER: ${POSTGRES_USER:-travel_user}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-travel_password}
+      DB_SSL: ${DB_SSL:-false}
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      MINIO_BUCKET: ${MINIO_BUCKET:-travel-app}
+      MINIO_USE_SSL: ${MINIO_USE_SSL:-false}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-123456S}
+      REDIS_DB: ${REDIS_DB:-0}
+      REDIS_TTL_DEFAULT: ${REDIS_TTL_DEFAULT:-3600}
+      REDIS_TTL_ROUTES: ${REDIS_TTL_ROUTES:-1800}
+      REDIS_TTL_HOTELS: ${REDIS_TTL_HOTELS:-1800}
+      REDIS_TTL_TRANSPORT: ${REDIS_TTL_TRANSPORT:-1800}
+      REDIS_TTL_FAVORITES: ${REDIS_TTL_FAVORITES:-3600}
+      REDIS_TTL_SESSION: ${REDIS_TTL_SESSION:-86400}
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-key-change-in-production}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-24h}
+      BCRYPT_SALT_ROUNDS: ${BCRYPT_SALT_ROUNDS:-10}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+      MOCK_DATA_PATH: /app/data
+      MOCK_DATA_CACHE: ${MOCK_DATA_CACHE:-true}
+    ports:
+      - "${BACKEND_PORT:-5000}:5000"
+    # Убираем volumes для избежания проблем с правами доступа
+    networks:
+      - travel-app-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:5000/health",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: development
+    container_name: travel-app-frontend
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:5000}
+      NEXT_PUBLIC_API_VERSION: ${NEXT_PUBLIC_API_VERSION:-v1}
+      NODE_ENV: ${NODE_ENV:-development}
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    # Убираем volumes для избежания проблем с правами доступа
+    networks:
+      - travel-app-network
+    depends_on:
+      - backend
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:3000",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  travel-app-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  minio_data:
+  redis_data:
