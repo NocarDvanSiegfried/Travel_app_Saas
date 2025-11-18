@@ -39,7 +39,6 @@
 ```
 
 Проверено в:
-- ✅ `RouteController.ts`
 - ✅ `RouteBuilderController.ts`
 - ✅ `RiskController.ts`
 - ✅ `DiagnosticsController.ts`
@@ -168,4 +167,5 @@
 ---
 
 **Проект полностью готов к продакшен-развёртыванию.**
+
 

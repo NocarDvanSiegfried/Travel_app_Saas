@@ -66,3 +66,4 @@ export interface ISeasonalityData {
   seasonFactor: number;
 }
 
+
