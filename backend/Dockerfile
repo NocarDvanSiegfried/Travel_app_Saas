@@ -57,7 +57,7 @@ RUN npm install -g nodemon ts-node
 
 EXPOSE 5000
 
-CMD ["npm", "run", "dev"]
+CMD ["npm", "run", "docker:dev"]
 
 # ============================================================================
 # PRODUCTION - минимальный production образ
@@ -75,4 +75,4 @@ COPY --from=builder /app/package.json ./
 
 EXPOSE 5000
 
-CMD ["npm", "start"]
+CMD ["npm", "run", "docker:start"]

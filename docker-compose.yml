@@ -60,7 +60,7 @@ services:
           "redis-cli",
           "--raw",
           "-a",
-          "${REDIS_PASSWORD:-redis_password}",
+          "${REDIS_PASSWORD:-123456S}",
           "ping",
         ]
       interval: 10s
@@ -91,7 +91,7 @@ services:
       MINIO_USE_SSL: ${MINIO_USE_SSL:-false}
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_password}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-123456S}
       REDIS_DB: ${REDIS_DB:-0}
       REDIS_TTL_DEFAULT: ${REDIS_TTL_DEFAULT:-3600}
       REDIS_TTL_ROUTES: ${REDIS_TTL_ROUTES:-1800}

@@ -4,10 +4,12 @@
   "description": "Travel App Backend API",
   "main": "dist/index.js",
   "scripts": {
-    "dev": "nodemon --exec \"ts-node --files src/index.ts\"",
+    "dev": "echo '⚠️  Локальный запуск отключен. Используйте Docker: docker compose up backend' && exit 1",
+    "docker:dev": "nodemon --exec \"ts-node --files src/index.ts\"",
     "build": "tsc && npm run copy-assets",
     "copy-assets": "node -e \"const fs = require('fs'); const path = require('path'); const src = 'src/infrastructure/database/migrations'; const dest = 'dist/infrastructure/database/migrations'; if (fs.existsSync(src)) { fs.mkdirSync(dest, { recursive: true }); fs.readdirSync(src).forEach(f => { if (f.endsWith('.sql')) fs.copyFileSync(path.join(src, f), path.join(dest, f)); }); }\"",
     "start": "node dist/index.js",
+    "docker:start": "node dist/index.js",
     "lint": "eslint src --ext .ts",
     "type-check": "tsc --noEmit"
   },
