@@ -3,7 +3,7 @@
     "id": "route-001",
     "name": "Якутск - Москва (Авиа)",
     "routeNumber": "SU-1234",
-    "transportType": "airplane",
+    "transportType": "PLANE",
     "stops": ["stop-001", "stop-002"],
     "baseFare": 25000
   },
@@ -11,7 +11,7 @@
     "id": "route-002",
     "name": "Якутск - Иркутск (Авиа)",
     "routeNumber": "S7-5678",
-    "transportType": "airplane",
+    "transportType": "PLANE",
     "stops": ["stop-001", "stop-003"],
     "baseFare": 12000
   },
@@ -19,7 +19,7 @@
     "id": "route-003",
     "name": "Якутск - Мирный (Автобус)",
     "routeNumber": "101",
-    "transportType": "bus",
+    "transportType": "BUS",
     "stops": ["stop-001", "stop-004", "stop-005"],
     "baseFare": 2500
   },
@@ -27,7 +27,7 @@
     "id": "route-004",
     "name": "Иркутск - Москва (Поезд)",
     "routeNumber": "004А",
-    "transportType": "train",
+    "transportType": "TRAIN",
     "stops": ["stop-003", "stop-006", "stop-002"],
     "baseFare": 8000
   },
@@ -35,7 +35,7 @@
     "id": "route-005",
     "name": "Мирный - Иркутск (Авиа)",
     "routeNumber": "S7-9012",
-    "transportType": "airplane",
+    "transportType": "PLANE",
     "stops": ["stop-005", "stop-003"],
     "baseFare": 8000
   },
@@ -43,7 +43,7 @@
     "id": "route-006",
     "name": "Якутск - Хандыга (Автобус)",
     "routeNumber": "102",
-    "transportType": "bus",
+    "transportType": "BUS",
     "stops": ["stop-001", "stop-007"],
     "baseFare": 2000
   },
@@ -51,7 +51,7 @@
     "id": "route-007",
     "name": "Москва - Санкт-Петербург (Поезд)",
     "routeNumber": "002Б",
-    "transportType": "train",
+    "transportType": "TRAIN",
     "stops": ["stop-002", "stop-008"],
     "baseFare": 3500
   },
@@ -59,7 +59,7 @@
     "id": "route-008",
     "name": "Якутск - Нерюнгри (Автобус)",
     "routeNumber": "103",
-    "transportType": "bus",
+    "transportType": "BUS",
     "stops": ["stop-001", "stop-009"],
     "baseFare": 2200
   },
@@ -67,7 +67,7 @@
     "id": "route-009",
     "name": "Нерюнгри - Иркутск (Авиа)",
     "routeNumber": "S7-3456",
-    "transportType": "airplane",
+    "transportType": "PLANE",
     "stops": ["stop-009", "stop-003"],
     "baseFare": 9000
   },
@@ -75,7 +75,7 @@
     "id": "route-010",
     "name": "Иркутск - Красноярск (Поезд)",
     "routeNumber": "070М",
-    "transportType": "train",
+    "transportType": "TRAIN",
     "stops": ["stop-003", "stop-010"],
     "baseFare": 4000
   }

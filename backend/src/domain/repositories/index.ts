@@ -1,13 +1,11 @@
 /**
- * Экспорт всех интерфейсов репозиториев и сервисов доменного слоя
+ * Domain repositories barrel file
+ * 
+ * Exports all repository interfaces for easy importing.
  */
 
-// Существующие интерфейсы
-export * from './IUserRepository';
-
-// Новые интерфейсы для адаптивной загрузки данных
-export * from './ITransportDataProvider';
-export * from './IDataQualityValidator';
-export * from './IDataRecoveryService';
-
-
+export * from './IStopRepository';
+export * from './IRouteRepository';
+export * from './IFlightRepository';
+export * from './IDatasetRepository';
+export * from './IGraphRepository';

@@ -230,16 +230,8 @@ export async function checkOData(req: Request, res: Response): Promise<void> {
  */
 export async function checkAdaptiveDataLoading(req: Request, res: Response): Promise<void> {
   try {
-    const isEnabled = process.env.USE_ADAPTIVE_DATA_LOADING === 'true';
-
-    if (!isEnabled) {
-      res.json({
-        status: 'disabled',
-        message: 'Adaptive data loading is disabled. Set USE_ADAPTIVE_DATA_LOADING=true to enable.',
-        enabled: false,
-      });
-      return;
-    }
+    // Новая архитектура Phase 2 - всегда включена
+    // Старая адаптивная система удалена
 
     const startTime = Date.now();
     
@@ -254,12 +246,19 @@ export async function checkAdaptiveDataLoading(req: Request, res: Response): Pro
     const recoveryModeStats = metricsRegistry.getModeStats(DataSourceMode.RECOVERY);
     const mockModeStats = metricsRegistry.getModeStats(DataSourceMode.MOCK);
     
-    // Проверяем доступность через создание TransportDataService
-    const { createTransportDataService } = await import('../../application/data-loading');
-    const transportDataService = await createTransportDataService();
+    // Используем новую архитектуру Phase 2
+    // Получаем информацию о графе из Redis
+    const { DatabaseConfig } = await import('../../infrastructure/config/database.config');
+    const { RedisConfig } = await import('../../infrastructure/config/redis.config');
+    const { PostgresGraphRepository } = await import('../../infrastructure/repositories/PostgresGraphRepository');
     
-    // Получаем информацию о последней загрузке
-    const lastLoadInfo = await transportDataService.getLastLoadInfo();
+    const pool = DatabaseConfig.getPool();
+    const redis = RedisConfig.getClient();
+    const graphRepository = new PostgresGraphRepository(pool, redis);
+    
+    // Получаем метаданные графа
+    const graphMetadata = await graphRepository.getGraphMetadata();
+    const graphStats = await graphRepository.getGraphStatistics();
 
     // Проверяем кеш
     const { DatasetCacheRepository, RedisConnection } = await import('../../infrastructure/cache');
@@ -293,21 +292,28 @@ export async function checkAdaptiveDataLoading(req: Request, res: Response): Pro
     res.json({
       status: 'ok',
       enabled: true,
+      architecture: 'Phase 2 (Optimized)',
       
-      // Provider availability
+      // Graph information (new architecture)
+      graph: {
+        available: graphStats.totalNodes > 0,
+        version: graphStats.version,
+        totalNodes: graphStats.totalNodes,
+        totalEdges: graphStats.totalEdges,
+        buildTimestamp: graphMetadata ? new Date(graphMetadata.buildTimestamp).toISOString() : null,
+        datasetVersion: graphMetadata?.datasetVersion,
+      },
+      
+      // Provider availability (legacy, for compatibility)
       providers: {
         odata: {
           name: 'OData Transport Provider',
-          available: !!lastLoadInfo && lastLoadInfo.mode === 'real',
+          available: graphStats.totalNodes > 0,
           configured: !!process.env.ODATA_BASE_URL,
-        },
-        mock: {
-          name: 'Mock Transport Provider',
-          available: true,
         },
       },
       
-      // Cache status
+      // Cache status (legacy, for compatibility)
       cache: {
         available: cacheAvailable,
         hasData: !!cachedDataset,
@@ -318,14 +324,6 @@ export async function checkAdaptiveDataLoading(req: Request, res: Response): Pro
         hits: metricsSummary.cache.hits,
         misses: metricsSummary.cache.misses,
       },
-      
-      // Last load information
-      lastLoad: lastLoadInfo ? {
-        mode: lastLoadInfo.mode,
-        quality: lastLoadInfo.quality,
-        source: lastLoadInfo.source,
-        loadedAt: lastLoadInfo.loadedAt,
-      } : null,
       
       // Performance metrics
       metrics: {

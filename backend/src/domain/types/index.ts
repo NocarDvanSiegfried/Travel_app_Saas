@@ -8,6 +8,9 @@ import { ITransportDataset, IRoute, IStop, IFlight } from '../entities/Transport
 import { DataSourceMode } from '../enums/DataSourceMode';
 import { IQualityReport } from '../entities/QualityReport';
 
+// Re-export ITransportDataset and related interfaces for convenience
+export type { ITransportDataset, IRoute, IStop, IFlight } from '../entities/TransportDataset';
+
 /**
  * Частичный датасет (все поля опциональны)
  */
@@ -162,5 +165,7 @@ export interface IDatasetStats {
   averageStopsPerRoute: number;
   averageFlightsPerRoute: number;
 }
+
+
 
 

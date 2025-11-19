@@ -1,0 +1,506 @@
+/**
+ * OData Sync Worker
+ * 
+ * Fetches data from OData API, detects changes, and updates PostgreSQL.
+ * 
+ * Lifecycle:
+ * 1. Fetch OData API response
+ * 2. Calculate SHA256 hash
+ * 3. Compare with last hash
+ * 4. If changed: parse, save to PostgreSQL, create dataset version, backup to MinIO
+ * 5. Trigger next worker (Virtual Entities Generator)
+ * 
+ * @module application/workers
+ */
+
+import crypto from 'crypto';
+import { BaseBackgroundWorker } from './base/BaseBackgroundWorker';
+import type { WorkerExecutionResult } from './base/IBackgroundWorker';
+import type { IStopRepository } from '../../domain/repositories/IStopRepository';
+import type { IRouteRepository } from '../../domain/repositories/IRouteRepository';
+import type { IFlightRepository } from '../../domain/repositories/IFlightRepository';
+import type { IDatasetRepository } from '../../domain/repositories/IDatasetRepository';
+import { RealStop } from '../../domain/entities/RealStop';
+import { Route, type RouteStop, type TransportType } from '../../domain/entities/Route';
+import { Flight } from '../../domain/entities/Flight';
+import { Dataset } from '../../domain/entities/Dataset';
+
+/**
+ * OData API response structure
+ */
+type ODataResponse = {
+  stops: Array<{
+    id: string;
+    name: string;
+    latitude?: number;
+    longitude?: number;
+    type?: string;
+    address?: string;
+    cityName?: string;
+  }>;
+  routes: Array<{
+    id: string;
+    routeNumber: string;
+    name: string;
+    transportType: string;
+    stops: string[];
+    baseFare?: number;
+    carrier?: string;
+  }>;
+  flights: Array<{
+    id: string;
+    routeId: string;
+    fromStopId: string;
+    toStopId: string;
+    departureTime: string;
+    arrivalTime: string;
+    daysOfWeek?: string[];
+    priceRub?: number;
+    availableSeats?: number;
+  }>;
+};
+
+/**
+ * OData Client Interface
+ */
+export interface IODataClient {
+  fetchAll(): Promise<ODataResponse>;
+}
+
+/**
+ * MinIO Client Interface (simple)
+ */
+export interface IMinioClient {
+  uploadDataset(datasetId: string, data: string): Promise<void>;
+}
+
+/**
+ * OData Sync Worker
+ * 
+ * Synchronizes data from OData API to PostgreSQL.
+ * 
+ * @class
+ */
+export class ODataSyncWorker extends BaseBackgroundWorker {
+  private lastHash?: string;
+
+  constructor(
+    private readonly odataClient: IODataClient,
+    private readonly stopRepository: IStopRepository,
+    private readonly routeRepository: IRouteRepository,
+    private readonly flightRepository: IFlightRepository,
+    private readonly datasetRepository: IDatasetRepository,
+    private readonly minioClient?: IMinioClient
+  ) {
+    super('odata-sync-worker', 'OData Synchronization Worker', '1.0.0');
+  }
+
+  /**
+   * Check if worker can run (idempotency)
+   * 
+   * Only run if enough time has passed since last successful run.
+   */
+  public async canRun(): Promise<boolean> {
+    const isRunning = await super.canRun();
+    if (!isRunning) {
+      return false;
+    }
+
+    // Check if we ran recently (within last hour)
+    if (this.lastRun) {
+      const hoursSinceLastRun = (Date.now() - this.lastRun.getTime()) / (1000 * 60 * 60);
+      if (hoursSinceLastRun < 1) {
+        this.log('INFO', `Skipping run - last run was ${Math.round(hoursSinceLastRun * 60)} minutes ago`);
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  /**
+   * Execute worker logic
+   */
+  protected async executeWorkerLogic(): Promise<WorkerExecutionResult> {
+    const startTime = Date.now();
+
+    try {
+      // ====================================================================
+      // Step 1: Fetch OData API Response
+      // ====================================================================
+      this.log('INFO', 'Step 1: Fetching OData API response...');
+      const odataResponse = await this.odataClient.fetchAll();
+
+      this.log('INFO', `Fetched: ${odataResponse.stops.length} stops, ${odataResponse.routes.length} routes, ${odataResponse.flights.length} flights`);
+
+      // ====================================================================
+      // Step 2: Calculate SHA256 Hash
+      // ====================================================================
+      this.log('INFO', 'Step 2: Calculating data hash...');
+      const responseString = JSON.stringify(odataResponse);
+      const currentHash = crypto.createHash('sha256').update(responseString).digest('hex');
+
+      this.log('INFO', `Data hash: ${currentHash.substring(0, 16)}...`);
+
+      // ====================================================================
+      // Step 3: Compare with Last Hash
+      // ====================================================================
+      this.log('INFO', 'Step 3: Checking for changes...');
+      
+      const lastDataset = await this.datasetRepository.getLatestDataset();
+      const lastHash = lastDataset?.odataHash;
+
+      if (lastHash === currentHash) {
+        this.log('INFO', 'No changes detected - data is up to date');
+        return {
+          success: true,
+          workerId: this.workerId,
+          executionTimeMs: Date.now() - startTime,
+          message: 'No changes detected',
+        };
+      }
+
+      this.log('INFO', 'Changes detected - proceeding with update');
+
+      // ====================================================================
+      // Step 4: Parse and Validate Data
+      // ====================================================================
+      this.log('INFO', 'Step 4: Parsing and validating data...');
+      
+      const { stops, routes, flights } = this.parseODataResponse(odataResponse);
+
+      this.log('INFO', `Parsed: ${stops.length} stops, ${routes.length} routes, ${flights.length} flights`);
+
+      // ====================================================================
+      // Step 5: Save to PostgreSQL (Transactional)
+      // ====================================================================
+      this.log('INFO', 'Step 5: Saving to PostgreSQL...');
+
+      const savedCounts = await this.saveDataToPostgreSQL(stops, routes, flights);
+
+      this.log('INFO', `Saved: ${savedCounts.stops} stops, ${savedCounts.routes} routes, ${savedCounts.flights} flights`);
+
+      // ====================================================================
+      // Step 6: Create New Dataset Version
+      // ====================================================================
+      this.log('INFO', 'Step 6: Creating new dataset version...');
+
+      const newDataset = new Dataset(
+        0, // ID will be assigned by database (SERIAL)
+        `v${Date.now()}`,
+        'ODATA',
+        this.calculateQuality(stops, routes, flights),
+        stops.length,
+        routes.length,
+        flights.length,
+        0, // totalVirtualStops - will be updated by Worker 2
+        0, // totalVirtualRoutes - will be updated by Worker 2
+        currentHash,
+        undefined, // metadata
+        new Date(),
+        false // isActive - will be activated after graph build
+      );
+
+      await this.datasetRepository.saveDataset(newDataset);
+
+      this.log('INFO', `Created dataset: ${newDataset.id} (v${newDataset.version})`);
+
+      // ====================================================================
+      // Step 7: Backup to MinIO (Optional)
+      // ====================================================================
+      if (this.minioClient) {
+        this.log('INFO', 'Step 7: Backing up to MinIO...');
+        
+        try {
+          await this.minioClient.uploadDataset(newDataset.version, responseString);
+          this.log('INFO', 'Backup successful');
+        } catch (error: any) {
+          this.log('WARN', `Backup failed: ${error?.message}`, error);
+          // Non-fatal error - continue
+        }
+      } else {
+        this.log('INFO', 'Step 7: Skipping MinIO backup (no client provided)');
+      }
+
+      // ====================================================================
+      // Step 8: Return Success
+      // ====================================================================
+      this.lastHash = currentHash;
+
+      return {
+        success: true,
+        workerId: this.workerId,
+        executionTimeMs: Date.now() - startTime,
+        message: `OData sync completed - ${savedCounts.stops + savedCounts.routes + savedCounts.flights} records updated`,
+        dataProcessed: {
+          added: savedCounts.stops + savedCounts.routes + savedCounts.flights,
+          updated: 0,
+          deleted: 0,
+        },
+        nextWorker: 'virtual-entities-generator',
+      };
+    } catch (error: any) {
+      this.log('ERROR', 'OData sync failed', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Parse OData response into Domain entities
+   */
+  private parseODataResponse(response: ODataResponse): {
+    stops: RealStop[];
+    routes: Route[];
+    flights: Flight[];
+  } {
+    // Parse stops - handle both OData format and mock format
+    const stops = response.stops.map((stopData: any) => {
+      // Handle mock format: { id, name, coordinates: { latitude, longitude }, type }
+      const latitude = stopData.coordinates?.latitude ?? stopData.latitude;
+      const longitude = stopData.coordinates?.longitude ?? stopData.longitude;
+      
+      // Extract city name from stop name if not provided
+      let cityName = stopData.cityName;
+      if (!cityName && stopData.name) {
+        // Try to extract city from name (e.g., "Аэропорт Якутск" -> "Якутск")
+        const cityMatch = stopData.name.match(/(?:г\.\s*)?([А-Яа-яЁё]+)/);
+        if (cityMatch) {
+          cityName = cityMatch[1];
+        }
+      }
+
+      // Determine if airport or railway station
+      const isAirport = stopData.type === 'airport' || stopData.name?.toLowerCase().includes('аэропорт');
+      const isRailwayStation = stopData.type === 'railway' || stopData.name?.toLowerCase().includes('вокзал');
+
+      return new RealStop(
+        stopData.id,
+        stopData.name,
+        latitude,
+        longitude,
+        cityName, // cityId
+        isAirport,
+        isRailwayStation,
+        stopData.address ? { address: stopData.address } : undefined
+      );
+    });
+
+    // Parse routes - handle both OData format and mock format
+    const routes = response.routes
+      .filter((routeData: any) => {
+        // Filter out routes with invalid stops
+        const stops = routeData.stops || [];
+        return Array.isArray(stops) && stops.length >= 2;
+      })
+      .map((routeData: any) => {
+        // Convert stops array to RouteStop format
+        const stopsSequence: RouteStop[] = (routeData.stops || []).map((stopId: string, index: number) => ({
+          stopId,
+          order: index + 1,
+        }));
+
+        // Extract from_stop_id and to_stop_id from stops sequence
+        const fromStopId = stopsSequence[0].stopId;
+        const toStopId = stopsSequence[stopsSequence.length - 1].stopId;
+
+        // Normalize transportType to domain type
+        const transportType = this.normalizeTransportType(routeData.transportType) || 'BUS';
+
+        return new Route(
+          routeData.id,
+          transportType,
+          fromStopId,
+          toStopId,
+          stopsSequence,
+          routeData.routeNumber || routeData.id,
+          undefined, // durationMinutes - will be calculated if needed
+          undefined, // distanceKm - will be calculated if needed
+          routeData.carrier || routeData.operator, // operator
+          routeData.name ? { name: routeData.name, baseFare: routeData.baseFare } : undefined, // metadata
+          undefined, // createdAt
+          undefined // updatedAt
+        );
+      });
+
+    // Parse flights - handle both OData format and mock format
+    const flights = response.flights.map((flightData: any) => {
+      // Handle mock format: { price } vs OData format: { priceRub }
+      const priceRub = flightData.priceRub ?? flightData.price;
+      
+      // Convert ISO time format to HH:MM if needed
+      const departureTime = this.convertTimeToHHMM(flightData.departureTime);
+      const arrivalTime = this.convertTimeToHHMM(flightData.arrivalTime);
+      
+      // Handle daysOfWeek - default to all days if not provided
+      let daysOfWeek: number[] = flightData.daysOfWeek;
+      if (!daysOfWeek || !Array.isArray(daysOfWeek) || daysOfWeek.length === 0) {
+        daysOfWeek = [1, 2, 3, 4, 5, 6, 7]; // Default to all days
+      }
+      
+      // Normalize transportType if provided
+      const transportType = flightData.transportType 
+        ? this.normalizeTransportType(flightData.transportType)
+        : undefined;
+
+      return new Flight(
+        flightData.id,
+        flightData.fromStopId,
+        flightData.toStopId,
+        departureTime,
+        arrivalTime,
+        daysOfWeek,
+        flightData.routeId,
+        priceRub,
+        false, // isVirtual
+        transportType,
+        undefined, // metadata
+        undefined // createdAt
+      );
+    });
+
+    return { stops, routes, flights };
+  }
+
+  /**
+   * Save data to PostgreSQL (transactional)
+   */
+  private async saveDataToPostgreSQL(
+    stops: RealStop[],
+    routes: Route[],
+    flights: Flight[]
+  ): Promise<{ stops: number; routes: number; flights: number }> {
+    // Save stops in batch
+    const savedStops = await this.stopRepository.saveRealStopsBatch(stops);
+
+    // Save routes in batch
+    const savedRoutes = await this.routeRepository.saveRoutesBatch(routes);
+
+    // Save flights in batch
+    const savedFlights = await this.flightRepository.saveFlightsBatch(flights);
+
+    return {
+      stops: savedStops.length,
+      routes: savedRoutes.length,
+      flights: savedFlights.length,
+    };
+  }
+
+  /**
+   * Normalize transport type to domain TransportType
+   * Handles various input formats: "airplane", "bus", "train" -> "PLANE", "BUS", "TRAIN"
+   */
+  private normalizeTransportType(input: string | undefined | null): TransportType | undefined {
+    if (!input) {
+      return undefined;
+    }
+
+    const normalized = input.trim().toUpperCase();
+
+    // Map common variations to domain types
+    if (normalized === 'AIRPLANE' || normalized === 'PLANE' || normalized === 'АВИА') {
+      return 'PLANE';
+    }
+    if (normalized === 'BUS' || normalized === 'АВТОБУС') {
+      return 'BUS';
+    }
+    if (normalized === 'TRAIN' || normalized === 'ПОЕЗД') {
+      return 'TRAIN';
+    }
+    if (normalized === 'WATER' || normalized === 'FERRY' || normalized === 'ПАРОМ') {
+      return 'WATER';
+    }
+
+    // If already a valid domain type, return as is
+    if (normalized === 'PLANE' || normalized === 'BUS' || normalized === 'TRAIN' || normalized === 'WATER') {
+      return normalized as TransportType;
+    }
+
+    // Default to BUS for unknown types
+    return 'BUS';
+  }
+
+  /**
+   * Convert time to HH:MM format
+   * Handles ISO format (2025-11-19T08:30:00.000Z) and HH:MM format
+   */
+  private convertTimeToHHMM(time: string): string {
+    if (!time) {
+      throw new Error('Time is required');
+    }
+
+    // If already in HH:MM format, return as is
+    if (/^([0-1][0-9]|2[0-3]):([0-5][0-9])$/.test(time)) {
+      return time;
+    }
+
+    // If ISO format, extract HH:MM
+    if (time.includes('T')) {
+      const date = new Date(time);
+      const hours = String(date.getUTCHours()).padStart(2, '0');
+      const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+      return `${hours}:${minutes}`;
+    }
+
+    // Try to parse as Date and extract time
+    try {
+      const date = new Date(time);
+      if (!isNaN(date.getTime())) {
+        const hours = String(date.getUTCHours()).padStart(2, '0');
+        const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+        return `${hours}:${minutes}`;
+      }
+    } catch {
+      // Ignore parsing errors
+    }
+
+    // If all else fails, try to extract HH:MM from string
+    const match = time.match(/([0-1][0-9]|2[0-3]):([0-5][0-9])/);
+    if (match) {
+      return match[0];
+    }
+
+    throw new Error(`Cannot convert time to HH:MM format: ${time}`);
+  }
+
+  /**
+   * Calculate dataset quality score
+   */
+  private calculateQuality(stops: RealStop[], routes: Route[], flights: Flight[]): number {
+    let score = 0;
+    let maxScore = 0;
+
+    // Check stops quality
+    maxScore += 100;
+    if (stops.length > 0) {
+      score += 50;
+      
+      const stopsWithCoordinates = stops.filter(s => s.latitude !== undefined && s.longitude !== undefined).length;
+      score += (stopsWithCoordinates / stops.length) * 50;
+    }
+
+    // Check routes quality
+    maxScore += 100;
+    if (routes.length > 0) {
+      score += 50;
+      
+      // Check if routes have operator or metadata with fare info
+      const routesWithInfo = routes.filter(r => 
+        r.operator !== undefined || 
+        (r.metadata && (r.metadata.baseFare !== undefined || r.metadata.name !== undefined))
+      ).length;
+      score += (routesWithInfo / routes.length) * 50;
+    }
+
+    // Check flights quality
+    maxScore += 100;
+    if (flights.length > 0) {
+      score += 50;
+      
+      const flightsWithPrice = flights.filter(f => f.priceRub !== undefined).length;
+      score += (flightsWithPrice / flights.length) * 50;
+    }
+
+    return Math.round((score / maxScore) * 100); // Return 0-100
+  }
+}
+

@@ -1,26 +1,33 @@
 # syntax=docker/dockerfile:1.4
 
 # ============================================================================
-# BASE - базовый образ
+# BASE - минимальный базовый образ
 # ============================================================================
 FROM node:18-alpine AS base
 
-RUN apk add --no-cache libc6-compat curl wget
+# Устанавливаем только необходимые системные пакеты
+# libc6-compat нужен для некоторых нативных модулей Node.js
+RUN apk add --no-cache libc6-compat
 
 WORKDIR /app
 
 # ============================================================================
-# DEPS - установка зависимостей (кешируется при неизменных package.json)
+# DEPS - установка зависимостей (максимальное кеширование)
 # ============================================================================
 FROM base AS deps
 
-# Копируем ТОЛЬКО файлы зависимостей - это ключ к кэшированию
+# Копируем ТОЛЬКО файлы зависимостей для максимального кеширования
 COPY package.json package-lock.json* ./
 
 # Устанавливаем зависимости с BuildKit cache mount
-# npm cache сохраняется между сборками автоматически
+# npm cache сохраняется между сборками, ускоряя повторные сборки
 RUN --mount=type=cache,target=/root/.npm \
-    npm ci --prefer-offline --no-audit
+    --mount=type=cache,target=/root/.npm/_cacache \
+    if [ -f package-lock.json ]; then \
+      npm ci --prefer-offline --no-audit --no-fund; \
+    else \
+      npm install --prefer-offline --no-audit --no-fund --package-lock; \
+    fi
 
 # ============================================================================
 # BUILDER - сборка TypeScript
@@ -32,7 +39,7 @@ ENV NODE_ENV=production
 # Копируем зависимости из deps stage
 COPY --from=deps /app/node_modules ./node_modules
 
-# Копируем конфигурацию и исходный код ПОСЛЕ установки зависимостей
+# Копируем только необходимые файлы для сборки
 COPY tsconfig.json package.json ./
 COPY src ./src
 
@@ -40,7 +47,7 @@ COPY src ./src
 RUN npm run build
 
 # ============================================================================
-# DEVELOPMENT - для разработки
+# DEVELOPMENT - для разработки (оптимизировано)
 # ============================================================================
 FROM base AS development
 
@@ -49,11 +56,12 @@ ENV NODE_ENV=development
 # Копируем зависимости
 COPY --from=deps /app/node_modules ./node_modules
 
-# Копируем код (будет перезаписано volume в docker-compose)
-COPY . .
+# Устанавливаем dev-инструменты локально (не глобально для меньшего размера слоя)
+RUN npm install -g --silent nodemon ts-node
 
-# Устанавливаем глобальные инструменты для разработки
-RUN npm install -g nodemon ts-node
+# Копируем только необходимые файлы для разработки
+COPY package.json tsconfig.json ./
+COPY src ./src
 
 EXPOSE 5000
 
@@ -66,12 +74,18 @@ FROM base AS production
 
 ENV NODE_ENV=production
 
-# Копируем зависимости
+# Создаем пользователя для безопасности
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nodejs
+
+# Копируем только production зависимости
 COPY --from=deps /app/node_modules ./node_modules
 
-# Копируем собранные файлы
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/package.json ./
+# Копируем собранные файлы (миграции уже включены через copy-assets скрипт)
+COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
+COPY --from=builder --chown=nodejs:nodejs /app/package.json ./
+
+USER nodejs
 
 EXPOSE 5000
 

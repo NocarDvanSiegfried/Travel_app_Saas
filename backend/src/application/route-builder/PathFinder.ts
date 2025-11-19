@@ -43,7 +43,7 @@ export class PathFinder {
     console.log(`[PathFinder] 🔍 Поиск пути: fromStopId="${fromStopId}" -> toStopId="${toStopId}" (дата: ${date || 'не указана'})`);
     
     // КРИТИЧЕСКИ ВАЖНО: Диагностика графа перед поиском пути
-    // Проверяем, что PathFinder использует ТОТ ЖЕ граф, который был построен в RouteGraphManager
+    // Проверяем, что PathFinder использует ТОТ ЖЕ граф, который был построен в GraphBuilderWorker
     const nodesMapSize = graph.getNodesMapSize();
     const edgesMapSize = graph.getEdgesMapSize();
     const nodesMapKeys = graph.getNodesMapKeys();
@@ -368,7 +368,7 @@ export class PathFinder {
       // КРИТИЧЕСКИ ВАЖНО: Проверяем, что мы используем тот же граф
       if (!existsInEdgesMap) {
         console.log(`[PathFinder] ❌ КРИТИЧЕСКАЯ ОШИБКА: ключ "${current}" не существует в edgesMap, но getEdgesFrom() вернул рёбра!`);
-        console.log(`[PathFinder] Это означает, что PathFinder использует НЕ тот граф, который был построен в RouteGraphManager!`);
+        console.log(`[PathFinder] Это означает, что PathFinder использует НЕ тот граф, который был построен в GraphBuilderWorker!`);
         continue;
       }
       

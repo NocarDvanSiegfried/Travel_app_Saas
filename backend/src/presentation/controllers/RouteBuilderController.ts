@@ -1,10 +1,22 @@
 /**
- * Контроллер для построения маршрутов
+ * Контроллер для построения маршрутов (оптимизированная версия)
+ * 
+ * Использует новую архитектуру Phase 2:
+ * - OptimizedBuildRouteUseCase
+ * - Graph из Redis
+ * - Readonly режим
  */
 
 import { Request, Response } from 'express';
-import { BuildRouteUseCase } from '../../application/route-builder';
-import { normalizeCityName } from '../../shared/utils/city-normalizer';
+import { OptimizedBuildRouteUseCase } from '../../application/route-builder/use-cases';
+import type { BuildRouteRequest } from '../../application/route-builder/use-cases';
+import { DatabaseConfig } from '../../infrastructure/config/database.config';
+import { RedisConfig } from '../../infrastructure/config/redis.config';
+import { PostgresGraphRepository } from '../../infrastructure/repositories/PostgresGraphRepository';
+import { PostgresFlightRepository } from '../../infrastructure/repositories/PostgresFlightRepository';
+import { PostgresStopRepository } from '../../infrastructure/repositories/PostgresStopRepository';
+import { PostgresRouteRepository } from '../../infrastructure/repositories/PostgresRouteRepository';
+import { getStartupResult } from '../../index';
 
 /**
  * Поиск маршрутов (алиас для buildRoute)
@@ -52,37 +64,50 @@ export async function getRouteDetails(req: Request, res: Response): Promise<void
 }
 
 /**
- * Получить диагностику графа маршрутов
+ * Получить диагностику графа маршрутов (оптимизированная версия)
  */
 export async function getRouteGraphDiagnostics(req: Request, res: Response): Promise<void> {
   try {
-    const { createODataClient } = await import('../../infrastructure/api/odata-client');
-    const odataClient = createODataClient();
+    const startup = getStartupResult();
 
-    if (!odataClient) {
-      res.json({
-        status: 'error',
-        message: 'OData клиент недоступен',
-        graph: null,
+    if (!startup?.metrics?.graphAvailable) {
+      res.status(503).json({
+        success: false,
+        graphAvailable: false,
+        message: 'Граф недоступен',
       });
       return;
     }
 
-    // TODO: Реализовать диагностику графа маршрутов
-    res.json({
-      status: 'ok',
-      message: 'Граф маршрутов доступен',
-      graph: {
-        nodes: 0,
-        edges: 0,
+    const pool = DatabaseConfig.getPool();
+    const redis = RedisConfig.getClient();
+
+    const graphRepository = new PostgresGraphRepository(pool, redis);
+
+    // Получаем статистику графа из Redis
+    const stats = await graphRepository.getGraphStatistics();
+    const metadata = await graphRepository.getGraphMetadata();
+
+    res.status(200).json({
+      success: true,
+      graphAvailable: true,
+      version: stats.version,
+      statistics: {
+        totalNodes: stats.totalNodes,
+        totalEdges: stats.totalEdges,
+        averageEdgesPerNode: stats.averageEdgesPerNode,
+        densityPercentage: stats.densityPercentage,
+      },
+      metadata: {
+        buildTimestamp: metadata ? new Date(metadata.buildTimestamp).toISOString() : null,
+        datasetVersion: metadata?.datasetVersion,
       },
     });
-  } catch (error) {
-    const errorMessage = error instanceof Error 
-      ? error.message 
-      : 'Внутренняя ошибка сервера';
+  } catch (error: any) {
+    const errorMessage = error?.message || String(error);
 
     res.status(500).json({
+      success: false,
       error: {
         code: 'INTERNAL_ERROR',
         message: errorMessage,
@@ -92,8 +117,12 @@ export async function getRouteGraphDiagnostics(req: Request, res: Response): Pro
 }
 
 /**
- * Построить маршрут между двумя городами
- * Использует адаптивную систему загрузки данных (REAL/RECOVERY/MOCK)
+ * Построить маршрут между двумя городами (оптимизированная версия)
+ * 
+ * Использует новую архитектуру Phase 2:
+ * - Graph из Redis (readonly)
+ * - OptimizedBuildRouteUseCase
+ * - Быстрый поиск (< 10ms)
  * 
  * Параметры:
  * - from (обязательный) - город отправления
@@ -102,77 +131,157 @@ export async function getRouteGraphDiagnostics(req: Request, res: Response): Pro
  * - passengers (опциональный) - количество пассажиров (по умолчанию 1)
  */
 export async function buildRoute(req: Request, res: Response): Promise<void> {
+  const requestStartTime = Date.now();
+
   try {
-    // Получаем параметры из query или body (поддержка обоих форматов)
-    const fromParam = req.query.from || req.body?.from;
-    const toParam = req.query.to || req.body?.to;
-    const dateParam = req.query.date || req.body?.date;
-    const passengersParam = req.query.passengers || req.body?.passengers;
+    // Получаем параметры из query или body
+    const fromCity = (req.query.from || req.body?.from) as string;
+    const toCity = (req.query.to || req.body?.to) as string;
+    const dateStr = (req.query.date || req.body?.date) as string;
+    const passengersStr = (req.query.passengers || req.body?.passengers) as string;
 
-    // Проверяем только обязательные параметры: from и to
-    if (!fromParam || !toParam) {
+    // Проверяем обязательные параметры
+    if (!fromCity || !toCity) {
       res.status(400).json({
+        success: false,
         error: {
           code: 'VALIDATION_ERROR',
-          message: 'Параметры from и to обязательны',
+          message: 'Параметры "from" и "to" обязательны',
         },
+        executionTimeMs: Date.now() - requestStartTime,
       });
       return;
     }
 
-    // Нормализуем названия городов (убираем "г.", пробелы, приводим к нижнему регистру)
-    const normalizedFrom = normalizeCityName(String(fromParam));
-    const normalizedTo = normalizeCityName(String(toParam));
-
-    console.log(`[RouteBuilderController] Запрос маршрута: "${fromParam}" -> "${toParam}"`);
-    console.log(`[RouteBuilderController] Нормализовано: "${normalizedFrom}" -> "${normalizedTo}"`);
-
-    if (!normalizedFrom || !normalizedTo) {
+    // Парсим дату (по умолчанию сегодня)
+    let date: Date;
+    try {
+      date = dateStr ? new Date(dateStr) : new Date();
+      if (isNaN(date.getTime())) {
+        throw new Error('Invalid date format');
+      }
+    } catch (error) {
       res.status(400).json({
+        success: false,
         error: {
           code: 'VALIDATION_ERROR',
-          message: 'Некорректные названия городов',
+          message: 'Неверный формат даты. Используйте YYYY-MM-DD.',
         },
+        executionTimeMs: Date.now() - requestStartTime,
       });
       return;
     }
 
-    // Если дата не указана, используем текущую дату
-    const searchDate = dateParam ? String(dateParam) : new Date().toISOString().split('T')[0];
-
-    const useCase = new BuildRouteUseCase();
-    const result = await useCase.execute({
-      fromCity: normalizedFrom,
-      toCity: normalizedTo,
-      date: searchDate,
-      passengers: passengersParam ? parseInt(String(passengersParam), 10) : 1,
-    });
-
-    // В адаптивной системе маршруты всегда находятся (через виртуальные маршруты в RECOVERY режиме)
-    // Но если всё же маршрутов нет, возвращаем пустой массив с информацией о режиме данных
-    if (result.routes.length === 0) {
-      res.status(404).json({
+    // Парсим количество пассажиров (по умолчанию 1)
+    const passengers = passengersStr ? parseInt(passengersStr, 10) : 1;
+    if (isNaN(passengers) || passengers < 1 || passengers > 100) {
+      res.status(400).json({
+        success: false,
         error: {
-          code: 'ROUTES_NOT_FOUND',
-          message: 'Маршруты не найдены для указанных параметров',
+          code: 'VALIDATION_ERROR',
+          message: 'Количество пассажиров должно быть от 1 до 100',
         },
-        dataMode: result.dataMode,
-        dataQuality: result.dataQuality,
+        executionTimeMs: Date.now() - requestStartTime,
       });
       return;
     }
 
-    res.json(result);
-  } catch (error) {
-    const errorMessage = error instanceof Error
-      ? error.message
-      : 'Внутренняя ошибка сервера';
+    // Проверяем доступность графа
+    const startup = getStartupResult();
+    if (!startup?.metrics?.graphAvailable) {
+      res.status(503).json({
+        success: false,
+        error: {
+          code: 'GRAPH_NOT_AVAILABLE',
+          message: 'Граф недоступен. Запустите фоновый worker для построения графа.',
+        },
+        graphAvailable: false,
+        executionTimeMs: Date.now() - requestStartTime,
+      });
+      return;
+    }
+
+    // Инициализируем репозитории
+    const pool = DatabaseConfig.getPool();
+    const redis = RedisConfig.getClient();
+
+    const graphRepository = new PostgresGraphRepository(pool, redis);
+    const flightRepository = new PostgresFlightRepository(pool);
+    const stopRepository = new PostgresStopRepository(pool);
+    const routeRepository = new PostgresRouteRepository(pool);
+
+    // Выполняем поиск маршрута
+    const useCase = new OptimizedBuildRouteUseCase(
+      graphRepository,
+      flightRepository,
+      stopRepository,
+      routeRepository
+    );
+
+    const request: BuildRouteRequest = {
+      fromCity,
+      toCity,
+      date,
+      passengers,
+    };
+
+    const result = await useCase.execute(request);
+    const totalExecutionTime = Date.now() - requestStartTime;
+
+    // Возвращаем результат
+    if (result.success) {
+      res.status(200).json({
+        success: true,
+        routes: result.routes,
+        executionTimeMs: totalExecutionTime,
+        graphVersion: result.graphVersion,
+        graphAvailable: result.graphAvailable,
+      });
+    } else {
+      // Маршруты не найдены
+      if (result.error?.includes('not available')) {
+        res.status(503).json({
+          success: false,
+          error: {
+            code: 'GRAPH_NOT_AVAILABLE',
+            message: result.error,
+          },
+          executionTimeMs: totalExecutionTime,
+          graphAvailable: result.graphAvailable,
+        });
+      } else if (result.error?.includes('No stops found') || result.error?.includes('No path found')) {
+        res.status(404).json({
+          success: false,
+          error: {
+            code: 'ROUTES_NOT_FOUND',
+            message: result.error,
+          },
+          executionTimeMs: totalExecutionTime,
+          graphAvailable: result.graphAvailable,
+          graphVersion: result.graphVersion,
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          error: {
+            code: 'INTERNAL_ERROR',
+            message: result.error,
+          },
+          executionTimeMs: totalExecutionTime,
+        });
+      }
+    }
+  } catch (error: any) {
+    const totalExecutionTime = Date.now() - requestStartTime;
+    const errorMessage = error?.message || String(error);
 
     res.status(500).json({
+      success: false,
       error: {
         code: 'INTERNAL_ERROR',
         message: errorMessage,
       },
+      executionTimeMs: totalExecutionTime,
     });
   }
 }
