@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+.next/
+out/
+build/
+dist/
+
+# Testing
+coverage/
+.nyc_output/
+test-results/
+playwright-report/
+playwright/.cache/
+
+# Generated files
+tsconfig.tsbuildinfo
+next-env.d.ts
+
+# Config files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Logs
+*.log
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Public assets
+public/

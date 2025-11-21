@@ -2,19 +2,25 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Header } from '@/components/header';
-import { Footer } from '@/components/footer';
-import { RouteDetailsView } from '@/components/route-details/route-details-view';
-import { RouteDetailsSkeleton } from '@/components/route-details/route-details-skeleton';
-import { RouteDetailsError } from '@/components/route-details/route-details-error';
-import { adaptRouteToDetailsFormat } from '@/shared/utils/route-adapter';
-import { IBuiltRoute, IRiskAssessment } from '@/shared/types/route-adapter';
+import { Header, Footer, ErrorBoundary } from '@/shared/ui';
+import { RouteDetailsView, RouteDetailsSkeleton, RouteDetailsError } from '@/modules/routes';
+import { adaptRouteToDetailsFormat } from '@/modules/routes/lib';
+import { IBuiltRoute, IRiskAssessment } from '@/modules/routes/domain';
+import { safeLocalStorage } from '@/shared/utils/storage';
 
 interface StoredRouteData {
   route: IBuiltRoute;
   riskAssessment?: IRiskAssessment;
 }
 
+/**
+ * Компонент содержимого страницы детальной информации о маршруте
+ * 
+ * Загружает данные маршрута из localStorage и отображает детальную информацию.
+ * Использует адаптер для преобразования данных в формат компонента RouteDetailsView.
+ * 
+ * @returns JSX элемент с детальной информацией о маршруте
+ */
 function RouteDetailsContent() {
   const searchParams = useSearchParams();
   const [routeData, setRouteData] = useState<ReturnType<typeof adaptRouteToDetailsFormat> | null>(
@@ -33,7 +39,7 @@ function RouteDetailsContent() {
     }
 
     try {
-      const storedData = localStorage.getItem(`route-${routeId}`);
+      const storedData = safeLocalStorage.getItem(`route-${routeId}`);
       if (!storedData) {
         setError('Маршрут не найден');
         setLoading(false);
@@ -57,7 +63,7 @@ function RouteDetailsContent() {
     return (
       <div className="min-h-screen yakutia-pattern relative flex flex-col">
         <Header />
-        <main className="container mx-auto px-4 py-6 md:py-8 relative z-10 max-w-[1300px] flex-1">
+        <main className="container mx-auto px-4 py-6 md:py-8 relative z-10 max-w-[1300px] flex-1" aria-label="Детали маршрута">
           <RouteDetailsSkeleton />
         </main>
         <Footer />
@@ -69,7 +75,7 @@ function RouteDetailsContent() {
     return (
       <div className="min-h-screen yakutia-pattern relative flex flex-col">
         <Header />
-        <main className="container mx-auto px-4 py-6 md:py-8 relative z-10 max-w-[1300px] flex-1">
+        <main className="container mx-auto px-4 py-6 md:py-8 relative z-10 max-w-[1300px] flex-1" aria-label="Детали маршрута">
           <RouteDetailsError error={error || 'Маршрут не найден'} />
         </main>
         <Footer />
@@ -94,14 +100,16 @@ export default function RouteDetailsPage() {
       fallback={
         <div className="min-h-screen yakutia-pattern relative flex flex-col">
           <Header />
-          <main className="container mx-auto px-4 py-6 md:py-8 relative z-10 max-w-[1300px] flex-1">
+          <main className="container mx-auto px-4 py-6 md:py-8 relative z-10 max-w-[1300px] flex-1" aria-label="Детали маршрута">
             <RouteDetailsSkeleton />
           </main>
           <Footer />
         </div>
       }
     >
-      <RouteDetailsContent />
+      <ErrorBoundary>
+        <RouteDetailsContent />
+      </ErrorBoundary>
     </Suspense>
   );
 }

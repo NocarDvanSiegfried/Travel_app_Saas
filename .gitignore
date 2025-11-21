@@ -49,6 +49,8 @@ Thumbs.db
 .temp/
 *.tsbuildinfo
 
-.env.example
+# .env.example should be in repository (it's a template)
+# .env.local and other .env* files are ignored above
+
 .cursor
 .corsorignore

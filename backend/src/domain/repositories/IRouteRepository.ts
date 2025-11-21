@@ -167,3 +167,6 @@ export interface IRouteRepository {
   findVirtualConnections(fromStopId: string, toStopId: string): Promise<VirtualRoute[]>;
 }
 
+
+
+

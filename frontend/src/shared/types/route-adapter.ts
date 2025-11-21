@@ -129,13 +129,71 @@ export enum DataSourceMode {
   UNKNOWN = 'unknown',
 }
 
+/**
+ * Данные машинного обучения для маршрута
+ * Содержит предсказания и метаданные модели
+ */
+export interface MLData {
+  /**
+   * Предсказания модели (задержки, цены и т.д.)
+   */
+  predictions?: {
+    /**
+     * Предсказанная задержка в минутах
+     */
+    delay?: number
+    /**
+     * Предсказанная цена
+     */
+    price?: number
+  }
+  /**
+   * Уровень уверенности модели (0-1)
+   */
+  confidence?: number
+  /**
+   * Версия модели, использованной для предсказания
+   */
+  modelVersion?: string
+}
+
+/**
+ * Данные о занятости сегмента маршрута
+ */
+export interface OccupancyData {
+  /**
+   * ID сегмента
+   */
+  segmentId: string
+  /**
+   * Количество занятых мест
+   */
+  occupied: number
+  /**
+   * Общее количество мест
+   */
+  total: number
+  /**
+   * Процент занятости (0-100)
+   */
+  percentage: number
+  /**
+   * Дата и время последнего обновления
+   */
+  lastUpdated?: string
+}
+
 export interface IRouteBuilderResult {
-  routes: IBuiltRoute[];
-  alternatives?: IBuiltRoute[];
-  mlData?: unknown;
-  riskAssessment?: IRiskAssessment;
-  dataMode?: DataSourceMode | string;
-  dataQuality?: number;
+  routes: IBuiltRoute[]
+  alternatives?: IBuiltRoute[]
+  /**
+   * Данные машинного обучения для маршрута
+   * Содержит предсказания задержек, цен и метаданные модели
+   */
+  mlData?: MLData
+  riskAssessment?: IRiskAssessment
+  dataMode?: DataSourceMode | string
+  dataQuality?: number
 }
 
 export interface RouteDetailsData {
@@ -190,8 +248,11 @@ export interface RouteDetailsData {
         Наименование?: string;
         Код?: string;
       }>;
-      occupancy: Array<unknown>;
-      availableSeats: number;
+      /**
+       * Данные о занятости по сегментам рейса
+       */
+      occupancy: Array<OccupancyData>
+      availableSeats: number
     }>;
   }>;
   riskAssessment?: {

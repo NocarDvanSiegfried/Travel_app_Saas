@@ -1,5 +1,15 @@
 import { API_BASE_URL } from '../constants/api';
 
+/**
+ * Универсальная функция для выполнения API запросов
+ * Используется с React Query в query functions
+ * 
+ * @template T - Тип ожидаемого ответа от API
+ * @param endpoint - Endpoint для запроса (относительный путь от API_BASE_URL)
+ * @param options - Опции для fetch запроса
+ * @returns Promise с данными типа T
+ * @throws Error при ошибке сети или API
+ */
 export async function fetchApi<T>(
   endpoint: string,
   options?: RequestInit
@@ -36,8 +46,13 @@ export async function fetchApi<T>(
 
     return response.json();
   } catch (error) {
+    // Проверяем, есть ли подключение к интернету
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      throw new Error('Нет подключения к интернету. Проверьте ваше соединение.');
+    }
+    
     if (error instanceof Error && error.message.includes('Failed to fetch')) {
-      throw new Error(`Не удалось подключиться к серверу. Проверьте, что backend запущен на ${API_BASE_URL}`);
+      throw new Error(`Не удалось подключиться к серверу. Проверьте, что backend запущен на ${API_BASE_URL.replace('/api/v1', '')}`);
     }
     if (error instanceof Error) {
       throw error;

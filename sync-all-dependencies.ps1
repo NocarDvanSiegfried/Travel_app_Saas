@@ -61,3 +61,6 @@ Sync-Dependencies -Dir "frontend" -Name "Frontend"
 Write-Host "🎉 Синхронизация всех зависимостей завершена!" -ForegroundColor Green
 Write-Host ""
 
+
+
+

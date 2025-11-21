@@ -1,18 +1,61 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Header } from '@/components/header'
-import { NavigationTabs } from '@/components/navigation-tabs'
-import { AssistantButton } from '@/components/assistant-button'
-import { RoutesSection } from '@/components/routes-section'
-import { HotelsSection } from '@/components/hotels-section'
-import { TransportSection } from '@/components/transport-section'
-import { ServicesSection } from '@/components/services-section'
-import { FavoritesSection } from '@/components/favorites-section'
-import { Footer } from '@/components/footer'
+import { useState, useEffect, useCallback } from 'react'
+import dynamic from 'next/dynamic'
+import { Header, Footer, NavigationTabs, AssistantButton } from '@/shared/ui'
+
+// Динамическая загрузка секций для уменьшения начального bundle size
+const RoutesSection = dynamic(
+  () => import('@/modules/routes').then((mod) => ({ default: mod.RoutesSection })),
+  {
+    loading: () => <div className="text-center py-8 text-text-dark">Загрузка...</div>,
+  }
+)
+
+const HotelsSection = dynamic(
+  () => import('@/modules/hotels').then((mod) => ({ default: mod.HotelsSection })),
+  {
+    loading: () => <div className="text-center py-8 text-text-dark">Загрузка...</div>,
+  }
+)
+
+const TransportSection = dynamic(
+  () => import('@/modules/transport').then((mod) => ({ default: mod.TransportSection })),
+  {
+    loading: () => <div className="text-center py-8 text-text-dark">Загрузка...</div>,
+  }
+)
+
+const ServicesSection = dynamic(
+  () => import('@/modules/services').then((mod) => ({ default: mod.ServicesSection })),
+  {
+    loading: () => <div className="text-center py-8 text-text-dark">Загрузка...</div>,
+  }
+)
+
+const FavoritesSection = dynamic(
+  () => import('@/modules/favorites').then((mod) => ({ default: mod.FavoritesSection })),
+  {
+    loading: () => <div className="text-center py-8 text-text-dark">Загрузка...</div>,
+  }
+)
 
 type ActiveSection = 'routes' | 'hotels' | 'transport' | 'services' | 'favorites'
 
+/**
+ * Главная страница приложения
+ * 
+ * Отображает навигационные вкладки и контент выбранной секции:
+ * - Маршруты
+ * - Отели
+ * - Транспорт
+ * - Услуги
+ * - Избранное
+ * 
+ * Использует плавные переходы между секциями и обеспечивает SSR-безопасность
+ * 
+ * @returns JSX элемент главной страницы
+ */
 export default function Home() {
   const [mounted, setMounted] = useState(false)
   const [activeSection, setActiveSection] = useState<ActiveSection>('routes')
@@ -37,10 +80,10 @@ export default function Home() {
     }
   }, [activeSection, displaySection, mounted])
 
-  const handleSectionChange = (section: ActiveSection) => {
+  const handleSectionChange = useCallback((section: ActiveSection) => {
     if (section === activeSection) return
     setActiveSection(section)
-  }
+  }, [activeSection])
 
   const renderContent = () => {
     switch (displaySection) {
@@ -98,18 +141,13 @@ export default function Home() {
         </div>
 
         {/* Контент с плавной анимацией */}
-        <div className="relative min-h-[400px]">
+        <section aria-label={`Секция ${displaySection}`} className="relative min-h-[400px]">
           <div
-            className={isTransitioning ? 'fade-out' : 'fade-in'}
-            style={{
-              opacity: isTransitioning ? 0 : 1,
-              transition: 'opacity 0.4s ease-in-out',
-              pointerEvents: isTransitioning ? 'none' : 'auto',
-            }}
+            className={`${isTransitioning ? 'fade-out' : 'fade-in'} transition-opacity duration-400 ease-in-out ${isTransitioning ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'}`}
           >
             {renderContent()}
           </div>
-        </div>
+        </section>
       </main>
 
       {/* Анимированный мамонтёнок */}

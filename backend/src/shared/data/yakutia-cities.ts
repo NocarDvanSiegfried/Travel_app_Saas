@@ -37,3 +37,6 @@ export const YAKUTIA_CITIES_COORDINATES: Record<string, { latitude: number; long
 
 
 
+
+
+

@@ -209,6 +209,47 @@
     animation: fadeOut 0.4s ease-in-out;
   }
 
+  /* Утилитарные классы для замены inline styles */
+  .bg-header {
+    background-color: var(--color-header);
+  }
+
+  .bg-primary {
+    background-color: var(--color-primary);
+  }
+
+  .bg-primary-hover {
+    background-color: var(--color-primary-hover);
+  }
+
+  .bg-card {
+    background-color: var(--color-card-bg);
+  }
+
+  .bg-input {
+    background-color: var(--color-input-bg);
+  }
+
+  .text-dark {
+    color: var(--color-text-dark);
+  }
+
+  .text-light {
+    color: var(--color-text-light);
+  }
+
+  .border-card {
+    border-color: var(--color-card-border);
+  }
+
+  .border-input {
+    border-color: var(--color-input-border);
+  }
+
+  .border-primary {
+    border-color: var(--color-primary);
+  }
+
   /* Стили для select и input[type="number"] */
   select {
     background-color: var(--color-input-bg) !important;
