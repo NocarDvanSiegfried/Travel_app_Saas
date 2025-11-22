@@ -13,76 +13,79 @@ export function Footer() {
   }
 
   return (
-    <footer className="mt-auto border-t border-black/20 bg-header">
-      <div className="container mx-auto px-4 py-3 max-w-[1300px]">
-        <div className="flex items-center justify-between">
-          {/* Логотип слева - точно как в header */}
+    <footer className="mt-auto border-t border-header-border bg-header-bg shadow-sm">
+      <div className="container-main">
+        <div className="flex items-center justify-between py-2.5">
+          {/* Логотип слева */}
           <div className="flex items-center space-x-2">
-            <div className="w-10 h-10 bg-white/20 rounded-yakutia flex items-center justify-center border border-white/30">
-              <span className="text-white text-xl font-bold">Т</span>
+            <div className="w-7 h-7 bg-primary rounded-sm flex items-center justify-center" style={{ boxShadow: 'none' }}>
+              <span className="text-inverse text-sm font-medium">Т</span>
             </div>
-            <span className="text-white font-semibold text-lg hidden sm:block">
+            <span className="text-header-text font-medium text-xs hidden sm:block" style={{ letterSpacing: '-0.01em' }}>
               Travel App
             </span>
           </div>
 
           {/* Центр - ссылки */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2.5">
             <Link
               href="/about"
-              className="text-white text-sm hover:text-white/80 yakutia-transition"
+              className="text-secondary text-xs hover:text-primary transition-fast font-normal"
+              style={{ letterSpacing: '-0.01em' }}
             >
               О нас
             </Link>
-            <span className="text-white/40 text-sm">•</span>
+            <span className="text-tertiary text-xs opacity-40">•</span>
             <button
               type="button"
               onClick={handleSupportClick}
               aria-label="Открыть поддержку"
-              className="text-white text-sm hover:text-white/80 yakutia-transition"
+              className="text-secondary text-xs hover:text-primary transition-fast font-normal"
+              style={{ letterSpacing: '-0.01em' }}
             >
               Поддержка
             </button>
-            <span className="text-white/40 text-sm">•</span>
+            <span className="text-tertiary text-xs opacity-40">•</span>
             <Link
               href="/license"
-              className="text-white text-sm hover:text-white/80 yakutia-transition"
+              className="text-secondary text-xs hover:text-primary transition-fast font-normal"
+              style={{ letterSpacing: '-0.01em' }}
             >
               Документы
             </Link>
           </div>
 
-          {/* Справа - соц.значки и копирайт в одной линии */}
-          <div className="flex items-center space-x-3">
+          {/* Справа - соц.значки и копирайт */}
+          <div className="flex items-center space-x-2">
             <a
               href="https://vk.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="yakutia-transition hover:opacity-70 text-light"
+              className="transition-fast hover:opacity-60 text-tertiary"
               aria-label="VK"
             >
-              <VkIcon className="w-5 h-5" color="currentColor" />
+              <VkIcon className="w-3.5 h-3.5" color="currentColor" />
             </a>
             <a
               href="https://ok.ru"
               target="_blank"
               rel="noopener noreferrer"
-              className="yakutia-transition hover:opacity-70 text-light"
+              className="transition-fast hover:opacity-60 text-tertiary"
               aria-label="Одноклассники"
             >
-              <OkIcon className="w-5 h-5" color="currentColor" />
+              <OkIcon className="w-3.5 h-3.5" color="currentColor" />
             </a>
             <a
               href="https://t.me"
               target="_blank"
               rel="noopener noreferrer"
-              className="yakutia-transition hover:opacity-70 text-light"
+              className="transition-fast hover:opacity-60 text-tertiary"
               aria-label="Telegram"
             >
-              <TelegramIcon className="w-5 h-5" color="currentColor" />
+              <TelegramIcon className="w-3.5 h-3.5" color="currentColor" />
             </a>
-            <span className="text-white/60 text-sm">
-              © 2025 Travel App
+            <span className="text-tertiary text-xs opacity-60" style={{ letterSpacing: '-0.01em' }}>
+              © 2025
             </span>
           </div>
         </div>

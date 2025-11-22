@@ -43,25 +43,14 @@ export function HotelsSortDropdown({ sortOption, onSortChange }: HotelsSortDropd
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="px-4 py-2 rounded-yakutia yakutia-transition font-medium text-sm border flex items-center gap-2"
-        style={{
-          backgroundColor: 'var(--color-input-bg)',
-          color: 'var(--color-text-light)',
-          borderColor: 'var(--color-input-border)',
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.backgroundColor = 'var(--color-card-bg)'
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.backgroundColor = 'var(--color-input-bg)'
-        }}
+        className="input flex items-center gap-2"
       >
         <span>{sortLabels[sortOption]}</span>
         <span>{isOpen ? '▲' : '▼'}</span>
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 mt-2 yakutia-card p-2 min-w-[200px] z-50 fade-in">
+        <div className="absolute top-full left-0 mt-2 card p-2 min-w-[200px] z-50 fade-in">
           {(['price-desc', 'price-asc', 'rating'] as SortOption[]).map((option) => {
             const isActive = sortOption === option
             return (
@@ -69,21 +58,11 @@ export function HotelsSortDropdown({ sortOption, onSortChange }: HotelsSortDropd
                 key={option}
                 type="button"
                 onClick={() => handleSelect(option)}
-                className="w-full text-left px-4 py-2 rounded-yakutia yakutia-transition text-sm"
-                style={{
-                  backgroundColor: isActive ? 'var(--color-primary)' : 'transparent',
-                  color: isActive ? '#FFFFFF' : 'var(--color-text-dark)',
-                }}
-                onMouseEnter={(e) => {
-                  if (!isActive) {
-                    e.currentTarget.style.backgroundColor = 'var(--color-card-bg)'
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!isActive) {
-                    e.currentTarget.style.backgroundColor = 'transparent'
-                  }
-                }}
+                className={`w-full text-left px-4 py-2 rounded-sm transition-fast text-sm ${
+                  isActive 
+                    ? 'bg-primary text-inverse' 
+                    : 'text-primary hover:bg-surface-hover'
+                }`}
               >
                 {sortLabels[option]}
               </button>

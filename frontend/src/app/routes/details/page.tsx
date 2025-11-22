@@ -61,9 +61,9 @@ function RouteDetailsContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen yakutia-pattern relative flex flex-col">
+      <div className="min-h-screen bg-background relative flex flex-col">
         <Header />
-        <main className="container mx-auto px-4 py-6 md:py-8 relative z-10 max-w-[1300px] flex-1" aria-label="Детали маршрута">
+        <main className="container-main section-spacing-compact relative z-10 flex-1" aria-label="Детали маршрута">
           <RouteDetailsSkeleton />
         </main>
         <Footer />
@@ -73,9 +73,9 @@ function RouteDetailsContent() {
 
   if (error || !routeData) {
     return (
-      <div className="min-h-screen yakutia-pattern relative flex flex-col">
+      <div className="min-h-screen bg-background relative flex flex-col">
         <Header />
-        <main className="container mx-auto px-4 py-6 md:py-8 relative z-10 max-w-[1300px] flex-1" aria-label="Детали маршрута">
+        <main className="container-main section-spacing-compact relative z-10 flex-1" aria-label="Детали маршрута">
           <RouteDetailsError error={error || 'Маршрут не найден'} />
         </main>
         <Footer />
@@ -84,9 +84,9 @@ function RouteDetailsContent() {
   }
 
   return (
-    <div className="min-h-screen yakutia-pattern relative flex flex-col">
+    <div className="min-h-screen bg-background relative flex flex-col">
       <Header />
-      <main className="container mx-auto px-4 py-6 md:py-8 relative z-10 max-w-[1300px] flex-1">
+      <main className="container-main section-spacing-compact relative z-10 flex-1">
         <RouteDetailsView data={routeData} />
       </main>
       <Footer />
@@ -98,7 +98,7 @@ export default function RouteDetailsPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen yakutia-pattern relative flex flex-col">
+        <div className="min-h-screen bg-background relative flex flex-col">
           <Header />
           <main className="container mx-auto px-4 py-6 md:py-8 relative z-10 max-w-[1300px] flex-1" aria-label="Детали маршрута">
             <RouteDetailsSkeleton />

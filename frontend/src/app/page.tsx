@@ -8,35 +8,35 @@ import { Header, Footer, NavigationTabs, AssistantButton } from '@/shared/ui'
 const RoutesSection = dynamic(
   () => import('@/modules/routes').then((mod) => ({ default: mod.RoutesSection })),
   {
-    loading: () => <div className="text-center py-8 text-text-dark">Загрузка...</div>,
+    loading: () => <div className="text-center py-8 text-secondary">Загрузка...</div>,
   }
 )
 
 const HotelsSection = dynamic(
   () => import('@/modules/hotels').then((mod) => ({ default: mod.HotelsSection })),
   {
-    loading: () => <div className="text-center py-8 text-text-dark">Загрузка...</div>,
+    loading: () => <div className="text-center py-8 text-secondary">Загрузка...</div>,
   }
 )
 
 const TransportSection = dynamic(
   () => import('@/modules/transport').then((mod) => ({ default: mod.TransportSection })),
   {
-    loading: () => <div className="text-center py-8 text-text-dark">Загрузка...</div>,
+    loading: () => <div className="text-center py-8 text-secondary">Загрузка...</div>,
   }
 )
 
 const ServicesSection = dynamic(
   () => import('@/modules/services').then((mod) => ({ default: mod.ServicesSection })),
   {
-    loading: () => <div className="text-center py-8 text-text-dark">Загрузка...</div>,
+    loading: () => <div className="text-center py-8 text-secondary">Загрузка...</div>,
   }
 )
 
 const FavoritesSection = dynamic(
   () => import('@/modules/favorites').then((mod) => ({ default: mod.FavoritesSection })),
   {
-    loading: () => <div className="text-center py-8 text-text-dark">Загрузка...</div>,
+    loading: () => <div className="text-center py-8 text-secondary">Загрузка...</div>,
   }
 )
 
@@ -104,11 +104,11 @@ export default function Home() {
   // Показываем контент только после монтирования на клиенте
   if (!mounted) {
     return (
-      <div className="min-h-screen yakutia-pattern relative flex flex-col">
+      <div className="min-h-screen bg-background flex flex-col">
         <Header />
-        <main className="container mx-auto px-4 py-6 md:py-8 relative z-10 max-w-[1300px] flex-1">
-          <div className="text-center mb-4">
-            <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold mb-3 leading-tight text-balance" style={{ color: 'var(--color-text-dark)' }}>
+        <main className="container-main section-spacing-compact flex-1">
+          <div className="text-center mb-6">
+            <h1 className="text-2xl md:text-3xl lg:text-4xl font-medium mb-2 leading-tight text-balance" style={{ color: 'var(--color-text-heading)' }}>
               Путешествия, которые соединяют Якутию и Россию
             </h1>
           </div>
@@ -119,31 +119,31 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen yakutia-pattern relative flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col">
       <Header />
 
-      <main className="container mx-auto px-4 py-6 md:py-8 relative z-10 max-w-[1300px] flex-1">
+      <main className="container-main section-spacing-compact flex-1">
         {/* Центральный заголовок */}
-        <div className="text-center mb-4">
-          <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold mb-3 leading-tight text-balance" style={{ color: 'var(--color-text-dark)' }}>
+        <div className="text-center mb-6">
+          <h1 className="text-2xl md:text-3xl lg:text-4xl font-medium mb-2 leading-tight text-balance" style={{ color: 'var(--color-text-heading)' }}>
             Путешествия, которые соединяют Якутию и Россию
           </h1>
           {displaySection === 'routes' && (
-            <h2 className="text-2xl md:text-3xl font-semibold" style={{ color: 'var(--color-text-dark)' }}>
+            <h2 className="text-lg md:text-xl font-normal text-secondary">
               Ваш маршрут начинается здесь
             </h2>
           )}
         </div>
 
         {/* Навигационные табы */}
-        <div className="mb-5">
+        <div className="mb-6">
           <NavigationTabs onSectionChange={handleSectionChange} activeSection={activeSection} />
         </div>
 
         {/* Контент с плавной анимацией */}
         <section aria-label={`Секция ${displaySection}`} className="relative min-h-[400px]">
           <div
-            className={`${isTransitioning ? 'fade-out' : 'fade-in'} transition-opacity duration-400 ease-in-out ${isTransitioning ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'}`}
+            className={`${isTransitioning ? 'opacity-0' : 'animate-fade-in'} transition-opacity duration-base ${isTransitioning ? 'pointer-events-none' : 'pointer-events-auto'}`}
           >
             {renderContent()}
           </div>

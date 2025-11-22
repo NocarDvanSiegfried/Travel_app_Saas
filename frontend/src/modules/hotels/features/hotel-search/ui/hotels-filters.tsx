@@ -23,29 +23,18 @@ export function HotelsFilters({ filters, onFiltersChange, isOpen, onToggle }: Ho
         <button
           type="button"
           onClick={onToggle}
-          className="px-6 py-2 rounded-yakutia yakutia-transition font-medium text-sm border"
-          style={{
-            backgroundColor: isOpen ? 'var(--color-primary)' : 'var(--color-input-bg)',
-            color: isOpen ? '#FFFFFF' : 'var(--color-text-light)',
-            borderColor: isOpen ? 'var(--color-primary)' : 'var(--color-input-border)',
-          }}
-          onMouseEnter={(e) => {
-            if (!isOpen) {
-              e.currentTarget.style.backgroundColor = 'var(--color-card-bg)'
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (!isOpen) {
-              e.currentTarget.style.backgroundColor = 'var(--color-input-bg)'
-            }
-          }}
+          className={`px-6 py-2 rounded-sm transition-fast font-medium text-sm border ${
+            isOpen 
+              ? 'btn-primary border-primary' 
+              : 'bg-input-bg text-secondary border-divider hover:bg-surface-hover'
+          }`}
         >
           Фильтр {isOpen ? '▼' : '▶'}
         </button>
       </div>
 
       {isOpen && (
-        <div className="yakutia-card p-[18px] fade-in">
+        <div className="card p-5 fade-in">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {/* Ближе к центру */}
             <label className="flex items-center space-x-2 cursor-pointer">
@@ -58,7 +47,7 @@ export function HotelsFilters({ filters, onFiltersChange, isOpen, onToggle }: Ho
                   accentColor: 'var(--color-primary)',
                 }}
               />
-              <span className="text-sm" style={{ color: 'var(--color-text-dark)' }}>
+              <span className="text-sm text-primary">
                 Ближе к центру
               </span>
             </label>
@@ -74,7 +63,7 @@ export function HotelsFilters({ filters, onFiltersChange, isOpen, onToggle }: Ho
                   accentColor: 'var(--color-primary)',
                 }}
               />
-              <span className="text-sm" style={{ color: 'var(--color-text-dark)' }}>
+              <span className="text-sm text-primary">
                 С завтраком
               </span>
             </label>
@@ -90,7 +79,7 @@ export function HotelsFilters({ filters, onFiltersChange, isOpen, onToggle }: Ho
                   accentColor: 'var(--color-primary)',
                 }}
               />
-              <span className="text-sm" style={{ color: 'var(--color-text-dark)' }}>
+              <span className="text-sm text-primary">
                 Парковка
               </span>
             </label>
@@ -106,14 +95,14 @@ export function HotelsFilters({ filters, onFiltersChange, isOpen, onToggle }: Ho
                   accentColor: 'var(--color-primary)',
                 }}
               />
-              <span className="text-sm" style={{ color: 'var(--color-text-dark)' }}>
+              <span className="text-sm text-primary">
                 Высокий рейтинг (4.5+)
               </span>
             </label>
 
             {/* Цена от */}
             <div className="space-y-2">
-              <label htmlFor="price-min" className="block text-sm font-medium" style={{ color: 'var(--color-text-dark)' }}>
+              <label htmlFor="price-min" className="block text-xs font-normal text-secondary">
                 Цена от (₽)
               </label>
               <input
@@ -123,18 +112,13 @@ export function HotelsFilters({ filters, onFiltersChange, isOpen, onToggle }: Ho
                 onChange={(e) => handleFilterChange('priceMin', e.target.value ? parseInt(e.target.value) : undefined)}
                 placeholder="0"
                 min="0"
-                className="w-full px-4 py-2 rounded-yakutia focus:ring-2 focus:ring-white/20 outline-none yakutia-transition shadow-sm border"
-                style={{
-                  color: 'var(--color-text-light)',
-                  backgroundColor: 'var(--color-input-bg)',
-                  borderColor: 'var(--color-input-border)',
-                }}
+              className="input"
               />
             </div>
 
             {/* Цена до */}
             <div className="space-y-2">
-              <label htmlFor="price-max" className="block text-sm font-medium" style={{ color: 'var(--color-text-dark)' }}>
+              <label htmlFor="price-max" className="block text-xs font-normal text-secondary">
                 Цена до (₽)
               </label>
               <input
@@ -144,12 +128,7 @@ export function HotelsFilters({ filters, onFiltersChange, isOpen, onToggle }: Ho
                 onChange={(e) => handleFilterChange('priceMax', e.target.value ? parseInt(e.target.value) : undefined)}
                 placeholder="100000"
                 min="0"
-                className="w-full px-4 py-2 rounded-yakutia focus:ring-2 focus:ring-white/20 outline-none yakutia-transition shadow-sm border"
-                style={{
-                  color: 'var(--color-text-light)',
-                  backgroundColor: 'var(--color-input-bg)',
-                  borderColor: 'var(--color-input-border)',
-                }}
+              className="input"
               />
             </div>
           </div>

@@ -25,33 +25,22 @@ export function RentFilters({ filters, onFiltersChange, isOpen, onToggle }: Rent
         <button
           type="button"
           onClick={onToggle}
-          className="px-6 py-2 rounded-yakutia yakutia-transition font-medium text-sm border"
-          style={{
-            backgroundColor: isOpen ? 'var(--color-primary)' : 'var(--color-input-bg)',
-            color: isOpen ? '#FFFFFF' : 'var(--color-text-light)',
-            borderColor: isOpen ? 'var(--color-primary)' : 'var(--color-input-border)',
-          }}
-          onMouseEnter={(e) => {
-            if (!isOpen) {
-              e.currentTarget.style.backgroundColor = 'var(--color-card-bg)'
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (!isOpen) {
-              e.currentTarget.style.backgroundColor = 'var(--color-input-bg)'
-            }
-          }}
+          className={`px-6 py-2 rounded-sm transition-fast font-medium text-sm border ${
+            isOpen 
+              ? 'btn-primary border-primary' 
+              : 'bg-input-bg text-secondary border-divider hover:bg-surface-hover'
+          }`}
         >
           Фильтр {isOpen ? '▼' : '▶'}
         </button>
       </div>
 
       {isOpen && (
-        <div className="yakutia-card p-[18px] fade-in">
+        <div className="card p-5 fade-in">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {/* Возраст водителя */}
             <div className="space-y-2">
-              <label htmlFor="driver-age" className="block text-sm font-medium" style={{ color: 'var(--color-text-dark)' }}>
+              <label htmlFor="driver-age" className="block text-xs font-normal text-secondary">
                 Возраст водителя
               </label>
               <input
@@ -62,34 +51,24 @@ export function RentFilters({ filters, onFiltersChange, isOpen, onToggle }: Rent
                 placeholder="25"
                 min="18"
                 max="80"
-                className="w-full px-4 py-2 rounded-yakutia focus:ring-2 focus:ring-white/20 outline-none yakutia-transition shadow-sm border"
-                style={{
-                  color: 'var(--color-text-light)',
-                  backgroundColor: 'var(--color-input-bg)',
-                  borderColor: 'var(--color-input-border)',
-                }}
+              className="input"
               />
             </div>
 
             {/* Тип авто */}
             <div className="space-y-2">
-              <label htmlFor="car-type" className="block text-sm font-medium" style={{ color: 'var(--color-text-dark)' }}>
+              <label htmlFor="car-type" className="block text-xs font-normal text-secondary">
                 Тип авто
               </label>
               <select
                 id="car-type"
                 value={filters.carType || ''}
                 onChange={(e) => handleFilterChange('carType', e.target.value as CarType | undefined)}
-                className="w-full px-4 py-2 rounded-yakutia focus:ring-2 focus:ring-white/20 outline-none yakutia-transition shadow-sm border"
-                style={{
-                  color: 'var(--color-text-light)',
-                  backgroundColor: 'var(--color-input-bg)',
-                  borderColor: 'var(--color-input-border)',
-                }}
+              className="input"
               >
-                <option value="" style={{ color: 'var(--color-text-dark)' }}>Все типы</option>
+                <option value="">Все типы</option>
                 {carTypes.map((type) => (
-                  <option key={type} value={type} style={{ color: 'var(--color-text-dark)' }}>
+                  <option key={type} value={type}>
                     {type}
                   </option>
                 ))}
@@ -98,23 +77,18 @@ export function RentFilters({ filters, onFiltersChange, isOpen, onToggle }: Rent
 
             {/* Коробка передач */}
             <div className="space-y-2">
-              <label htmlFor="transmission" className="block text-sm font-medium" style={{ color: 'var(--color-text-dark)' }}>
+              <label htmlFor="transmission" className="block text-xs font-normal text-secondary">
                 Коробка передач
               </label>
               <select
                 id="transmission"
                 value={filters.transmission || ''}
                 onChange={(e) => handleFilterChange('transmission', e.target.value as 'Автомат' | 'Механика' | undefined)}
-                className="w-full px-4 py-2 rounded-yakutia focus:ring-2 focus:ring-white/20 outline-none yakutia-transition shadow-sm border"
-                style={{
-                  color: 'var(--color-text-light)',
-                  backgroundColor: 'var(--color-input-bg)',
-                  borderColor: 'var(--color-input-border)',
-                }}
+              className="input"
               >
-                <option value="" style={{ color: 'var(--color-text-dark)' }}>Любая</option>
-                <option value="Автомат" style={{ color: 'var(--color-text-dark)' }}>Автомат</option>
-                <option value="Механика" style={{ color: 'var(--color-text-dark)' }}>Механика</option>
+                <option value="">Любая</option>
+                <option value="Автомат">Автомат</option>
+                <option value="Механика">Механика</option>
               </select>
             </div>
 
@@ -129,14 +103,14 @@ export function RentFilters({ filters, onFiltersChange, isOpen, onToggle }: Rent
                   accentColor: 'var(--color-primary)',
                 }}
               />
-              <span className="text-sm" style={{ color: 'var(--color-text-dark)' }}>
+              <span className="text-sm text-primary">
                 Кондиционер
               </span>
             </label>
 
             {/* Цена от */}
             <div className="space-y-2">
-              <label htmlFor="price-min-rent" className="block text-sm font-medium" style={{ color: 'var(--color-text-dark)' }}>
+              <label htmlFor="price-min-rent" className="block text-xs font-normal text-secondary">
                 Цена от (₽)
               </label>
               <input
@@ -146,18 +120,13 @@ export function RentFilters({ filters, onFiltersChange, isOpen, onToggle }: Rent
                 onChange={(e) => handleFilterChange('priceMin', e.target.value ? parseInt(e.target.value) : undefined)}
                 placeholder="0"
                 min="0"
-                className="w-full px-4 py-2 rounded-yakutia focus:ring-2 focus:ring-white/20 outline-none yakutia-transition shadow-sm border"
-                style={{
-                  color: 'var(--color-text-light)',
-                  backgroundColor: 'var(--color-input-bg)',
-                  borderColor: 'var(--color-input-border)',
-                }}
+              className="input"
               />
             </div>
 
             {/* Цена до */}
             <div className="space-y-2">
-              <label htmlFor="price-max-rent" className="block text-sm font-medium" style={{ color: 'var(--color-text-dark)' }}>
+              <label htmlFor="price-max-rent" className="block text-xs font-normal text-secondary">
                 Цена до (₽)
               </label>
               <input
@@ -167,12 +136,7 @@ export function RentFilters({ filters, onFiltersChange, isOpen, onToggle }: Rent
                 onChange={(e) => handleFilterChange('priceMax', e.target.value ? parseInt(e.target.value) : undefined)}
                 placeholder="100000"
                 min="0"
-                className="w-full px-4 py-2 rounded-yakutia focus:ring-2 focus:ring-white/20 outline-none yakutia-transition shadow-sm border"
-                style={{
-                  color: 'var(--color-text-light)',
-                  backgroundColor: 'var(--color-input-bg)',
-                  borderColor: 'var(--color-input-border)',
-                }}
+              className="input"
               />
             </div>
           </div>

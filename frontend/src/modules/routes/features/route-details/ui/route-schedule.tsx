@@ -26,18 +26,18 @@ export function RouteSchedule({ schedule: _schedule, flights }: RouteSchedulePro
 
   if (!flights || flights.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-2xl font-bold mb-4" style={{ color: 'var(--color-text-dark)' }}>
+      <div className="card p-5">
+        <h2 className="text-xl font-medium mb-3" style={{ color: 'var(--color-text-heading)' }}>
           Расписание рейсов
         </h2>
-        <p className="text-gray-600">Нет доступных рейсов на выбранную дату</p>
+        <p className="text-secondary">Нет доступных рейсов на выбранную дату</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <h2 className="text-2xl font-bold mb-4" style={{ color: 'var(--color-text-dark)' }}>
+    <div className="card p-5">
+      <h2 className="text-xl font-medium mb-3" style={{ color: 'var(--color-text-heading)' }}>
         Расписание рейсов
       </h2>
       
@@ -45,23 +45,30 @@ export function RouteSchedule({ schedule: _schedule, flights }: RouteSchedulePro
         {flights.map((flight) => (
           <div
             key={flight.Ref_Key}
-            className="border rounded-lg p-4 hover:shadow-md transition-shadow"
+            className="border border-divider rounded-sm p-4 hover:shadow-sm transition-fast"
           >
             <div className="flex items-center justify-between">
               <div className="flex-1">
                 <div className="flex items-center gap-4 mb-2">
-                  <span className="font-bold text-lg" style={{ color: 'var(--color-text-dark)' }}>
+                  <span className="font-medium text-base text-primary">
                     {flight.НомерРейса || 'Без номера'}
                   </span>
                   {flight.Статус && (
                     <span
-                      className={`px-2 py-1 rounded text-xs ${
-                        flight.Статус === 'Отправлен'
-                          ? 'bg-green-100 text-green-800'
+                      className="px-2 py-1 rounded-sm text-xs"
+                      style={{
+                        backgroundColor: flight.Статус === 'Отправлен'
+                          ? 'var(--color-success)'
                           : flight.Статус === 'Задержан'
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : 'bg-gray-100 text-gray-800'
-                      }`}
+                          ? 'var(--color-warning)'
+                          : 'var(--color-background-subtle)',
+                        color: flight.Статус === 'Отправлен'
+                          ? 'var(--color-success)'
+                          : flight.Статус === 'Задержан'
+                          ? 'var(--color-warning)'
+                          : 'var(--color-text-secondary)',
+                        opacity: flight.Статус === 'Отправлен' || flight.Статус === 'Задержан' ? 0.15 : 1,
+                      }}
                     >
                       {flight.Статус}
                     </span>
@@ -70,22 +77,22 @@ export function RouteSchedule({ schedule: _schedule, flights }: RouteSchedulePro
                 
                 <div className="flex items-center gap-6 text-sm">
                   <div>
-                    <span className="text-gray-600">Отправление:</span>
-                    <span className="ml-2 font-semibold" style={{ color: 'var(--color-text-dark)' }}>
+                    <span className="text-secondary">Отправление:</span>
+                    <span className="ml-2 font-medium text-primary">
                       {formatTime(flight.ВремяОтправления)}
                     </span>
                   </div>
                   
                   <div>
-                    <span className="text-gray-600">Прибытие:</span>
-                    <span className="ml-2 font-semibold" style={{ color: 'var(--color-text-dark)' }}>
+                    <span className="text-secondary">Прибытие:</span>
+                    <span className="ml-2 font-medium text-primary">
                       {formatTime(flight.ВремяПрибытия)}
                     </span>
                   </div>
                   
                   <div>
-                    <span className="text-gray-600">Свободных мест:</span>
-                    <span className="ml-2 font-semibold" style={{ color: 'var(--color-text-dark)' }}>
+                    <span className="text-secondary">Свободных мест:</span>
+                    <span className="ml-2 font-medium text-primary">
                       {flight.availableSeats}
                     </span>
                   </div>

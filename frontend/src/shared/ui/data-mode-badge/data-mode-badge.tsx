@@ -65,7 +65,7 @@ export const DataModeBadge = memo(function DataModeBadge({ dataMode, dataQuality
 
   return (
     <div
-      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-yakutia text-sm font-medium shadow-sm ${className}`}
+      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-sm font-medium shadow-sm ${className}`}
       style={{
         backgroundColor: config.bgColor,
         color: config.textColor,

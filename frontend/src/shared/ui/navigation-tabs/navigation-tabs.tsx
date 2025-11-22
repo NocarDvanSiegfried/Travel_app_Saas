@@ -27,7 +27,7 @@ export function NavigationTabs({ onSectionChange, activeSection }: NavigationTab
   }
 
   return (
-    <nav className="yakutia-card p-[18px] w-full" aria-label="Основная навигация">
+    <nav className="card p-2 w-full" aria-label="Основная навигация">
       <div className="flex items-center justify-center overflow-x-auto w-full" role="tablist">
         {tabs.map((tab) => {
           const isActive = activeSection === tab.id
@@ -42,19 +42,18 @@ export function NavigationTabs({ onSectionChange, activeSection }: NavigationTab
               aria-controls={`${tab.id}-panel`}
               aria-label={tab.label}
               className={`
-                flex items-center space-x-3 px-6 py-3 border-b-2 yakutia-smooth cursor-pointer
+                flex items-center space-x-2 px-4 py-2 transition-fast cursor-pointer h-9
                 ${isActive
-                  ? 'border-[#13c1d8] text-[#0f2d33] font-semibold'
-                  : 'border-transparent text-[#e7fafd]/80 hover:text-[#e7fafd] hover:border-white/30'
+                  ? 'border-b-2 border-primary text-primary font-medium'
+                  : 'border-b border-transparent text-secondary hover:text-primary hover:border-divider'
                 }
               `}
-              style={{ pointerEvents: 'auto' }}
             >
               <Icon
-                className="w-5 h-5 yakutia-smooth"
-                color={isActive ? '#13c1d8' : '#e7fafd'}
+                className="w-4 h-4 transition-fast"
+                color={isActive ? 'var(--color-primary)' : 'var(--color-text-secondary)'}
               />
-              <span className="text-sm whitespace-nowrap">{tab.label}</span>
+              <span className="text-sm whitespace-nowrap font-normal">{tab.label}</span>
             </button>
           )
         })}

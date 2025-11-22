@@ -25,52 +25,52 @@ interface RouteSegmentsProps {
 export function RouteSegments({ segments }: RouteSegmentsProps) {
   if (!segments || segments.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-2xl font-bold mb-4" style={{ color: 'var(--color-text-dark)' }}>
+      <div className="card p-5">
+        <h2 className="text-xl font-medium mb-3" style={{ color: 'var(--color-text-heading)' }}>
           Сегменты маршрута
         </h2>
-        <p className="text-gray-600">Сегменты маршрута не найдены</p>
+        <p className="text-secondary">Сегменты маршрута не найдены</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <h2 className="text-2xl font-bold mb-4" style={{ color: 'var(--color-text-dark)' }}>
+    <div className="card p-5">
+      <h2 className="text-xl font-medium mb-3" style={{ color: 'var(--color-text-heading)' }}>
         Сегменты маршрута
       </h2>
       
-      <div className="space-y-4">
+      <div className="space-y-3">
         {segments.map((segment, index) => (
           <div
             key={index}
-            className="border-l-4 border-blue-500 pl-4 py-2"
+            className="border-l-4 border-primary pl-4 py-2"
           >
             <div className="flex items-start gap-4">
-              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold">
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-inverse flex items-center justify-center font-medium">
                 {segment.order + 1}
               </div>
               
               <div className="flex-1">
                 <div className="flex items-center justify-between mb-1">
-                  <div className="font-semibold" style={{ color: 'var(--color-text-dark)' }}>
+                  <div className="font-medium text-primary">
                     {segment.from?.Наименование || segment.from?.Код || 'Неизвестно'}
                   </div>
                   {segment.departureTime && (
-                    <div className="text-sm text-gray-600 font-mono">
+                    <div className="text-sm text-secondary font-mono">
                       {segment.departureTime}
                     </div>
                   )}
                 </div>
-                <div className="text-gray-600 text-sm mt-1">
+                <div className="text-secondary text-sm mt-1">
                   {segment.from?.Адрес}
                 </div>
                 
                 <div className="my-2 flex items-center gap-2">
-                  <div className="flex-1 h-px bg-gray-300"></div>
+                  <div className="flex-1 h-px" style={{ backgroundColor: 'var(--color-divider)' }}></div>
                   <div className="flex items-center gap-2">
                     {segment.transportType && (
-                      <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded" style={{ color: 'var(--color-text-dark)' }}>
+                      <span className="text-xs px-2 py-1 rounded-sm" style={{ backgroundColor: 'var(--color-primary-light)', color: 'var(--color-primary)' }}>
                         {segment.transportType === 'airplane' ? '✈️ Самолёт' :
                          segment.transportType === 'bus' ? '🚌 Автобус' :
                          segment.transportType === 'train' ? '🚂 Поезд' :
@@ -79,22 +79,22 @@ export function RouteSegments({ segments }: RouteSegmentsProps) {
                          '🚌 Транспорт'}
                       </span>
                     )}
-                    <span className="text-xs text-gray-500">↓</span>
+                    <span className="text-xs text-tertiary">↓</span>
                   </div>
-                  <div className="flex-1 h-px bg-gray-300"></div>
+                  <div className="flex-1 h-px" style={{ backgroundColor: 'var(--color-divider)' }}></div>
                 </div>
                 
                 <div className="flex items-center justify-between mb-1">
-                  <div className="font-semibold" style={{ color: 'var(--color-text-dark)' }}>
+                  <div className="font-medium text-primary">
                     {segment.to?.Наименование || segment.to?.Код || 'Неизвестно'}
                   </div>
                   {segment.arrivalTime && (
-                    <div className="text-sm text-gray-600 font-mono">
+                    <div className="text-sm text-secondary font-mono">
                       {segment.arrivalTime}
                     </div>
                   )}
                 </div>
-                <div className="text-gray-600 text-sm mt-1">
+                <div className="text-secondary text-sm mt-1">
                   {segment.to?.Адрес}
                   {segment.duration && (
                     <span className="ml-2 text-xs">

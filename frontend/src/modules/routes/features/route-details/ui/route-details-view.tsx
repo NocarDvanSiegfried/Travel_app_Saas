@@ -117,14 +117,14 @@ export function RouteDetailsView({ data }: RouteDetailsViewProps) {
 
   if (!primaryRoute) {
     return (
-      <div className="text-center py-12">
-        <p className="text-xl text-gray-600">Маршруты не найдены</p>
+      <div className="text-center py-10">
+        <p className="text-base text-secondary">Маршруты не найдены</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <RouteSummary
         from={data.from}
         to={data.to}

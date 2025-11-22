@@ -259,11 +259,10 @@ export function CityAutocomplete({
   }
 
   return (
-    <div className="space-y-2 relative z-10" ref={containerRef}>
+    <div className="space-y-1.5 relative z-10" ref={containerRef}>
       <label
         htmlFor={id}
-        className="block text-sm font-medium text-left"
-        style={{ color: 'var(--color-text-light)' }}
+        className="block text-xs font-normal text-left text-secondary"
       >
         {label}
       </label>
@@ -280,24 +279,12 @@ export function CityAutocomplete({
           onBlur={handleInputBlur}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          className="w-full px-4 py-3 rounded-yakutia focus:ring-2 focus:ring-white/20 outline-none yakutia-transition placeholder:text-white/60 shadow-sm border"
-          style={{
-            color: 'var(--color-text-light)',
-            backgroundColor: 'var(--color-input-bg)',
-            borderColor: 'var(--color-input-border)',
-          }}
+          className="input"
         />
         {isOpen && filteredCities.filter((city) => city && typeof city === 'string' && city.trim().length > 1).length > 0 && (
           <ul
             ref={listRef}
-            className="absolute z-[1000] w-full max-h-60 overflow-auto rounded-yakutia shadow-lg border"
-            style={{
-              backgroundColor: 'var(--color-card-bg)',
-              borderColor: 'var(--color-card-border)',
-              backdropFilter: 'blur(10px)',
-              top: 'calc(100% + 4px)',
-              marginTop: '0',
-            }}
+            className="absolute z-[1000] w-full max-h-60 overflow-auto rounded-sm shadow-sm border border-border bg-surface mt-1"
           >
             {filteredCities
               .filter((city) => city && typeof city === 'string' && city.trim().length > 1)
@@ -316,18 +303,11 @@ export function CityAutocomplete({
                       }
                     }}
                     tabIndex={0}
-                    className={`px-4 py-2 cursor-pointer yakutia-transition ${
+                    className={`px-4 py-3 cursor-pointer transition-fast ${
                       index === highlightedIndex
-                        ? 'opacity-90'
-                        : 'hover:opacity-80'
+                        ? 'bg-primary-light text-primary font-medium'
+                        : 'hover:bg-surface-hover text-primary'
                     }`}
-                    style={{
-                      backgroundColor:
-                        index === highlightedIndex
-                          ? 'var(--color-primary)'
-                          : 'transparent',
-                      color: 'var(--color-text-light)',
-                    }}
                     onMouseEnter={() => setHighlightedIndex(index)}
                   >
                     {trimmedCity}

@@ -46,7 +46,7 @@ export function TransportSection() {
   return (
     <section className="w-full">
       {/* Переключатель вкладок */}
-      <div className="yakutia-card p-[18px] mb-5">
+      <div className="card p-5 mb-4">
         <div className="flex flex-wrap items-center justify-center gap-2">
           {tabs.map((tab) => {
             const isActive = activeTab === tab.id
@@ -59,24 +59,11 @@ export function TransportSection() {
                   e.stopPropagation()
                   setActiveTab(tab.id)
                 }}
-                className="px-4 py-2 rounded-yakutia yakutia-transition font-medium text-sm border"
-                style={{
-                  backgroundColor: isActive ? 'var(--color-primary)' : 'var(--color-input-bg)',
-                  color: isActive ? '#FFFFFF' : 'var(--color-text-light)',
-                  borderColor: isActive ? 'var(--color-primary)' : 'var(--color-input-border)',
-                  pointerEvents: 'auto',
-                  cursor: 'pointer',
-                }}
-                onMouseEnter={(e) => {
-                  if (!isActive) {
-                    e.currentTarget.style.backgroundColor = 'var(--color-card-bg)'
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!isActive) {
-                    e.currentTarget.style.backgroundColor = 'var(--color-input-bg)'
-                  }
-                }}
+                className={`px-4 py-2 rounded-sm transition-fast font-medium text-sm border ${
+                  isActive 
+                    ? 'btn-primary border-primary' 
+                    : 'bg-input-bg text-secondary border-divider hover:bg-surface-hover'
+                }`}
               >
                 {tab.label}
               </button>

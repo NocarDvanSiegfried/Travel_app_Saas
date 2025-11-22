@@ -9,10 +9,10 @@ export function AssistantButton() {
   return (
     <button
       className={`
-        fixed bottom-6 right-6 w-[70px] h-[70px] rounded-full
+        fixed bottom-6 right-6 w-14 h-14 rounded-full
         flex items-center justify-center
-        yakutia-glow yakutia-transition z-50
-        shadow-lg
+        transition-fast z-50
+        shadow-sm hover:shadow-md
         ${isHovered ? 'scale-110' : 'scale-100'}
       `}
       style={{ backgroundColor: 'var(--color-primary)' }}
@@ -27,8 +27,8 @@ export function AssistantButton() {
       aria-label="Помощник мамонтёнок"
     >
       <MammothIcon 
-        className="w-10 h-10 yakutia-bounce" 
-        color="#FFFFFF"
+        className="w-8 h-8" 
+        color="var(--color-text-inverse)"
       />
     </button>
   )

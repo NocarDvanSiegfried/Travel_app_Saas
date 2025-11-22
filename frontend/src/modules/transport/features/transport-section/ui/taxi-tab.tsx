@@ -27,10 +27,10 @@ export function TaxiTab() {
   return (
     <div className="w-full">
       {/* Форма поиска */}
-      <div className="yakutia-card p-[18px] mb-5">
+      <div className="card p-5 mb-4">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-          <div className="space-y-2">
-            <label htmlFor="taxi-from" className="block text-sm font-medium" style={{ color: 'var(--color-text-light)' }}>
+          <div className="space-y-1.5">
+            <label htmlFor="taxi-from" className="block text-xs font-normal text-secondary">
               Откуда
             </label>
             <input
@@ -40,17 +40,12 @@ export function TaxiTab() {
               onChange={(e) => setFrom(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder="Адрес отправления"
-              className="w-full px-4 py-3 rounded-yakutia focus:ring-2 focus:ring-white/20 outline-none yakutia-transition placeholder:text-white/60 shadow-sm border"
-              style={{
-                color: 'var(--color-text-light)',
-                backgroundColor: 'var(--color-input-bg)',
-                borderColor: 'var(--color-input-border)',
-              }}
+              className="input"
             />
           </div>
 
-          <div className="space-y-2">
-            <label htmlFor="taxi-to" className="block text-sm font-medium" style={{ color: 'var(--color-text-light)' }}>
+          <div className="space-y-1.5">
+            <label htmlFor="taxi-to" className="block text-xs font-normal text-secondary">
               Куда
             </label>
             <input
@@ -60,17 +55,12 @@ export function TaxiTab() {
               onChange={(e) => setTo(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder="Адрес назначения"
-              className="w-full px-4 py-3 rounded-yakutia focus:ring-2 focus:ring-white/20 outline-none yakutia-transition placeholder:text-white/60 shadow-sm border"
-              style={{
-                color: 'var(--color-text-light)',
-                backgroundColor: 'var(--color-input-bg)',
-                borderColor: 'var(--color-input-border)',
-              }}
+              className="input"
             />
           </div>
 
-          <div className="space-y-2">
-            <label htmlFor="taxi-date" className="block text-sm font-medium" style={{ color: 'var(--color-text-light)' }}>
+          <div className="space-y-1.5">
+            <label htmlFor="taxi-date" className="block text-xs font-normal text-secondary">
               Дата поездки
             </label>
             <input
@@ -79,17 +69,12 @@ export function TaxiTab() {
               value={date || today}
               onChange={(e) => setDate(e.target.value)}
               min={today}
-              className="w-full px-4 py-3 rounded-yakutia focus:ring-2 focus:ring-white/20 outline-none yakutia-transition shadow-sm border [color-scheme:dark]"
-              style={{
-                color: 'var(--color-text-light)',
-                backgroundColor: 'var(--color-input-bg)',
-                borderColor: 'var(--color-input-border)',
-              }}
+              className="input"
             />
           </div>
 
-          <div className="space-y-2">
-            <label htmlFor="taxi-passengers" className="block text-sm font-medium" style={{ color: 'var(--color-text-light)' }}>
+          <div className="space-y-1.5">
+            <label htmlFor="taxi-passengers" className="block text-xs font-normal text-secondary">
               Пассажиры
             </label>
             <input
@@ -99,30 +84,18 @@ export function TaxiTab() {
               onChange={(e) => setPassengers(parseInt(e.target.value) || 1)}
               min="1"
               max="8"
-              className="w-full px-4 py-3 rounded-yakutia focus:ring-2 focus:ring-white/20 outline-none yakutia-transition shadow-sm border"
-              style={{
-                color: 'var(--color-text-light)',
-                backgroundColor: 'var(--color-input-bg)',
-                borderColor: 'var(--color-input-border)',
-              }}
+              className="input"
             />
           </div>
 
-          <div className="space-y-2">
-            <div className="block text-sm font-medium opacity-0" style={{ color: 'var(--color-text-light)' }}>
+          <div className="space-y-1.5">
+            <div className="block text-xs font-normal opacity-0 text-secondary">
               Поиск
             </div>
             <button
               type="button"
               onClick={handleSearch}
-              className="w-full px-6 py-3 rounded-yakutia yakutia-transition font-semibold text-white shadow-lg hover:shadow-xl hover:scale-[1.02]"
-              style={{ backgroundColor: 'var(--color-primary)' }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--color-primary-hover)'
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--color-primary)'
-              }}
+              className="btn-primary w-full"
             >
               Найти такси
             </button>
@@ -134,31 +107,24 @@ export function TaxiTab() {
       {isSearchActive && from.trim() && to.trim() && (
         <div className="space-y-4 fade-in">
           {taxiMock.map((taxi) => (
-            <div key={taxi.id} className="yakutia-card p-[18px]">
+            <div key={taxi.id} className="card p-5">
               <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <div className="flex-1">
                   <div className="flex items-center gap-4 mb-2">
-                    <span className="text-2xl font-bold" style={{ color: 'var(--color-primary)' }}>
+                    <span className="text-xl font-medium text-primary">
                       {taxi.price.toLocaleString('ru-RU')} ₽
                     </span>
-                    <span className="text-lg font-medium" style={{ color: 'var(--color-text-dark)' }}>
+                    <span className="text-base font-medium text-primary">
                       {taxi.carType}
                     </span>
-                    <span className="text-sm" style={{ color: 'var(--color-text-dark)' }}>
+                    <span className="text-sm text-secondary">
                       ~ {taxi.estimatedTime}
                     </span>
                   </div>
                 </div>
                 <button
                   type="button"
-                  className="px-6 py-2 rounded-yakutia yakutia-transition font-semibold text-white"
-                  style={{ backgroundColor: 'var(--color-primary)' }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = 'var(--color-primary-hover)'
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'var(--color-primary)'
-                  }}
+                  className="btn-primary"
                 >
                   Выбрать
                 </button>

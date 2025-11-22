@@ -2,10 +2,10 @@
 
 export function HotelCardSkeleton() {
   return (
-    <div className="yakutia-card p-[18px]">
+    <div className="card p-5">
       <div className="flex flex-col md:flex-row gap-4">
         {/* Skeleton фото */}
-        <div className="w-full md:w-64 h-48 md:h-40 rounded-yakutia overflow-hidden flex-shrink-0">
+        <div className="w-full md:w-64 h-48 md:h-40 rounded-sm overflow-hidden flex-shrink-0">
           <div
             className="w-full h-full animate-pulse"
             style={{

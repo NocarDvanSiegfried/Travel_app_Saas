@@ -144,7 +144,7 @@ export function SearchForm() {
   return (
     <form
       onSubmit={handleSubmit}
-      className="yakutia-card p-[18px] w-full relative"
+      className="card card-hover p-5 w-full relative"
     >
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-5">
         {/* Откуда */}
@@ -164,7 +164,7 @@ export function SearchForm() {
             }}
           />
           {errors.from && (
-            <p className="text-sm mt-1" style={{ color: '#ff6b6b' }}>
+            <p className="text-sm mt-1 text-error">
               {errors.from}
             </p>
           )}
@@ -187,7 +187,7 @@ export function SearchForm() {
             }}
           />
           {errors.to && (
-            <p className="text-sm mt-1" style={{ color: '#ff6b6b' }}>
+            <p className="text-sm mt-1 text-error">
               {errors.to}
             </p>
           )}
@@ -208,7 +208,7 @@ export function SearchForm() {
             }}
           />
           {errors.date && (
-            <p className="text-sm mt-1" style={{ color: '#ff6b6b' }}>
+            <p className="text-sm mt-1 text-error">
               {errors.date}
             </p>
           )}
@@ -228,8 +228,8 @@ export function SearchForm() {
         </div>
 
         {/* Пассажиры */}
-        <div className="space-y-2">
-          <label htmlFor="passengers" className="block text-sm font-medium text-left" style={{ color: 'var(--color-text-light)' }}>
+        <div className="space-y-1.5">
+          <label htmlFor="passengers" className="block text-xs font-normal text-left text-secondary">
             Пассажиры
           </label>
           <div className="relative">
@@ -243,12 +243,7 @@ export function SearchForm() {
               max="9"
               aria-label="Количество пассажиров"
               aria-describedby="passengers-description"
-              className="w-full px-4 py-3 pr-12 rounded-yakutia focus:ring-2 focus:ring-white/20 outline-none yakutia-transition shadow-sm border"
-              style={{ 
-                color: 'var(--color-text-light)', 
-                backgroundColor: 'var(--color-input-bg)', 
-                borderColor: 'var(--color-input-border)',
-              }}
+              className="input pr-12"
             />
             <div className="absolute right-2 top-1/2 -translate-y-1/2 flex flex-col gap-0.5">
               <button
@@ -262,8 +257,7 @@ export function SearchForm() {
                     return prev
                   })
                 }}
-                className="w-6 h-4 flex items-center justify-center rounded text-xs yakutia-transition hover:opacity-80"
-                style={{ color: 'var(--color-text-light)' }}
+                className="w-6 h-4 flex items-center justify-center rounded text-xs transition-fast hover:bg-surface-hover text-secondary"
                 aria-label="Увеличить количество пассажиров"
                 aria-controls="passengers"
               >
@@ -280,8 +274,7 @@ export function SearchForm() {
                     return prev
                   })
                 }}
-                className="w-6 h-4 flex items-center justify-center rounded text-xs yakutia-transition hover:opacity-80"
-                style={{ color: 'var(--color-text-light)' }}
+                className="w-6 h-4 flex items-center justify-center rounded text-xs transition-fast hover:bg-surface-hover text-secondary"
                 aria-label="Уменьшить количество пассажиров"
                 aria-controls="passengers"
               >
@@ -292,8 +285,8 @@ export function SearchForm() {
         </div>
 
         {/* Класс поездки */}
-        <div className="space-y-2 relative">
-          <label htmlFor="class" className="block text-sm font-medium text-left" style={{ color: 'var(--color-text-light)' }}>
+        <div className="space-y-1.5 relative">
+          <label htmlFor="class" className="block text-xs font-normal text-left text-secondary">
             Класс поездки
           </label>
           <TripClassSelect
@@ -308,30 +301,13 @@ export function SearchForm() {
       </div>
 
       {/* Кнопка поиска */}
-      <div className="flex justify-center md:justify-start relative z-20">
+      <div className="flex justify-center md:justify-start relative z-20 mt-2">
         <button
           type="submit"
           disabled={!isFormValid()}
           aria-label="Найти маршрут"
           aria-disabled={!isFormValid()}
-          className={`w-full md:w-auto px-12 py-4 text-lg font-bold text-white rounded-yakutia-lg shadow-lg yakutia-transition ${
-            isFormValid()
-              ? 'hover:shadow-xl hover:scale-[1.02] cursor-pointer'
-              : 'opacity-50 cursor-not-allowed'
-          }`}
-          style={{
-            backgroundColor: 'var(--color-primary)',
-          }}
-          onMouseEnter={(e) => {
-            if (isFormValid()) {
-              e.currentTarget.style.backgroundColor = 'var(--color-primary-hover)'
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (isFormValid()) {
-              e.currentTarget.style.backgroundColor = 'var(--color-primary)'
-            }
-          }}
+          className="btn-primary w-full md:w-auto px-8 py-2.5"
         >
           Найти маршрут
         </button>

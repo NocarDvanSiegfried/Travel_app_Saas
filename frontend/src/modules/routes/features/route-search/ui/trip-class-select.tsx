@@ -107,25 +107,18 @@ export function TripClassSelect({
         tabIndex={0}
         onClick={handleToggle}
         onKeyDown={handleKeyDown}
-        className="w-full px-4 py-3 rounded-yakutia focus:ring-2 focus:ring-white/20 outline-none yakutia-transition shadow-sm border cursor-pointer"
-        style={{
-          color: 'var(--color-text-light)',
-          backgroundColor: 'var(--color-input-bg)',
-          borderColor: 'var(--color-input-border)',
-        }}
+        className="input cursor-pointer flex items-center justify-between"
       >
-        <div className="flex items-center justify-between">
-          <span>{selectedClass.label}</span>
-          <span
-            className="yakutia-transition"
-            style={{
-              transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-              display: 'inline-block',
-            }}
-          >
-            ▼
-          </span>
-        </div>
+        <span className="text-primary">{selectedClass.label}</span>
+        <span
+          className="transition-fast text-secondary"
+          style={{
+            transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+            display: 'inline-block',
+          }}
+        >
+          ▼
+        </span>
       </div>
       <input type="hidden" id={id} name={name} value={value} />
       {isOpen && (
@@ -133,13 +126,7 @@ export function TripClassSelect({
           ref={listRef}
           id={`${id}-listbox`}
           role="listbox"
-          className="absolute z-[1000] w-full mt-1 max-h-60 overflow-auto rounded-yakutia shadow-lg border"
-          style={{
-            backgroundColor: 'var(--color-card-bg)',
-            borderColor: 'var(--color-card-border)',
-            backdropFilter: 'blur(10px)',
-            top: 'calc(100% + 4px)',
-          }}
+          className="absolute z-[1000] w-full mt-1 max-h-60 overflow-auto rounded-sm shadow-sm border border-border bg-surface"
         >
           {TRIP_CLASSES.map((cls, index) => (
             <li
@@ -154,18 +141,11 @@ export function TripClassSelect({
                 }
               }}
               tabIndex={0}
-              className={`px-4 py-2 cursor-pointer yakutia-transition ${
+              className={`px-4 py-3 cursor-pointer transition-fast ${
                 index === highlightedIndex || cls.value === value
-                  ? 'opacity-90'
-                  : 'hover:opacity-80'
+                  ? 'bg-primary-light text-primary font-medium'
+                  : 'hover:bg-surface-hover text-primary'
               }`}
-              style={{
-                backgroundColor:
-                  index === highlightedIndex || cls.value === value
-                    ? 'var(--color-primary)'
-                    : 'transparent',
-                color: 'var(--color-text-light)',
-              }}
               onMouseEnter={() => setHighlightedIndex(index)}
             >
               {cls.label}

@@ -24,44 +24,44 @@ interface RouteSummaryProps {
 export const RouteSummary = memo(function RouteSummary({ from, to, date, route }: RouteSummaryProps) {
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <h1 className="text-3xl font-bold mb-4" style={{ color: 'var(--color-text-dark)' }}>
+    <div className="card p-5">
+      <h1 className="text-2xl font-medium mb-2" style={{ color: 'var(--color-text-heading)' }}>
         Маршрут: {from.Наименование || from.Код} → {to.Наименование || to.Код}
       </h1>
       
       <div className="space-y-2">
         <div className="flex items-center gap-2">
-          <span className="font-semibold" style={{ color: 'var(--color-text-dark)' }}>Дата:</span>
-          <span style={{ color: 'var(--color-text-dark)' }}>{formatDate(date, { full: true })}</span>
+          <span className="font-medium text-primary">Дата:</span>
+          <span className="text-primary">{formatDate(date, { full: true })}</span>
         </div>
         
         {route.Наименование && (
           <div className="flex items-center gap-2">
-            <span className="font-semibold" style={{ color: 'var(--color-text-dark)' }}>Маршрут:</span>
-            <span style={{ color: 'var(--color-text-dark)' }}>{route.Наименование}</span>
+            <span className="font-medium text-primary">Маршрут:</span>
+            <span className="text-primary">{route.Наименование}</span>
           </div>
         )}
 
         {route.Description && (
-          <div className="text-gray-600 mt-2">
+          <div className="text-secondary mt-2">
             {route.Description}
           </div>
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-          <div className="border-l-4 border-blue-500 pl-4">
-            <div className="font-semibold" style={{ color: 'var(--color-text-dark)' }}>Отправление</div>
-            <div style={{ color: 'var(--color-text-dark)' }}>{from.Наименование || from.Код}</div>
+          <div className="border-l-4 border-primary pl-4">
+            <div className="font-medium text-primary">Отправление</div>
+            <div className="text-primary">{from.Наименование || from.Код}</div>
             {from.Адрес && (
-              <div className="text-sm text-gray-600">{from.Адрес}</div>
+              <div className="text-sm text-secondary">{from.Адрес}</div>
             )}
           </div>
           
-          <div className="border-l-4 border-green-500 pl-4">
-            <div className="font-semibold" style={{ color: 'var(--color-text-dark)' }}>Прибытие</div>
-            <div style={{ color: 'var(--color-text-dark)' }}>{to.Наименование || to.Код}</div>
+          <div className="border-l-4 border-accent pl-4">
+            <div className="font-medium text-primary">Прибытие</div>
+            <div className="text-primary">{to.Наименование || to.Код}</div>
             {to.Адрес && (
-              <div className="text-sm text-gray-600">{to.Адрес}</div>
+              <div className="text-sm text-secondary">{to.Адрес}</div>
             )}
           </div>
         </div>

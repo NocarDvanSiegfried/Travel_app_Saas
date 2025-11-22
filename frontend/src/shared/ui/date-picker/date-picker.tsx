@@ -39,11 +39,10 @@ export function DatePicker({
   const today = new Date().toISOString().split('T')[0]
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-1.5">
       <label
         htmlFor={id}
-        className="block text-sm font-medium text-left"
-        style={{ color: 'var(--color-text-light)' }}
+        className="block text-xs font-normal text-left text-secondary"
       >
         {label}
       </label>
@@ -58,12 +57,7 @@ export function DatePicker({
           onClick={handleInputClick}
           onKeyDown={handleKeyDown}
           min={today}
-          className="w-full px-4 py-3 rounded-yakutia focus:ring-2 focus:ring-white/20 outline-none yakutia-transition shadow-sm border [color-scheme:dark]"
-          style={{
-            color: 'var(--color-text-light)',
-            backgroundColor: 'var(--color-input-bg)',
-            borderColor: 'var(--color-input-border)',
-          }}
+          className="input"
         />
       </div>
     </div>

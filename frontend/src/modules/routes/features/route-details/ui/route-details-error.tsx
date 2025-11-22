@@ -33,15 +33,15 @@ export function RouteDetailsError({ error }: RouteDetailsErrorProps) {
   const { title, message } = getErrorMessage(error);
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-8 text-center">
-      <div className="text-6xl mb-4">⚠️</div>
-      <h2 className="text-2xl font-bold mb-4" style={{ color: 'var(--color-text-dark)' }}>
+    <div className="card p-6 text-center">
+      <div className="text-4xl mb-4">⚠️</div>
+      <h2 className="text-xl font-medium mb-3" style={{ color: 'var(--color-text-heading)' }}>
         {title}
       </h2>
-      <p className="text-gray-600 mb-6">{message}</p>
+      <p className="text-secondary mb-6">{message}</p>
       <button
         onClick={() => window.history.back()}
-        className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+        className="btn-primary"
       >
         Вернуться назад
       </button>

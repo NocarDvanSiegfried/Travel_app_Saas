@@ -94,20 +94,20 @@ function RoutesContent() {
   }, [])
 
   return (
-    <div className="min-h-screen yakutia-pattern relative flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col">
       <Header />
 
-      <main className="container mx-auto px-4 py-6 md:py-8 relative z-10 max-w-[1300px] flex-1" aria-label="Результаты поиска маршрутов">
+      <main className="container-main section-spacing-compact flex-1" aria-label="Результаты поиска маршрутов">
         {/* Заголовок */}
-        <div className="text-center mb-6">
-          <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold mb-3 leading-tight text-balance text-dark">
+        <div className="text-center mb-5">
+          <h1 className="text-2xl md:text-3xl lg:text-4xl font-medium mb-2 leading-tight text-balance" style={{ color: 'var(--color-text-heading)' }}>
             Результаты поиска маршрутов
           </h1>
           {from && to && (
-            <div className="text-lg md:text-xl text-dark">
-              <span className="font-semibold">{from}</span>
+            <div className="text-base md:text-lg text-secondary">
+              <span className="font-medium">{from}</span>
               <span className="mx-2">→</span>
-              <span className="font-semibold">{to}</span>
+              <span className="font-medium">{to}</span>
               {date && (
                 <>
                   <span className="mx-2">•</span>
@@ -126,16 +126,16 @@ function RoutesContent() {
 
         {/* Индикатор загрузки */}
         {isLoading && (
-          <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-            <p className="mt-4 text-lg text-dark">Поиск маршрутов...</p>
+          <div className="text-center py-10">
+            <div className="inline-block animate-spin rounded-full h-10 w-10 border border-primary border-t-transparent"></div>
+            <p className="mt-3 text-base text-secondary">Поиск маршрутов...</p>
           </div>
         )}
 
         {/* Ошибка (только для критичных ошибок, не для ROUTES_NOT_FOUND) */}
         {errorMessage && !isLoading && errorCode !== 'ROUTES_NOT_FOUND' && (
-          <div className="yakutia-card p-6 text-center">
-            <p className="text-lg text-dark">{errorMessage}</p>
+          <div className="card p-5 text-center">
+            <p className="text-base text-primary">{errorMessage}</p>
           </div>
         )}
 
@@ -151,8 +151,8 @@ function RoutesContent() {
 
             {/* Основные маршруты */}
             {routes && routes.length > 0 ? (
-              <div className="space-y-4 mb-8">
-                <h2 className="text-2xl font-semibold mb-4 text-dark">
+              <div className="space-y-3 mb-6">
+                <h2 className="text-xl font-medium mb-3" style={{ color: 'var(--color-text-heading)' }}>
                   Найденные маршруты
                 </h2>
                 {routes.map((route) => {
@@ -162,21 +162,21 @@ function RoutesContent() {
                   }
                   
                   return (
-                    <div key={route.routeId} className="yakutia-card p-[18px] yakutia-transition">
+                    <div key={route.routeId} className="card card-hover p-5 transition-fast">
                       <div className="flex flex-col gap-4">
                         {/* Заголовок маршрута */}
                         <div className="flex items-center justify-between">
                           <div>
                             <div className="flex items-center gap-2 mb-2">
-                              <span className="text-xl font-bold text-dark">
+                              <span className="text-lg font-medium text-primary">
                                 {route.fromCity}
                               </span>
                               <span className="text-lg text-primary">→</span>
-                              <span className="text-xl font-bold text-dark">
+                              <span className="text-lg font-medium text-primary">
                                 {route.toCity}
                               </span>
                             </div>
-                            <div className="text-sm text-dark">
+                            <div className="text-sm text-secondary">
                               {route.departureTime && formatTime(route.departureTime)} - {route.arrivalTime && formatTime(route.arrivalTime)}
                               {route.transferCount !== undefined && route.transferCount > 0 && (
                                 <span className="ml-2">
@@ -188,7 +188,7 @@ function RoutesContent() {
                           <div className="text-right">
                             <div className="flex items-center justify-end gap-3 mb-2">
                               {route.totalPrice !== undefined && (
-                                <div className="text-2xl font-bold text-primary">
+                                <div className="text-xl font-medium text-primary">
                                   {formatPrice(route.totalPrice)}
                                 </div>
                               )}
@@ -197,7 +197,7 @@ function RoutesContent() {
                               )}
                             </div>
                             {route.totalDuration !== undefined && (
-                              <div className="text-sm text-dark">
+                              <div className="text-sm text-secondary">
                                 {formatDuration(route.totalDuration)}
                               </div>
                             )}
@@ -206,7 +206,7 @@ function RoutesContent() {
 
                         {/* Сегменты маршрута */}
                         {route.segments && Array.isArray(route.segments) && route.segments.length > 0 && (
-                          <div className="border-t pt-4 border-card">
+                          <div className="border-t pt-4 border-border">
                             <div className="space-y-3">
                               {route.segments.map((segment, index) => {
                                 // Безопасная проверка наличия segment
@@ -221,22 +221,22 @@ function RoutesContent() {
                                 
                                 return (
                                   <div key={index} className="flex items-center gap-3">
-                                    <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold bg-primary text-white">
+                                    <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium bg-primary text-inverse">
                                       {index + 1}
                                     </div>
                                     <div className="flex-1">
                                       <div className="flex items-center gap-2 mb-1">
-                                        <span className="text-sm font-medium text-dark">
+                                        <span className="text-sm font-medium text-primary">
                                           {getTransportTypeLabel(String(transportType))}
                                         </span>
                                         {segment.departureTime && segment.arrivalTime && (
-                                          <span className="text-xs text-dark">
+                                          <span className="text-xs text-secondary">
                                             {formatTime(segment.departureTime)} - {formatTime(segment.arrivalTime)}
                                           </span>
                                         )}
                                       </div>
                                       {(segmentDuration > 0 || segmentPrice > 0) && (
-                                        <div className="text-xs text-dark">
+                                        <div className="text-xs text-secondary">
                                           {segmentDuration > 0 && formatDuration(segmentDuration)}
                                           {segmentDuration > 0 && segmentPrice > 0 && ' • '}
                                           {segmentPrice > 0 && formatPrice(segmentPrice)}
@@ -255,7 +255,7 @@ function RoutesContent() {
                           <button
                             onClick={() => handleSelectRoute(route)}
                             aria-label={`Выбрать маршрут из ${route.fromCity} в ${route.toCity}`}
-                            className="px-6 py-2 rounded-yakutia yakutia-transition font-semibold bg-primary hover:bg-primary-hover text-white"
+                            className="px-6 py-2 rounded-sm transition-fast font-medium btn-primary"
                           >
                             Выбрать маршрут
                           </button>
@@ -266,14 +266,14 @@ function RoutesContent() {
                 })}
               </div>
             ) : (
-              <div className="yakutia-card p-12 text-center">
-                <p className="text-xl font-semibold mb-2 text-dark">
+              <div className="card p-8 text-center">
+                <p className="text-lg font-medium mb-2" style={{ color: 'var(--color-text-heading)' }}>
                   {errorCode === 'ROUTES_NOT_FOUND' 
                     ? `Маршрутов между ${from} и ${to}${date ? ` на ${formatDate(date)}` : ''} не найдено`
                     : 'Маршруты не найдены'
                   }
                 </p>
-                <p className="text-base text-dark">
+                <p className="text-sm text-secondary">
                   Попробуйте изменить параметры поиска или выберите другую дату
                 </p>
               </div>
@@ -281,8 +281,8 @@ function RoutesContent() {
 
             {/* Альтернативные маршруты */}
             {alternatives && Array.isArray(alternatives) && alternatives.length > 0 && (
-              <div className="space-y-4 mt-8">
-                <h2 className="text-2xl font-semibold mb-4 text-dark">
+              <div className="space-y-3 mt-6">
+                <h2 className="text-xl font-medium mb-3" style={{ color: 'var(--color-text-heading)' }}>
                   Альтернативные маршруты
                 </h2>
                 {alternatives.map((route) => {
@@ -292,21 +292,21 @@ function RoutesContent() {
                   }
                   
                   return (
-                    <div key={route.routeId} className="yakutia-card p-[18px] yakutia-transition">
+                    <div key={route.routeId} className="card card-hover p-5 transition-fast">
                       <div className="flex flex-col gap-4">
                         {/* Заголовок маршрута */}
                         <div className="flex items-center justify-between">
                           <div>
                             <div className="flex items-center gap-2 mb-2">
-                              <span className="text-xl font-bold text-dark">
+                              <span className="text-lg font-medium text-primary">
                                 {route.fromCity}
                               </span>
                               <span className="text-lg text-primary">→</span>
-                              <span className="text-xl font-bold text-dark">
+                              <span className="text-lg font-medium text-primary">
                                 {route.toCity}
                               </span>
                             </div>
-                            <div className="text-sm text-dark">
+                            <div className="text-sm text-secondary">
                               {route.departureTime && formatTime(route.departureTime)} - {route.arrivalTime && formatTime(route.arrivalTime)}
                               {route.transferCount !== undefined && route.transferCount > 0 && (
                                 <span className="ml-2">
@@ -318,7 +318,7 @@ function RoutesContent() {
                           <div className="text-right">
                             <div className="flex items-center justify-end gap-3 mb-2">
                               {route.totalPrice !== undefined && (
-                                <div className="text-2xl font-bold text-primary">
+                                <div className="text-xl font-medium text-primary">
                                   {formatPrice(route.totalPrice)}
                                 </div>
                               )}
@@ -327,7 +327,7 @@ function RoutesContent() {
                               )}
                             </div>
                             {route.totalDuration !== undefined && (
-                              <div className="text-sm text-dark">
+                              <div className="text-sm text-secondary">
                                 {formatDuration(route.totalDuration)}
                               </div>
                             )}
@@ -336,7 +336,7 @@ function RoutesContent() {
 
                         {/* Сегменты маршрута */}
                         {route.segments && Array.isArray(route.segments) && route.segments.length > 0 && (
-                          <div className="border-t pt-4 border-card">
+                          <div className="border-t pt-4 border-border">
                             <div className="space-y-3">
                               {route.segments.map((segment, index) => {
                                 // Безопасная проверка наличия segment
@@ -351,22 +351,22 @@ function RoutesContent() {
                                 
                                 return (
                                   <div key={index} className="flex items-center gap-3">
-                                    <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold bg-primary text-white">
+                                    <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium bg-primary text-inverse">
                                       {index + 1}
                                     </div>
                                     <div className="flex-1">
                                       <div className="flex items-center gap-2 mb-1">
-                                        <span className="text-sm font-medium text-dark">
+                                        <span className="text-sm font-medium text-primary">
                                           {getTransportTypeLabel(String(transportType))}
                                         </span>
                                         {segment.departureTime && segment.arrivalTime && (
-                                          <span className="text-xs text-dark">
+                                          <span className="text-xs text-secondary">
                                             {formatTime(segment.departureTime)} - {formatTime(segment.arrivalTime)}
                                           </span>
                                         )}
                                       </div>
                                       {(segmentDuration > 0 || segmentPrice > 0) && (
-                                        <div className="text-xs text-dark">
+                                        <div className="text-xs text-secondary">
                                           {segmentDuration > 0 && formatDuration(segmentDuration)}
                                           {segmentDuration > 0 && segmentPrice > 0 && ' • '}
                                           {segmentPrice > 0 && formatPrice(segmentPrice)}
@@ -385,7 +385,7 @@ function RoutesContent() {
                           <button
                             onClick={() => handleSelectRoute(route)}
                             aria-label={`Выбрать маршрут из ${route.fromCity} в ${route.toCity}`}
-                            className="px-6 py-2 rounded-yakutia yakutia-transition font-semibold bg-primary hover:bg-primary-hover text-white"
+                            className="px-6 py-2 rounded-sm transition-fast font-medium btn-primary"
                           >
                             Выбрать маршрут
                           </button>
@@ -408,12 +408,12 @@ function RoutesContent() {
 export default function RoutesPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen yakutia-pattern relative flex flex-col">
+      <div className="min-h-screen bg-background flex flex-col">
         <Header />
-        <main className="container mx-auto px-4 py-6 md:py-8 relative z-10 max-w-[1300px] flex-1">
-          <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-            <p className="mt-4 text-lg text-dark">Загрузка...</p>
+        <main className="container-main section-spacing-compact flex-1">
+          <div className="text-center py-10">
+            <div className="inline-block animate-spin rounded-full h-10 w-10 border border-primary border-t-transparent"></div>
+            <p className="mt-3 text-base text-secondary">Загрузка...</p>
           </div>
         </main>
         <Footer />

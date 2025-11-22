@@ -23,11 +23,11 @@ interface RouteAlternativesProps {
 export function RouteAlternatives({ routes }: RouteAlternativesProps) {
   if (!routes || routes.length <= 1) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-2xl font-bold mb-4" style={{ color: 'var(--color-text-dark)' }}>
+      <div className="card p-5">
+        <h2 className="text-xl font-medium mb-3" style={{ color: 'var(--color-text-heading)' }}>
           Альтернативные варианты
         </h2>
-        <p className="text-gray-600">Альтернативные маршруты не найдены</p>
+        <p className="text-secondary">Альтернативные маршруты не найдены</p>
       </div>
     );
   }
@@ -84,22 +84,22 @@ export function RouteAlternatives({ routes }: RouteAlternativesProps) {
     .sort((a, b) => a.price - b.price)[0];
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <h2 className="text-2xl font-bold mb-4" style={{ color: 'var(--color-text-dark)' }}>
+    <div className="card p-5">
+      <h2 className="text-xl font-medium mb-3" style={{ color: 'var(--color-text-heading)' }}>
         Альтернативные варианты
       </h2>
       
-      <div className="space-y-4">
+      <div className="space-y-3">
         {fastest && (
-          <div className="border-l-4 border-blue-500 pl-4 py-2 bg-blue-50 rounded">
-            <div className="font-semibold text-blue-800 mb-1">
+          <div className="border-l-4 border-primary pl-4 py-2 rounded-sm" style={{ backgroundColor: 'var(--color-primary-light)' }}>
+            <div className="font-medium mb-1" style={{ color: 'var(--color-primary)' }}>
               ⚡ Быстрее
             </div>
-            <div className="text-sm" style={{ color: 'var(--color-text-dark)' }}>
+            <div className="text-sm text-primary">
               {fastest.route.route.Наименование || fastest.route.route.Код}
             </div>
             {fastest.duration && (
-              <div className="text-sm text-gray-600">
+              <div className="text-sm text-secondary">
                 Время в пути: {fastest.duration.hours}ч {fastest.duration.minutes}м
               </div>
             )}
@@ -107,15 +107,15 @@ export function RouteAlternatives({ routes }: RouteAlternativesProps) {
         )}
 
         {cheapest && (
-          <div className="border-l-4 border-green-500 pl-4 py-2 bg-green-50 rounded">
-            <div className="font-semibold text-green-800 mb-1">
+          <div className="border-l-4 border-accent pl-4 py-2 rounded-sm" style={{ backgroundColor: 'var(--color-accent)', opacity: 0.1 }}>
+            <div className="font-medium mb-1" style={{ color: 'var(--color-accent)' }}>
               💰 Дешевле
             </div>
-            <div className="text-sm" style={{ color: 'var(--color-text-dark)' }}>
+            <div className="text-sm text-primary">
               {cheapest.route.route.Наименование || cheapest.route.route.Код}
             </div>
             {cheapest.price !== Infinity && (
-              <div className="text-sm text-gray-600">
+              <div className="text-sm text-secondary">
                 Цена: от {formatPrice(cheapest.price)}
               </div>
             )}
@@ -123,7 +123,7 @@ export function RouteAlternatives({ routes }: RouteAlternativesProps) {
         )}
 
         {alternatives.length > 2 && (
-          <div className="text-sm text-gray-600 mt-4">
+          <div className="text-sm text-secondary mt-4">
             Всего альтернативных маршрутов: {alternatives.length}
           </div>
         )}

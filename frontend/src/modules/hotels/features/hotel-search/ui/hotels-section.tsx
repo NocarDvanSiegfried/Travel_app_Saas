@@ -155,8 +155,8 @@ export function HotelsSection() {
         >
           {showNoResults ? (
             // Сообщение "не найдено"
-            <div className="yakutia-card p-[18px] text-center fade-in">
-              <p className="text-lg" style={{ color: 'var(--color-text-dark)' }}>
+            <div className="card p-5 text-center fade-in">
+              <p className="text-base text-secondary">
                 Гостиницы не найдены
               </p>
             </div>

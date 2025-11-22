@@ -85,10 +85,10 @@ export function RentTab() {
   return (
     <div className="w-full">
       {/* Форма поиска */}
-      <div className="yakutia-card p-[18px] mb-5">
+      <div className="card p-5 mb-4">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-          <div className="space-y-2">
-            <label htmlFor="rent-city" className="block text-sm font-medium" style={{ color: 'var(--color-text-light)' }}>
+          <div className="space-y-1.5">
+            <label htmlFor="rent-city" className="block text-xs font-normal text-secondary">
               Город
             </label>
             <input
@@ -98,17 +98,12 @@ export function RentTab() {
               onChange={(e) => setCity(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder="Город аренды"
-              className="w-full px-4 py-3 rounded-yakutia focus:ring-2 focus:ring-white/20 outline-none yakutia-transition placeholder:text-white/60 shadow-sm border"
-              style={{
-                color: 'var(--color-text-light)',
-                backgroundColor: 'var(--color-input-bg)',
-                borderColor: 'var(--color-input-border)',
-              }}
+              className="input"
             />
           </div>
 
-          <div className="space-y-2">
-            <label htmlFor="rent-start" className="block text-sm font-medium" style={{ color: 'var(--color-text-light)' }}>
+          <div className="space-y-1.5">
+            <label htmlFor="rent-start" className="block text-xs font-normal text-secondary">
               Дата начала
             </label>
             <input
@@ -117,17 +112,12 @@ export function RentTab() {
               value={startDate || today}
               onChange={(e) => setStartDate(e.target.value)}
               min={today}
-              className="w-full px-4 py-3 rounded-yakutia focus:ring-2 focus:ring-white/20 outline-none yakutia-transition shadow-sm border [color-scheme:dark]"
-              style={{
-                color: 'var(--color-text-light)',
-                backgroundColor: 'var(--color-input-bg)',
-                borderColor: 'var(--color-input-border)',
-              }}
+              className="input"
             />
           </div>
 
-          <div className="space-y-2">
-            <label htmlFor="rent-end" className="block text-sm font-medium" style={{ color: 'var(--color-text-light)' }}>
+          <div className="space-y-1.5">
+            <label htmlFor="rent-end" className="block text-xs font-normal text-secondary">
               Дата окончания
             </label>
             <input
@@ -136,54 +126,37 @@ export function RentTab() {
               value={endDate || tomorrow}
               onChange={(e) => setEndDate(e.target.value)}
               min={startDate || tomorrow}
-              className="w-full px-4 py-3 rounded-yakutia focus:ring-2 focus:ring-white/20 outline-none yakutia-transition shadow-sm border [color-scheme:dark]"
-              style={{
-                color: 'var(--color-text-light)',
-                backgroundColor: 'var(--color-input-bg)',
-                borderColor: 'var(--color-input-border)',
-              }}
+              className="input"
             />
           </div>
 
-          <div className="space-y-2">
-            <label htmlFor="rent-car-type" className="block text-sm font-medium" style={{ color: 'var(--color-text-light)' }}>
+          <div className="space-y-1.5">
+            <label htmlFor="rent-car-type" className="block text-xs font-normal text-secondary">
               Тип авто
             </label>
             <select
               id="rent-car-type"
               value={carType}
               onChange={(e) => setCarType(e.target.value as CarType | '')}
-              className="w-full px-4 py-3 rounded-yakutia focus:ring-2 focus:ring-white/20 outline-none yakutia-transition shadow-sm border"
-              style={{
-                color: 'var(--color-text-light)',
-                backgroundColor: 'var(--color-input-bg)',
-                borderColor: 'var(--color-input-border)',
-              }}
+              className="input"
             >
-              <option value="" style={{ color: 'var(--color-text-dark)' }}>Все типы</option>
+              <option value="">Все типы</option>
               {carTypes.map((type) => (
-                <option key={type} value={type} style={{ color: 'var(--color-text-dark)' }}>
+                <option key={type} value={type}>
                   {type}
                 </option>
               ))}
             </select>
           </div>
 
-          <div className="space-y-2">
-            <div className="block text-sm font-medium opacity-0" style={{ color: 'var(--color-text-light)' }}>
+          <div className="space-y-1.5">
+            <div className="block text-xs font-normal opacity-0 text-secondary">
               Поиск
             </div>
             <button
               type="button"
               onClick={handleSearch}
-              className="w-full px-6 py-3 rounded-yakutia yakutia-transition font-semibold text-white shadow-lg hover:shadow-xl hover:scale-[1.02]"
-              style={{ backgroundColor: 'var(--color-primary)' }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--color-primary-hover)'
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--color-primary)'
-              }}
+              className="btn-primary w-full"
             >
               Найти авто
             </button>
@@ -214,15 +187,15 @@ export function RentTab() {
         >
           {filteredCars.length > 0 ? (
             filteredCars.map((car) => (
-              <div key={car.id} className="yakutia-card p-[18px] fade-in">
+              <div key={car.id} className="card p-5 fade-in">
                 <div className="flex flex-col md:flex-row gap-4">
-                  <div className="w-full md:w-64 h-48 md:h-40 rounded-yakutia overflow-hidden flex-shrink-0">
+                  <div className="w-full md:w-64 h-48 md:h-40 rounded-sm overflow-hidden flex-shrink-0">
                     <div
                       className="w-full h-full"
                       style={{
                         backgroundImage: car.imageUrl
                           ? `url(${car.imageUrl})`
-                          : `linear-gradient(135deg, var(--color-background-mid), var(--color-background-end))`,
+                          : `linear-gradient(135deg, var(--color-background-subtle), var(--color-surface-hover))`,
                         backgroundSize: 'cover',
                         backgroundPosition: 'center',
                       }}
@@ -232,37 +205,30 @@ export function RentTab() {
                   <div className="flex-1 flex flex-col">
                     <div className="flex items-start justify-between mb-2">
                       <div>
-                        <h3 className="text-xl font-semibold" style={{ color: 'var(--color-text-dark)' }}>
+                        <h3 className="text-lg font-medium text-primary">
                           {car.brand} {car.model}
                         </h3>
-                        <span className="text-sm" style={{ color: 'var(--color-text-dark)' }}>
+                        <span className="text-sm text-secondary">
                           {car.carType}
                         </span>
                       </div>
-                      <span className="text-sm" style={{ color: 'var(--color-text-dark)' }}>
+                      <span className="text-sm text-secondary">
                         {car.transmission}
                       </span>
                     </div>
 
                     <div className="flex items-center justify-between mt-auto">
                       <div>
-                        <span className="text-2xl font-bold" style={{ color: 'var(--color-primary)' }}>
+                        <span className="text-xl font-medium text-primary">
                           {car.pricePerDay.toLocaleString('ru-RU')} ₽
                         </span>
-                        <span className="text-sm ml-1" style={{ color: 'var(--color-text-dark)' }}>
+                        <span className="text-sm text-secondary">
                           / сутки
                         </span>
                       </div>
                       <button
                         type="button"
-                        className="px-6 py-2 rounded-yakutia yakutia-transition font-semibold text-white"
-                        style={{ backgroundColor: 'var(--color-primary)' }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor = 'var(--color-primary-hover)'
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = 'var(--color-primary)'
-                        }}
+                        className="btn-primary"
                       >
                         Забронировать
                       </button>
@@ -272,8 +238,8 @@ export function RentTab() {
               </div>
             ))
           ) : (
-            <div className="yakutia-card p-[18px] text-center fade-in">
-              <p className="text-lg" style={{ color: 'var(--color-text-dark)' }}>
+            <div className="card p-5 text-center fade-in">
+              <p className="text-base text-secondary">
                 Автомобили не найдены
               </p>
             </div>

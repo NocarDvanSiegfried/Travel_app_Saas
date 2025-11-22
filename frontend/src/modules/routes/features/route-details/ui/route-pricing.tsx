@@ -45,32 +45,32 @@ export const RoutePricing = memo(function RoutePricing({ flights }: RoutePricing
 
   if (allTariffs.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-2xl font-bold mb-4" style={{ color: 'var(--color-text-dark)' }}>
+      <div className="card p-5">
+        <h2 className="text-xl font-medium mb-3" style={{ color: 'var(--color-text-heading)' }}>
           Стоимость и тарифы
         </h2>
-        <p className="text-gray-600">Тарифы не найдены</p>
+        <p className="text-secondary">Тарифы не найдены</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <h2 className="text-2xl font-bold mb-4" style={{ color: 'var(--color-text-dark)' }}>
+    <div className="card p-5">
+      <h2 className="text-xl font-medium mb-3" style={{ color: 'var(--color-text-heading)' }}>
         Стоимость и тарифы
       </h2>
       
-      <div className="mb-4 p-4 bg-blue-50 rounded-lg">
+      <div className="mb-4 p-4 rounded-sm" style={{ backgroundColor: 'var(--color-primary-light)' }}>
         <div className="flex items-center justify-between">
-          <span className="text-gray-600">Диапазон цен:</span>
+          <span className="text-secondary">Диапазон цен:</span>
           <div className="flex items-center gap-4">
             {minPrice !== Infinity && (
-              <span className="text-2xl font-bold text-green-600">
+              <span className="text-xl font-medium" style={{ color: 'var(--color-success)' }}>
                 от {formatPrice(minPrice)}
               </span>
             )}
             {maxPrice > 0 && maxPrice !== minPrice && (
-              <span className="text-xl text-gray-600">
+              <span className="text-xl text-secondary">
                 до {formatPrice(maxPrice)}
               </span>
             )}
@@ -80,8 +80,8 @@ export const RoutePricing = memo(function RoutePricing({ flights }: RoutePricing
 
       <div className="space-y-3">
         {flights.map((flight) => (
-          <div key={flight.Ref_Key} className="border rounded-lg p-4">
-            <div className="font-semibold mb-2" style={{ color: 'var(--color-text-dark)' }}>
+          <div key={flight.Ref_Key} className="border border-divider rounded-sm p-4">
+            <div className="font-medium mb-2 text-primary">
               Рейс {flight.НомерРейса || 'Без номера'}
             </div>
             
@@ -90,19 +90,19 @@ export const RoutePricing = memo(function RoutePricing({ flights }: RoutePricing
                 {flight.tariffs.map((tariff, index) => (
                   <div
                     key={index}
-                    className="border rounded p-3 hover:shadow-md transition-shadow"
+                    className="border border-divider rounded-sm p-3 hover:shadow-sm transition-fast"
                   >
-                    <div className="font-semibold mb-1" style={{ color: 'var(--color-text-dark)' }}>
+                    <div className="font-medium mb-1 text-primary">
                       {tariff.Наименование || tariff.Код || 'Тариф'}
                     </div>
-                    <div className="text-2xl font-bold text-green-600">
+                    <div className="text-xl font-medium" style={{ color: 'var(--color-success)' }}>
                       {tariff.Цена ? formatPrice(tariff.Цена) : '—'}
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-gray-600 text-sm">Тарифы не указаны</p>
+              <p className="text-secondary text-sm">Тарифы не указаны</p>
             )}
           </div>
         ))}

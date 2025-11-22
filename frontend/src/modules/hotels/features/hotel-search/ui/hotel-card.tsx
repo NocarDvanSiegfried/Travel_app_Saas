@@ -9,16 +9,16 @@ interface HotelCardProps {
 
 export const HotelCard = memo(function HotelCard({ hotel }: HotelCardProps) {
   return (
-    <div className="yakutia-card p-[18px] yakutia-transition">
+    <div className="card p-5 transition-fast">
       <div className="flex flex-col md:flex-row gap-4">
         {/* Фото гостиницы */}
-        <div className="w-full md:w-64 h-48 md:h-40 rounded-yakutia overflow-hidden flex-shrink-0">
+        <div className="w-full md:w-64 h-48 md:h-40 rounded-sm overflow-hidden flex-shrink-0">
           <div
             className="w-full h-full"
             style={{
               backgroundImage: hotel.imageUrl
                 ? `url(${hotel.imageUrl})`
-                : `linear-gradient(135deg, var(--color-background-mid), var(--color-background-end))`,
+                : `linear-gradient(135deg, var(--color-background-subtle), var(--color-surface-hover))`,
               backgroundSize: 'cover',
               backgroundPosition: 'center',
             }}
@@ -28,45 +28,35 @@ export const HotelCard = memo(function HotelCard({ hotel }: HotelCardProps) {
         {/* Информация о гостинице */}
         <div className="flex-1 flex flex-col">
           <div className="flex items-start justify-between mb-2">
-            <h3 className="text-xl font-semibold" style={{ color: 'var(--color-text-dark)' }}>
+            <h3 className="text-lg font-medium text-primary">
               {hotel.name}
             </h3>
             <div className="flex items-center gap-1">
-              <span className="text-sm font-medium" style={{ color: 'var(--color-primary)' }}>
+              <span className="text-sm font-medium text-primary">
                 ★
               </span>
-              <span className="text-sm font-medium" style={{ color: 'var(--color-text-dark)' }}>
+              <span className="text-sm font-medium text-primary">
                 {hotel.rating.toFixed(1)}
               </span>
             </div>
           </div>
 
-          <p className="text-sm mb-3 flex-1" style={{ color: 'var(--color-text-dark)' }}>
+          <p className="text-sm mb-3 flex-1 text-secondary">
             {hotel.description}
           </p>
 
           <div className="flex items-center justify-between">
             <div>
-              <span className="text-2xl font-bold" style={{ color: 'var(--color-primary)' }}>
+              <span className="text-xl font-medium text-primary">
                 {hotel.pricePerNight.toLocaleString('ru-RU')} ₽
               </span>
-              <span className="text-sm ml-1" style={{ color: 'var(--color-text-dark)' }}>
+              <span className="text-sm text-secondary">
                 / ночь
               </span>
             </div>
             <button
               aria-label={`Посмотреть номера в отеле ${hotel.name}`}
-              className="px-6 py-2 rounded-yakutia yakutia-transition font-semibold"
-              style={{
-                backgroundColor: 'var(--color-primary)',
-                color: '#FFFFFF',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--color-primary-hover)'
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--color-primary)'
-              }}
+              className="btn-primary"
             >
               Посмотреть номера
             </button>

@@ -17,7 +17,7 @@ export async function fetchCities(): Promise<string[]> {
     return validatedResponse.cities || [];
   } catch (error) {
     // Fallback на статический список если backend недоступен или валидация не прошла
-    // Используем только города из yakutia-cities-reference.json
+    // Fallback список городов
     const fallbackCities = [
       'Якутск',
       'Мирный',
