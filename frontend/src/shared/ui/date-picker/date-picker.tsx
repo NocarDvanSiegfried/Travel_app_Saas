@@ -9,6 +9,8 @@ interface DatePickerProps {
   value: string
   onChange: (value: string) => void
   onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void
+  error?: string
+  'aria-describedby'?: string
 }
 
 export function DatePicker({
@@ -18,6 +20,8 @@ export function DatePicker({
   value,
   onChange,
   onKeyDown,
+  error,
+  'aria-describedby': ariaDescribedBy,
 }: DatePickerProps) {
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -39,7 +43,7 @@ export function DatePicker({
   const today = new Date().toISOString().split('T')[0]
 
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-xs">
       <label
         htmlFor={id}
         className="block text-xs font-normal text-left text-secondary"
@@ -58,8 +62,15 @@ export function DatePicker({
           onKeyDown={handleKeyDown}
           min={today}
           className="input"
+          aria-describedby={error ? `${id}-error` : ariaDescribedBy}
+          aria-invalid={error ? 'true' : 'false'}
         />
       </div>
+      {error && (
+        <p id={`${id}-error`} className="text-sm mt-xs text-error" role="alert" aria-live="polite">
+          {error}
+        </p>
+      )}
     </div>
   )
 }

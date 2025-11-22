@@ -4,68 +4,144 @@
 
 @layer base {
   :root {
-    /* Skyscanner-inspired цветовая палитра - обновленная версия */
-    /* Основные цвета - более мягкие оттенки */
-    --color-primary: #0d6efd;
-    --color-primary-hover: #0b5ed7;
-    --color-primary-light: #e7f1ff;
-    --color-primary-dark: #0a58ca;
-    --color-accent: #00a698;
-    --color-accent-hover: #008578;
+    /* ============================================
+       LENALINK BRAND IDENTITY - Premium Travel Blue
+       Фирменная палитра LenaLink в премиальном Travel-стиле
+       ============================================ */
+
+    /* ========== BRAND COLORS - LenaLink Premium Travel Blue ========== */
+    /* Основные фирменные цвета */
+    --brand-primary: #0066cc;                    /* Премиальный синий (осн. акцент) */
+    --brand-primary-hover: #0052a3;               /* Насыщенный тёмный синий */
+    --brand-primary-active: #004080;              /* Активный премиальный синий */
+    --brand-primary-light: #e6f2ff;               /* Airy light blue */
+    --brand-primary-dark: #003d7a;                /* Глубокий синий */
     
-    /* Фон и поверхности - светлые и воздушные */
+    /* Вторичные акценты */
+    --brand-secondary: #00a8b5;                    /* Бирюзовый акцент (тонкий, современный) */
+    --brand-secondary-hover: #008a94;              /* Бирюзовый hover */
+    --brand-secondary-light: rgba(0, 168, 181, 0.1); /* Бирюзовый светлый */
+    
+    --brand-accent: #4dd0e1;                      /* Soft aqua */
+    --brand-accent-hover: #26c6da;                /* Aqua hover */
+    --brand-accent-light: rgba(77, 208, 225, 0.1); /* Aqua светлый */
+    
+    /* Градиенты (только токены) */
+    --brand-gradient-primary: linear-gradient(135deg, #0066cc 0%, #00a8b5 100%); /* blue → aqua */
+    --brand-gradient-surface: linear-gradient(180deg, rgba(230, 242, 255, 0.4) 0%, rgba(255, 255, 255, 1) 100%); /* subtle blue tint */
+    
+    /* Нейтральные брендовые цвета */
+    --brand-neutral-light: #f5f8fa;               /* Мягкий светлый нейтральный */
+    --brand-neutral-dark: #1a2332;                /* Глубокий тёмный нейтральный */
+    --brand-neutral-medium: #6b7c93;               /* Средний нейтральный */
+
+    /* ============================================
+       THEME SYSTEM V2 - Обновлено под LenaLink Brand
+       Полная система токенов для масштабируемого дизайна
+       ============================================ */
+
+    /* ========== 1. ОСНОВНЫЕ ЦВЕТА ========== */
+    --color-primary: var(--brand-primary);
+    --color-primary-hover: var(--brand-primary-hover);
+    --color-primary-active: var(--brand-primary-active);
+    --color-primary-light: var(--brand-primary-light);
+    --color-primary-dark: var(--brand-primary-dark);
+    
+    --color-accent: var(--brand-secondary);
+    --color-accent-hover: var(--brand-secondary-hover);
+    --color-accent-light: var(--brand-secondary-light);
+    
+    /* ========== 2. ПОВЕРХНОСТИ ========== */
+    /* Лёгкий оттенок синевато-белого для surface */
     --color-background: #ffffff;
-    --color-background-subtle: #f8f9fa;
-    --color-surface: #ffffff;
-    --color-surface-hover: #f1f3f5;
+    --color-background-subtle: #f5f8fa;           /* Мягкий синеватый оттенок */
     
-    /* Текст - мягкие оттенки Skyscanner */
-    --color-text-primary: #1a1a1a;
-    --color-text-secondary: #6b7280;
+    --color-surface: #fafcfe;                     /* Лёгкий оттенок синевато-белого */
+    --color-surface-alt: #f0f5f9;                 /* Синий оттенок 2-3% */
+    --color-surface-hover: #e6f2ff;                /* Airy blue hover */
+    
+    /* Глубокий синий (не чёрный) для dark-zone */
+    --color-dark-zone: #003d7a;                   /* Глубокий синий на основе brand-primary-dark */
+    --color-dark-zone-alt: #002d5c;                /* Ещё более глубокий синий */
+    --color-dark-zone-border: rgba(255, 255, 255, 0.15);
+    --color-dark-zone-text: #ffffff;
+    --color-dark-zone-text-secondary: rgba(255, 255, 255, 0.85);
+    --color-dark-zone-text-tertiary: rgba(255, 255, 255, 0.6);
+    --color-dark-zone-hover: rgba(255, 255, 255, 0.1);
+    
+    /* ========== 3. ТЕКСТ ========== */
+    --color-text-primary: #1a2332;                 /* Глубокий синий (brand-neutral-dark) */
+    --color-text-secondary: #6b7c93;               /* Нейтральный тёмный (brand-neutral-medium) */
+    --color-text-muted: #9ca3af;
     --color-text-tertiary: #9ca3af;
     --color-text-inverse: #ffffff;
-    --color-text-heading: #1e40af;
+    --color-text-heading: var(--brand-primary);    /* Фирменный синий для заголовков */
     
-    /* Границы и разделители - очень тонкие и светлые */
-    --color-border: #e5e7eb;
-    --color-border-hover: #d1d5db;
-    --color-divider: #f3f4f6;
+    /* ========== 4. ГРАНИЦЫ ========== */
+    --color-border-light: #d6e8f5;                 /* Потемневший воздушный синий */
+    --color-border-medium: #cbd5e0;                /* Нейтральный */
+    --color-border-dark: #9ca3af;
+    --color-border: #e0eef7;                       /* Воздушный синий */
+    --color-border-hover: var(--brand-primary);    /* Акцентированный синий */
+    --color-divider: #d6e8f5;                     /* Потемневший воздушный синий */
     
-    /* Интерактивные элементы - минималистичные */
-    --color-input-bg: #ffffff;
-    --color-input-border: #d1d5db;
-    --color-input-border-focus: #0d6efd;
-    --color-input-placeholder: #9ca3af;
-    
-    /* Карточки - легкие тени */
-    --color-card-bg: #ffffff;
-    --color-card-border: #e9ecef;
-    
-    /* Хедер - светлый и минималистичный */
-    --color-header-bg: #ffffff;
-    --color-header-border: #e9ecef;
-    --color-header-text: #1a1a1a;
-    
-    /* Состояния */
+    /* ========== 5. СОСТОЯНИЯ ========== */
     --color-success: #00a698;
-    --color-warning: #ffc107;
-    --color-error: #dc3545;
-    --color-info: #0d6efd;
+    --color-success-light: rgba(0, 166, 152, 0.1);
     
-    /* Тени - деликатные, почти невидимые */
+    --color-warning: #ffc107;
+    --color-warning-light: rgba(255, 193, 7, 0.1);
+    
+    --color-error: #dc3545;
+    --color-error-light: rgba(220, 53, 69, 0.1);
+    --color-danger: #dc3545;
+    --color-danger-light: rgba(220, 53, 69, 0.1);
+    
+    --color-info: var(--brand-primary);
+    --color-info-light: var(--brand-primary-light);
+    
+    /* ========== 6. ИНПУТЫ ========== */
+    /* Светлые инпуты для светлого фона */
+    --color-input-bg: #ffffff;
+    --color-input-border: #d6e8f5;                 /* Светло-синий оттенок */
+    --color-input-border-focus: var(--brand-primary); /* Брендовый акцент */
+    --color-input-placeholder: #9bb0c4;            /* Мягкий gray-blue */
+    --color-input-text: #1a2332;                  /* Глубокий синий */
+    
+    /* Тёмные инпуты для тёмного фона */
+    --color-input-bg-dark: rgba(255, 255, 255, 0.1);
+    --color-input-border-dark: rgba(255, 255, 255, 0.2);
+    --color-input-border-focus-dark: rgba(255, 255, 255, 0.4);
+    --color-input-placeholder-dark: rgba(255, 255, 255, 0.5);
+    --color-input-text-dark: #ffffff;
+    
+    /* ========== 7. КАРТОЧКИ ========== */
+    --color-card-bg: #fafcfe;                     /* Airy-blue surface */
+    --color-card-border: #d6e8f5;                 /* Blue-neutral */
+    
+    /* ========== 8. HEADER/FOOTER ========== */
+    --color-header-bg: var(--color-dark-zone);
+    --color-header-border: rgba(255, 255, 255, 0.1);
+    --color-header-text: var(--color-dark-zone-text);
+    --color-header-text-secondary: var(--color-dark-zone-text-secondary);
+    --color-header-text-tertiary: var(--color-dark-zone-text-tertiary);
+    --color-header-hover: var(--color-dark-zone-hover);
+    
+    /* ========== 9. ТЕНИ ========== */
+    --shadow-xs: 0 0.5px 1px 0 rgba(0, 0, 0, 0.01);
     --shadow-sm: 0 1px 1px 0 rgba(0, 0, 0, 0.02);
     --shadow-md: 0 1px 3px 0 rgba(0, 0, 0, 0.03);
     --shadow-lg: 0 2px 4px 0 rgba(0, 0, 0, 0.04);
     --shadow-xl: 0 4px 8px 0 rgba(0, 0, 0, 0.05);
     
-    /* Скругления - минимальные, как в Skyscanner */
+    /* ========== 10. РАДИУСЫ ========== */
     --radius-sm: 3px;
     --radius-md: 4px;
     --radius-lg: 6px;
     --radius-xl: 8px;
     --radius-full: 9999px;
     
-    /* Отступы - компактные */
+    /* ========== 11. ОТСТУПЫ ========== */
     --spacing-xs: 4px;
     --spacing-sm: 8px;
     --spacing-md: 12px;
@@ -73,39 +149,76 @@
     --spacing-xl: 24px;
     --spacing-2xl: 32px;
     --spacing-3xl: 48px;
+    
+    /* ========== 12. РАЗМЕРЫ ЭЛЕМЕНТОВ ========== */
+    --height-input: 38px;
+    --height-header: 48px;
+    --size-logo: 32px;
+    --size-icon-md: 16px;
 
-    /* Типографика - легкая и округлая, как в Skyscanner */
+    /* ========== 13. ТИПОГРАФИКА ========== */
     --font-family-base: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+    
+    /* Размеры шрифтов */
+    --font-xs: 12px;
+    --font-sm: 14px;
+    --font-md: 15px;
+    --font-lg: 17px;
+    --font-xl: 19px;
+    
+    /* Веса шрифтов */
+    --font-regular: 400;
+    --font-medium: 500;
+    --font-semibold: 600;
+    --font-bold: 700;
     --font-weight-light: 300;
     --font-weight-normal: 400;
     --font-weight-medium: 500;
     --font-weight-semibold: 600;
     --font-weight-bold: 700;
     
-    /* Межстрочные интервалы - аккуратные */
+    /* Межстрочные интервалы */
+    --leading-tight: 1.3;
+    --leading-normal: 1.5;
+    --leading-relaxed: 1.7;
     --line-height-tight: 1.3;
     --line-height-normal: 1.5;
     --line-height-relaxed: 1.7;
 
-    /* Переходы */
-    --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+    /* ========== 13. MOTION SYSTEM ========== */
+    /* Длительности анимаций */
+    --motion-duration-xs: 80ms;
+    --motion-duration-sm: 120ms;
+    --motion-duration-md: 180ms;
+    --motion-duration-lg: 240ms;
+    
+    /* Easing функции - мягкие, продуктовые */
+    --motion-ease-default: cubic-bezier(0.4, 0, 0.2, 1);
+    --motion-ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
+    --motion-ease-decelerate: cubic-bezier(0, 0, 0.2, 1);
+    --motion-ease-accelerate: cubic-bezier(0.4, 0, 1, 1);
+    
+    /* Legacy поддержка (для обратной совместимости) */
+    --transition-fast: var(--motion-duration-xs) var(--motion-ease-default);
+    --transition-base: var(--motion-duration-sm) var(--motion-ease-default);
+    --transition-slow: var(--motion-duration-md) var(--motion-ease-default);
   }
 
   * {
-    @apply box-border p-0 m-0;
+    box-sizing: border-box;
+    padding: 0;
+    margin: 0;
   }
 
   html {
-    @apply antialiased;
-    font-family: var(--font-family-base);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    font-family: var(--font-family-base);
   }
 
   body {
-    @apply max-w-full overflow-x-hidden;
+    max-width: 100%;
+    overflow-x: hidden;
     background-color: var(--color-background);
     color: var(--color-text-primary);
     font-family: var(--font-family-base);
@@ -115,22 +228,24 @@
     min-height: 100vh;
   }
   
-  /* Заголовки - легкие и мягкие */
+  /* Заголовки - легкие, чистые, честные типографика */
   h1, h2, h3, h4, h5, h6 {
     font-weight: var(--font-weight-medium);
     line-height: var(--line-height-tight);
-    letter-spacing: -0.02em;
+    letter-spacing: -0.01em;
     color: var(--color-text-heading);
   }
   
   h1 {
     font-size: 1.5rem;
     font-weight: var(--font-weight-medium);
+    letter-spacing: 0.01em;                       /* Увеличенный letter-spacing для h1 */
   }
   
   h2 {
     font-size: 1.25rem;
     font-weight: var(--font-weight-medium);
+    letter-spacing: 0.005em;                      /* Увеличенный letter-spacing для h2 */
   }
   
   h3 {
@@ -139,119 +254,350 @@
   }
 
   a {
-    @apply no-underline;
-    color: var(--color-primary);
-    transition: color var(--transition-fast);
+    text-decoration: none;
+    color: var(--brand-primary);
+    transition: color var(--motion-duration-xs) var(--motion-ease-default);
   }
 
   a:hover {
-    color: var(--color-primary-hover);
+    color: var(--brand-primary-hover);
+  }
+
+  a:focus-visible {
+    outline: 2px solid var(--brand-primary);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
   }
 }
 
 @layer components {
 
-  /* Плавные переходы */
-  .transition-smooth {
-    transition: all var(--transition-base);
+  /* ============================================
+     MOTION SYSTEM: UTILITY CLASSES
+     Унифицированные классы для анимаций и переходов
+     ============================================ */
+
+  /* Базовые transition классы */
+  .transition-fast {
+    transition: all var(--motion-duration-xs) var(--motion-ease-default);
   }
 
-  .transition-fast {
-    transition: all var(--transition-fast);
+  .transition-normal {
+    transition: all var(--motion-duration-sm) var(--motion-ease-default);
   }
 
   .transition-slow {
-    transition: all var(--transition-slow);
+    transition: all var(--motion-duration-md) var(--motion-ease-default);
   }
 
-  /* Карточки в стиле Skyscanner - легкие и воздушные */
+  /* Legacy поддержка */
+  .transition-smooth {
+    transition: all var(--motion-duration-sm) var(--motion-ease-default);
+  }
+
+  /* Специализированные transition классы */
+  .icon-transition {
+    transition: all var(--motion-duration-xs) var(--motion-ease-default);
+  }
+
+  .btn-transition {
+    transition: all var(--motion-duration-sm) var(--motion-ease-default);
+  }
+
+  .dropdown-transition {
+    transition: all var(--motion-duration-sm) var(--motion-ease-default);
+  }
+
+  .card-hover-transition {
+    transition: all var(--motion-duration-md) var(--motion-ease-default);
+  }
+
+  .input-transition {
+    transition: all var(--motion-duration-xs) var(--motion-ease-default);
+  }
+
+  .tab-transition {
+    transition: all var(--motion-duration-sm) var(--motion-ease-default);
+  }
+
+  /* ============================================
+     UI-KIT: CARD SYSTEM
+     Унифицированная система карточек на основе Theme System v2
+     ============================================ */
+
+  /* Карточки в стиле Skyscanner - светлые для контентных блоков */
   .card {
     background: var(--color-card-bg);
     border: 1px solid var(--color-card-border);
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    position: relative;
+  }
+
+  /* Тёмная карточка для формы поиска */
+  .card-dark {
+    background: var(--color-dark-zone);
+    border: 1px solid var(--color-dark-zone-border);
+    border-radius: var(--radius-lg);
     box-shadow: var(--shadow-sm);
     position: relative;
   }
 
   .card-hover {
-    transition: all var(--transition-base);
+    transition: box-shadow var(--motion-duration-md) var(--motion-ease-default),
+                border-color var(--motion-duration-md) var(--motion-ease-default),
+                transform var(--motion-duration-md) var(--motion-ease-default);
   }
 
   .card-hover:hover {
     box-shadow: var(--shadow-md);
-    border-color: var(--color-border);
+    border-color: var(--brand-primary);
+    transform: translateY(-1px);
+    background: var(--color-card-bg);
   }
 
-  /* Кнопки - компактные и яркие */
-  .btn-primary {
-    background-color: var(--color-primary);
-    color: var(--color-text-inverse);
+  /* ============================================
+     UI-KIT: BUTTON SYSTEM
+     Системные варианты кнопок на основе Theme System v2
+     ============================================ */
+
+  /* Базовые стили для всех кнопок */
+  [class^="btn-"] {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     font-weight: var(--font-weight-medium);
     border-radius: var(--radius-md);
-    padding: 10px 20px;
+    padding: var(--spacing-sm) var(--spacing-lg);
     border: none;
     cursor: pointer;
-    transition: all var(--transition-fast);
-    box-shadow: none;
-    font-size: 15px;
+    transition: background-color var(--motion-duration-sm) var(--motion-ease-default),
+                color var(--motion-duration-sm) var(--motion-ease-default),
+                box-shadow var(--motion-duration-sm) var(--motion-ease-default),
+                transform var(--motion-duration-sm) var(--motion-ease-default);
+    font-size: var(--font-md);
+    line-height: var(--leading-normal);
+    text-decoration: none;
   }
 
-  .btn-primary:hover:not(:disabled) {
-    background-color: var(--color-primary-hover);
-    box-shadow: var(--shadow-sm);
+  [class^="btn-"]:focus-visible {
+    outline: 2px solid var(--brand-primary);
+    outline-offset: 2px;
   }
 
-  .btn-primary:active:not(:disabled) {
-    background-color: var(--color-primary-dark);
-    transform: scale(0.98);
-  }
-
-  .btn-primary:disabled {
+  [class^="btn-"]:disabled {
     opacity: 0.5;
     cursor: not-allowed;
   }
 
+  /* Primary Button - Брендовый синий */
+  .btn-primary {
+    background-color: var(--brand-primary);
+    color: var(--color-text-inverse);
+    box-shadow: none;
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    background-color: var(--brand-primary-hover);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .btn-primary:active:not(:disabled) {
+    background-color: var(--color-primary-active);
+    transform: scale(0.98);
+    transition: transform var(--motion-duration-xs) var(--motion-ease-default);
+  }
+
+  /* Secondary Button - Нейтральный серо-синий */
   .btn-secondary {
     background-color: var(--color-surface);
     color: var(--color-text-primary);
-    font-weight: var(--font-weight-medium);
-    border-radius: var(--radius-md);
-    padding: 12px 24px;
     border: 1px solid var(--color-border);
-    cursor: pointer;
-    transition: all var(--transition-base);
   }
 
   .btn-secondary:hover:not(:disabled) {
     background-color: var(--color-surface-hover);
+    border-color: var(--brand-primary);
+  }
+
+  .btn-secondary:active:not(:disabled) {
+    background-color: var(--color-surface-alt);
+  }
+
+  /* Tertiary Button */
+  .btn-tertiary {
+    background-color: transparent;
+    color: var(--color-text-primary);
+    border: 1px solid var(--color-border-light);
+  }
+
+  .btn-tertiary:hover:not(:disabled) {
+    background-color: var(--color-surface-hover);
     border-color: var(--color-border-hover);
   }
 
-  /* Поля ввода - тонкие и легкие, как в Skyscanner */
-  .input {
+  .btn-tertiary:active:not(:disabled) {
+    background-color: var(--color-surface-alt);
+  }
+
+  /* Subtle Button - Soft-blue */
+  .btn-subtle {
+    background-color: var(--brand-primary-light);
+    color: var(--color-text-primary);
+    border: 1px solid transparent;
+  }
+
+  .btn-subtle:hover:not(:disabled) {
+    background-color: var(--color-surface-hover);
+    color: var(--brand-primary);
+  }
+
+  .btn-subtle:active:not(:disabled) {
+    background-color: var(--color-surface-alt);
+  }
+
+  /* Destructive Button */
+  .btn-destructive {
+    background-color: var(--color-error);
+    color: var(--color-text-inverse);
+    box-shadow: none;
+  }
+
+  .btn-destructive:hover:not(:disabled) {
+    background-color: var(--color-danger);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .btn-destructive:active:not(:disabled) {
+    opacity: 0.9;
+    transform: scale(0.98);
+    transition: transform var(--motion-duration-xs) var(--motion-ease-default),
+                opacity var(--motion-duration-xs) var(--motion-ease-default);
+  }
+
+  /* Icon Button - Airy-blue с hover-акцентом */
+  .btn-icon {
+    background-color: transparent;
+    color: var(--color-text-secondary);
+    padding: var(--spacing-xs);
+    border-radius: var(--radius-sm);
+    min-width: auto;
+    min-height: auto;
+  }
+
+  .btn-icon:hover:not(:disabled) {
+    background-color: var(--brand-primary-light);
+    color: var(--brand-primary);
+  }
+
+  .btn-icon:active:not(:disabled) {
+    background-color: var(--color-surface-alt);
+  }
+
+  /* ============================================
+     UI-KIT: INPUT SYSTEM
+     Унифицированная система инпутов на основе Theme System v2
+     ============================================ */
+
+  /* Базовые стили для всех инпутов */
+  [class^="input"] {
     width: 100%;
-    padding: 8px 12px;
+    padding: var(--spacing-xs) var(--spacing-md);
     border: 1px solid var(--color-input-border);
     border-radius: var(--radius-sm);
     background-color: var(--color-input-bg);
-    color: var(--color-text-primary);
-    font-size: 14px;
+    color: var(--color-input-text);
+    font-size: var(--font-sm);
     font-weight: var(--font-weight-normal);
-    transition: all var(--transition-fast);
+    transition: border-color var(--motion-duration-xs) var(--motion-ease-default),
+                box-shadow var(--motion-duration-xs) var(--motion-ease-default);
     box-shadow: var(--shadow-sm);
-    height: 38px;
-    line-height: 1.5;
+    height: var(--height-input);
+    line-height: var(--leading-normal);
+  }
+
+  [class^="input"]:focus {
+    outline: none;
+    border-color: var(--color-input-border-focus);
+    box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.08);
+  }
+
+  [class^="input"]:focus-visible {
+    outline: 2px solid var(--brand-primary);
+    outline-offset: 2px;
+    border-color: var(--color-input-border-focus);
+    box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.08);
+  }
+
+  [class^="input"]::placeholder {
+    color: var(--color-input-placeholder);
+    font-weight: var(--font-weight-normal);
+  }
+
+  /* Light Input (default) */
+  .input {
+    background-color: var(--color-input-bg);
+    border-color: var(--color-input-border);
+    color: var(--color-input-text);
   }
 
   .input:focus {
-    outline: none;
     border-color: var(--color-input-border-focus);
-    box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.08);
+    box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.08);
   }
 
-  .input::placeholder {
-    color: var(--color-input-placeholder);
-    font-weight: var(--font-weight-normal);
+  .input:focus-visible {
+    outline: 2px solid var(--brand-primary);
+    outline-offset: 2px;
+    border-color: var(--color-input-border-focus);
+    box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.08);
+  }
+
+  /* Dark Input */
+  .input-dark {
+    background-color: var(--color-input-bg-dark);
+    border-color: var(--color-input-border-dark);
+    color: var(--color-input-text-dark);
+  }
+
+  .input-dark:focus {
+    border-color: var(--color-input-border-focus-dark);
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2);
+  }
+
+  .input-dark::placeholder {
+    color: var(--color-input-placeholder-dark);
+  }
+
+  /* Error Input */
+  .input-error {
+    border-color: var(--color-error);
+    background-color: var(--color-error-light);
+  }
+
+  .input-error:focus {
+    border-color: var(--color-error);
+    box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.2);
+  }
+
+  /* Success Input */
+  .input-success {
+    border-color: var(--color-success);
+  }
+
+  .input-success:focus {
+    border-color: var(--color-success);
+    box-shadow: 0 0 0 2px rgba(0, 166, 152, 0.2);
+  }
+
+  /* Warning Input */
+  .input-warning {
+    border-color: var(--color-warning);
+  }
+
+  .input-warning:focus {
+    border-color: var(--color-warning);
+    box-shadow: 0 0 0 2px rgba(255, 193, 7, 0.2);
   }
 
   /* Контейнеры - компактные */
@@ -269,18 +615,6 @@
     padding: var(--spacing-lg) 0;
   }
 
-  /* Тени для header и footer */
-  .shadow-header {
-    box-shadow: var(--shadow-sm);
-  }
-
-  /* Разделители */
-  .divider {
-    height: 1px;
-    background-color: var(--color-divider);
-    border: none;
-    margin: var(--spacing-lg) 0;
-  }
 
   /* Анимации */
   @keyframes fadeIn {
@@ -320,15 +654,15 @@
   }
 
   .animate-fade-in {
-    animation: fadeIn var(--transition-slow) ease-out;
+    animation: fadeIn var(--motion-duration-md) var(--motion-ease-decelerate);
   }
 
   .animate-slide-in {
-    animation: slideIn var(--transition-base) ease-out;
+    animation: slideIn var(--motion-duration-sm) var(--motion-ease-decelerate);
   }
 
   .animate-scale-in {
-    animation: scaleIn var(--transition-base) ease-out;
+    animation: scaleIn var(--motion-duration-sm) var(--motion-ease-decelerate);
   }
 
   /* Утилитарные классы */
@@ -348,6 +682,10 @@
     color: var(--color-text-inverse);
   }
 
+  .text-heading {
+    color: var(--color-text-heading);
+  }
+
   .bg-surface {
     background-color: var(--color-surface);
   }
@@ -360,16 +698,292 @@
     background-color: var(--color-background-subtle);
   }
 
+  /* Утилитарные классы для тёмной зоны */
+  .text-header-secondary {
+    color: var(--color-dark-zone-text-secondary);
+  }
+
+  .text-header-tertiary {
+    color: var(--color-dark-zone-text-tertiary);
+  }
+
+  .bg-header-hover {
+    background-color: var(--color-dark-zone-hover);
+  }
+
+  .hover-header {
+    color: var(--color-dark-zone-text-secondary);
+    transition: background-color var(--motion-duration-xs) var(--motion-ease-default),
+                color var(--motion-duration-xs) var(--motion-ease-default);
+  }
+
+  .hover-header:hover {
+    background-color: var(--color-dark-zone-hover);
+    color: var(--color-dark-zone-text);
+  }
+
+  .hover-header-link {
+    color: var(--color-dark-zone-text-secondary);
+    transition: color var(--motion-duration-xs) var(--motion-ease-default);
+  }
+
+  .hover-header-link:hover {
+    color: var(--color-dark-zone-text);
+  }
+
+  .hover-header-icon {
+    color: var(--color-dark-zone-text-tertiary);
+    transition: color var(--motion-duration-xs) var(--motion-ease-default);
+  }
+
+  .hover-header-icon:hover {
+    color: var(--color-dark-zone-text-secondary);
+  }
+
+  /* Класс для labels в тёмной зоне */
+  .label-dark {
+    color: var(--color-dark-zone-text-secondary);
+  }
+
+  /* Классы для состояний с light-версиями */
+  .bg-success-light {
+    background-color: var(--color-success-light);
+  }
+
+  .bg-error-light {
+    background-color: var(--color-error-light);
+  }
+
+  .bg-warning-light {
+    background-color: var(--color-warning-light);
+  }
+
+  .bg-info-light {
+    background-color: var(--color-info-light);
+  }
+
+  .bg-accent-light {
+    background-color: var(--color-accent-light);
+  }
+
+  .bg-divider {
+    background-color: var(--color-divider);
+  }
+
+  /* Утилитарные классы для левых границ */
+  .border-l-primary {
+    border-left-width: 4px;
+    border-left-color: var(--color-primary);
+  }
+
+  .border-l-accent {
+    border-left-width: 4px;
+    border-left-color: var(--color-accent);
+  }
+
+  /* Transition opacity для анимаций */
+  .transition-opacity {
+    transition: opacity var(--motion-duration-md) var(--motion-ease-default);
+  }
+
+  .transition-opacity-slow {
+    transition: opacity var(--motion-duration-lg) var(--motion-ease-default);
+  }
+
+  /* Кнопка помощника */
+  .btn-assistant {
+    background-color: var(--brand-primary);
+    transition: background-color var(--motion-duration-sm) var(--motion-ease-default),
+                transform var(--motion-duration-sm) var(--motion-ease-default);
+  }
+
+  /* ============================================
+     UI-KIT: TABS SYSTEM
+     Унифицированная система табов на основе Theme System v2
+     ============================================ */
+
+  /* Базовые стили для табов */
+  .tab {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-sm);
+    font-weight: var(--font-weight-normal);
+    line-height: var(--leading-normal);
+    transition: background-color var(--motion-duration-sm) var(--motion-ease-default),
+                color var(--motion-duration-sm) var(--motion-ease-default),
+                border-color var(--motion-duration-sm) var(--motion-ease-default);
+    cursor: pointer;
+    border: none;
+    background: transparent;
+  }
+
+  /* Таб в тёмной зоне (header) */
+  .tab-dark {
+    color: var(--color-header-text-secondary);
+  }
+
+  .tab-dark:hover {
+    color: var(--color-header-text);
+    background-color: var(--color-header-hover);
+  }
+
+  .tab-dark-active {
+    background-color: var(--color-surface);
+    color: var(--color-text-primary);
+    font-weight: var(--font-weight-medium);
+  }
+
+  /* Таб в светлой зоне (content) */
+  .tab-light {
+    color: var(--color-text-secondary);
+    border: 1px solid var(--color-border-light);
+    background-color: var(--color-input-bg);
+  }
+
+  .tab-light:hover {
+    background-color: var(--brand-primary-light);
+    color: var(--brand-primary);
+    border-color: var(--brand-primary);
+  }
+
+  .tab-light-active {
+    background-color: var(--brand-primary);
+    color: var(--color-text-inverse);
+    border-color: var(--brand-primary);
+    font-weight: var(--font-weight-medium);
+  }
+
+  .tab:focus-visible {
+    outline: 2px solid var(--brand-primary);
+    outline-offset: 2px;
+  }
+
+  .btn-assistant:hover {
+    background-color: var(--color-primary-hover);
+    transform: scale(1.1);
+  }
+
+  /* ============================================
+     UI-KIT: BADGE SYSTEM
+     Унифицированная система бейджей на основе Theme System v2
+     ============================================ */
+
+  /* Базовые стили для всех бейджей */
+  [class^="badge-"] {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-xs);
+    font-weight: var(--font-weight-medium);
+    line-height: var(--leading-tight);
+    border: 1px solid transparent;
+  }
+
+  /* Primary Badge */
+  .badge-primary {
+    color: var(--color-primary);
+    background-color: var(--color-primary-light);
+    border-color: var(--color-primary);
+  }
+
+  /* Secondary Badge */
+  .badge-secondary {
+    color: var(--color-text-secondary);
+    background-color: var(--color-surface-alt);
+    border-color: var(--color-border-light);
+  }
+
+  /* Success Badge */
+  .badge-success {
+    color: var(--color-success);
+    background-color: var(--color-success-light);
+    border-color: var(--color-success);
+  }
+
+  /* Warning Badge */
+  .badge-warning {
+    color: var(--color-warning);
+    background-color: var(--color-warning-light);
+    border-color: var(--color-warning);
+  }
+
+  /* Danger Badge */
+  .badge-danger {
+    color: var(--color-error);
+    background-color: var(--color-error-light);
+    border-color: var(--color-error);
+  }
+
+  /* Neutral Badge */
+  .badge-neutral {
+    color: var(--color-text-secondary);
+    background-color: var(--color-surface-alt);
+    border-color: var(--color-border-light);
+  }
+
+  /* ============================================
+     UI-KIT: DROPDOWN SYSTEM
+     Унифицированная система выпадающих меню на основе Theme System v2
+     ============================================ */
+
+  .dropdown-menu {
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border-light);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-sm);
+    padding: var(--spacing-sm);
+    z-index: 1000;
+    position: absolute;
+    width: 100%;
+    max-height: 240px;
+    overflow-y: auto;
+    animation: fadeIn var(--motion-duration-sm) var(--motion-ease-decelerate);
+  }
+
+  .dropdown-item {
+    width: 100%;
+    text-align: left;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--radius-sm);
+    transition: background-color var(--motion-duration-xs) var(--motion-ease-default);
+    cursor: pointer;
+    font-size: var(--font-sm);
+    color: var(--color-text-primary);
+    background-color: transparent;
+    border: none;
+  }
+
+  .dropdown-item:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: -2px;
+  }
+
+  .dropdown-item:hover {
+    background-color: var(--color-surface-hover);
+  }
+
+  .dropdown-item-active {
+    background-color: var(--color-primary-light);
+    color: var(--color-primary);
+    font-weight: var(--font-weight-medium);
+  }
+
   /* Стили для select */
   select {
     background-color: var(--color-input-bg);
     color: var(--color-text-primary);
     border: 1px solid var(--color-input-border);
     border-radius: var(--radius-sm);
-    padding: 8px 12px;
-    font-size: 14px;
+    padding: var(--spacing-xs) var(--spacing-md);
+    font-size: var(--font-sm);
     font-weight: var(--font-weight-normal);
-    height: 38px;
+    height: var(--height-input);
     -webkit-appearance: none;
     -moz-appearance: none;
     appearance: none;
@@ -378,13 +992,21 @@
     background-position: right 12px center;
     background-size: 10px;
     padding-right: 36px;
-    transition: all var(--transition-fast);
+    transition: border-color var(--motion-duration-xs) var(--motion-ease-default),
+                box-shadow var(--motion-duration-xs) var(--motion-ease-default);
     cursor: pointer;
-    box-shadow: none;
+    box-shadow: var(--shadow-sm);
   }
 
   select:focus {
     outline: none;
+    border-color: var(--color-input-border-focus);
+    box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.08);
+  }
+
+  select:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
     border-color: var(--color-input-border-focus);
     box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.08);
   }
@@ -408,6 +1030,7 @@
 
   input[type="number"] {
     -moz-appearance: textfield;
+    appearance: textfield;
   }
 
   /* Стили для input[type="date"] */
@@ -418,10 +1041,86 @@
   input[type="date"]::-webkit-calendar-picker-indicator {
     cursor: pointer;
     opacity: 0.6;
-    transition: opacity var(--transition-fast);
+    transition: opacity var(--motion-duration-xs) var(--motion-ease-default);
   }
 
   input[type="date"]::-webkit-calendar-picker-indicator:hover {
     opacity: 1;
+  }
+
+  /* ============================================
+     ACCESSIBILITY: REDUCED MOTION SUPPORT
+     Поддержка системного запроса prefers-reduced-motion
+     ============================================ */
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  /* Screen reader only класс */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+
+  /* ============================================
+     BRAND COMPONENTS - LenaLink Premium Travel Blue
+     Семантические утилиты для брендовой идентичности
+     ============================================ */
+
+  /* Брендовые заголовки */
+  .brand-heading {
+    color: var(--brand-primary);
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: 0.01em;
+  }
+
+  .brand-subtitle {
+    color: var(--brand-neutral-medium);
+    font-weight: var(--font-weight-normal);
+    letter-spacing: 0.005em;
+  }
+
+  .brand-accent-text {
+    color: var(--brand-secondary);
+    font-weight: var(--font-weight-medium);
+  }
+
+  /* Брендовые поверхности */
+  .brand-surface-card {
+    background: var(--color-card-bg);
+    border: 1px solid var(--color-card-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+  }
+
+  /* Брендовые градиенты */
+  .brand-gradient {
+    background: var(--brand-gradient-primary);
+    color: var(--color-text-inverse);
+  }
+
+  .brand-gradient-surface {
+    background: var(--brand-gradient-surface);
+  }
+
+  /* Брендовый разделитель */
+  .brand-divider {
+    border-top: 1px solid var(--color-divider);
+    margin: var(--spacing-lg) 0;
   }
 }

@@ -104,6 +104,7 @@ export function TripClassSelect({
         aria-expanded={isOpen}
         aria-haspopup="listbox"
         aria-controls={`${id}-listbox`}
+        aria-label="Класс поездки"
         tabIndex={0}
         onClick={handleToggle}
         onKeyDown={handleKeyDown}
@@ -111,11 +112,9 @@ export function TripClassSelect({
       >
         <span className="text-primary">{selectedClass.label}</span>
         <span
-          className="transition-fast text-secondary"
-          style={{
-            transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-            display: 'inline-block',
-          }}
+          className={`inline-block text-secondary transition-fast ${isOpen ? 'rotate-180' : 'rotate-0'}`}
+          aria-label={isOpen ? 'Закрыть список' : 'Открыть список'}
+          role="img"
         >
           ▼
         </span>
@@ -126,7 +125,7 @@ export function TripClassSelect({
           ref={listRef}
           id={`${id}-listbox`}
           role="listbox"
-          className="absolute z-[1000] w-full mt-1 max-h-60 overflow-auto rounded-sm shadow-sm border border-border bg-surface"
+          className="absolute z-[1000] w-full mt-xs max-h-60 overflow-auto rounded-sm shadow-sm border border-card-border bg-card-bg"
         >
           {TRIP_CLASSES.map((cls, index) => (
             <li
@@ -141,11 +140,7 @@ export function TripClassSelect({
                 }
               }}
               tabIndex={0}
-              className={`px-4 py-3 cursor-pointer transition-fast ${
-                index === highlightedIndex || cls.value === value
-                  ? 'bg-primary-light text-primary font-medium'
-                  : 'hover:bg-surface-hover text-primary'
-              }`}
+              className={`dropdown-item ${index === highlightedIndex || cls.value === value ? 'dropdown-item-active' : ''}`}
               onMouseEnter={() => setHighlightedIndex(index)}
             >
               {cls.label}

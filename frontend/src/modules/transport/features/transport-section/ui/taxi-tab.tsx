@@ -27,9 +27,9 @@ export function TaxiTab() {
   return (
     <div className="w-full">
       {/* Форма поиска */}
-      <div className="card p-5 mb-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-          <div className="space-y-1.5">
+      <div className="card p-lg mb-lg">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-md">
+          <div className="space-y-xs">
             <label htmlFor="taxi-from" className="block text-xs font-normal text-secondary">
               Откуда
             </label>
@@ -44,7 +44,7 @@ export function TaxiTab() {
             />
           </div>
 
-          <div className="space-y-1.5">
+          <div className="space-y-xs">
             <label htmlFor="taxi-to" className="block text-xs font-normal text-secondary">
               Куда
             </label>
@@ -59,7 +59,7 @@ export function TaxiTab() {
             />
           </div>
 
-          <div className="space-y-1.5">
+          <div className="space-y-xs">
             <label htmlFor="taxi-date" className="block text-xs font-normal text-secondary">
               Дата поездки
             </label>
@@ -73,7 +73,7 @@ export function TaxiTab() {
             />
           </div>
 
-          <div className="space-y-1.5">
+          <div className="space-y-xs">
             <label htmlFor="taxi-passengers" className="block text-xs font-normal text-secondary">
               Пассажиры
             </label>
@@ -88,7 +88,7 @@ export function TaxiTab() {
             />
           </div>
 
-          <div className="space-y-1.5">
+          <div className="space-y-xs">
             <div className="block text-xs font-normal opacity-0 text-secondary">
               Поиск
             </div>
@@ -107,14 +107,14 @@ export function TaxiTab() {
       {isSearchActive && from.trim() && to.trim() && (
         <div className="space-y-4 fade-in">
           {taxiMock.map((taxi) => (
-            <div key={taxi.id} className="card p-5">
-              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div key={taxi.id} className="card p-lg">
+              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-md">
                 <div className="flex-1">
-                  <div className="flex items-center gap-4 mb-2">
+                  <div className="flex items-center gap-md mb-sm">
                     <span className="text-xl font-medium text-primary">
                       {taxi.price.toLocaleString('ru-RU')} ₽
                     </span>
-                    <span className="text-base font-medium text-primary">
+                    <span className="text-md font-medium text-primary">
                       {taxi.carType}
                     </span>
                     <span className="text-sm text-secondary">

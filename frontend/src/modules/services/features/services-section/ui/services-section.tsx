@@ -46,8 +46,8 @@ export function ServicesSection() {
   return (
     <section className="w-full">
       {/* Переключатель вкладок */}
-      <div className="card p-5 mb-4">
-        <div className="flex flex-wrap items-center justify-center gap-2">
+      <div className="card p-lg mb-md">
+        <div className="flex flex-wrap items-center justify-center gap-sm">
           {tabs.map((tab) => {
             const isActive = activeTab === tab.id
             return (
@@ -59,11 +59,7 @@ export function ServicesSection() {
                   e.stopPropagation()
                   setActiveTab(tab.id)
                 }}
-                className={`px-4 py-2 rounded-sm transition-fast font-medium text-sm border ${
-                  isActive 
-                    ? 'btn-primary border-primary' 
-                    : 'bg-input-bg text-secondary border-divider hover:bg-surface-hover'
-                }`}
+                className={`tab tab-light ${isActive ? 'tab-light-active' : ''}`}
               >
                 {tab.label}
               </button>
@@ -74,11 +70,7 @@ export function ServicesSection() {
 
       {/* Контент вкладок с анимацией */}
       <div
-        style={{
-          opacity: isTransitioning ? 0 : 1,
-          transition: 'opacity 0.22s ease-in-out',
-          pointerEvents: isTransitioning ? 'none' : 'auto',
-        }}
+        className={`transition-opacity ${isTransitioning ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'}`}
       >
         {renderTabContent()}
       </div>

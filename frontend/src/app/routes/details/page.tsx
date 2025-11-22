@@ -100,7 +100,7 @@ export default function RouteDetailsPage() {
       fallback={
         <div className="min-h-screen bg-background relative flex flex-col">
           <Header />
-          <main className="container mx-auto px-4 py-6 md:py-8 relative z-10 max-w-[1300px] flex-1" aria-label="Детали маршрута">
+          <main className="container-main section-spacing-compact relative z-10 flex-1" aria-label="Детали маршрута">
             <RouteDetailsSkeleton />
           </main>
           <Footer />

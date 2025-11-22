@@ -5,10 +5,10 @@ import { toursMock } from '@/modules/services/lib'
 export function ToursTab() {
   return (
     <div className="w-full">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-lg">
         {toursMock.map((tour) => (
-          <div key={tour.id} className="card p-5 fade-in">
-            <div className="w-full h-48 rounded-sm overflow-hidden mb-3">
+          <div key={tour.id} className="card p-lg fade-in">
+            <div className="w-full h-48 rounded-sm overflow-hidden mb-md">
               <div
                 className="w-full h-full"
                 style={{
@@ -20,17 +20,17 @@ export function ToursTab() {
                 }}
               />
             </div>
-            <h3 className="text-lg font-medium mb-2 text-primary">
+            <h3 className="text-lg font-medium mb-sm text-primary">
               {tour.name}
             </h3>
-            <p className="text-sm mb-3 text-secondary">
+            <p className="text-sm mb-md text-secondary">
               {tour.description}
             </p>
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-lg">
               <span className="text-sm text-secondary">
                 Длительность: {tour.duration}
               </span>
-              <span className="text-base font-medium text-primary">
+              <span className="text-md font-medium text-primary">
                 {tour.price.toLocaleString('ru-RU')} ₽
               </span>
             </div>

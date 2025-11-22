@@ -117,8 +117,8 @@ export function RouteDetailsView({ data }: RouteDetailsViewProps) {
 
   if (!primaryRoute) {
     return (
-      <div className="text-center py-10">
-        <p className="text-base text-secondary">Маршруты не найдены</p>
+      <div className="text-center py-2xl">
+        <p className="text-md text-secondary">Маршруты не найдены</p>
       </div>
     );
   }

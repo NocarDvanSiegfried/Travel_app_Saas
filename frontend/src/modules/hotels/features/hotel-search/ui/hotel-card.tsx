@@ -9,8 +9,8 @@ interface HotelCardProps {
 
 export const HotelCard = memo(function HotelCard({ hotel }: HotelCardProps) {
   return (
-    <div className="card p-5 transition-fast">
-      <div className="flex flex-col md:flex-row gap-4">
+    <div className="card p-lg transition-fast">
+      <div className="flex flex-col md:flex-row gap-md">
         {/* Фото гостиницы */}
         <div className="w-full md:w-64 h-48 md:h-40 rounded-sm overflow-hidden flex-shrink-0">
           <div
@@ -27,11 +27,11 @@ export const HotelCard = memo(function HotelCard({ hotel }: HotelCardProps) {
 
         {/* Информация о гостинице */}
         <div className="flex-1 flex flex-col">
-          <div className="flex items-start justify-between mb-2">
+          <div className="flex items-start justify-between mb-sm">
             <h3 className="text-lg font-medium text-primary">
               {hotel.name}
             </h3>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-xs">
               <span className="text-sm font-medium text-primary">
                 ★
               </span>
@@ -41,7 +41,7 @@ export const HotelCard = memo(function HotelCard({ hotel }: HotelCardProps) {
             </div>
           </div>
 
-          <p className="text-sm mb-3 flex-1 text-secondary">
+          <p className="text-sm mb-md flex-1 text-secondary">
             {hotel.description}
           </p>
 

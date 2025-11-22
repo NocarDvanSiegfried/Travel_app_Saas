@@ -16,33 +16,33 @@ export function FavoritesSection() {
   }
 
   return (
-    <section className="w-full space-y-6 fade-in">
+    <section className="w-full space-y-xl fade-in">
       {/* Блок 1: Лучшие цены */}
       <div>
-        <h2 className="text-xl font-medium mb-3" style={{ color: 'var(--color-text-heading)' }}>
+        <h2 className="text-xl font-medium mb-md text-heading">
           Лучшие цены
         </h2>
-        <div className="space-y-3">
+        <div className="space-y-md">
           {bestPricesMock.map((route) => (
-            <div key={route.id} className="card p-5">
+            <div key={route.id} className="card p-lg">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3 flex-1">
-                  <span className="text-base font-medium text-primary">
+                <div className="flex items-center gap-md flex-1">
+                  <span className="text-md font-medium text-primary">
                     {route.from}
                   </span>
-                  <span className="text-base text-primary">
+                  <span className="text-md text-primary">
                     →
                   </span>
-                  <span className="text-base font-medium text-primary">
+                  <span className="text-md font-medium text-primary">
                     {route.to}
                   </span>
                   {route.isLowestPrice && (
-                    <span className="text-xs px-2 py-1 rounded-sm text-inverse" style={{ backgroundColor: 'var(--color-primary)' }}>
+                    <span className="badge badge-primary text-inverse">
                       Самая низкая цена
                     </span>
                   )}
                 </div>
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-md">
                   {route.date && (
                     <span className="text-sm text-secondary">
                       {route.date}
@@ -60,24 +60,24 @@ export function FavoritesSection() {
 
       {/* Блок 2: Оптимальные маршруты */}
       <div>
-        <h2 className="text-xl font-medium mb-3" style={{ color: 'var(--color-text-heading)' }}>
+        <h2 className="text-xl font-medium mb-md text-heading">
           Оптимальные маршруты
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-md">
           {optimalRoutesMock.map((route) => (
-            <div key={route.id} className="card p-5 fade-in">
-              <h3 className="text-sm font-medium mb-2 text-primary">
+            <div key={route.id} className="card p-lg fade-in">
+              <h3 className="text-sm font-medium mb-sm text-primary">
                 {getRouteTypeLabel(route.type)}
               </h3>
-              <p className="text-base font-medium mb-3 text-primary">
+              <p className="text-md font-medium mb-md text-primary">
                 {route.route}
               </p>
-              <div className="space-y-2 mb-4">
+              <div className="space-y-sm mb-md">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-secondary">
                     Цена:
                   </span>
-                  <span className="text-base font-medium text-primary">
+                  <span className="text-md font-medium text-primary">
                     {route.price.toLocaleString('ru-RU')} ₽
                   </span>
                 </div>
@@ -111,13 +111,13 @@ export function FavoritesSection() {
 
       {/* Блок 3: Популярные места */}
       <div>
-        <h2 className="text-xl font-medium mb-3" style={{ color: 'var(--color-text-heading)' }}>
+        <h2 className="text-xl font-medium mb-md text-heading">
           Популярные места
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-md">
           {popularPlacesMock.map((place) => (
-            <div key={place.id} className="card p-5 fade-in">
-              <div className="w-full h-40 rounded-sm overflow-hidden mb-3">
+            <div key={place.id} className="card p-lg fade-in">
+              <div className="w-full h-40 rounded-sm overflow-hidden mb-md">
                 <div
                   className="w-full h-full"
                   style={{
@@ -129,7 +129,7 @@ export function FavoritesSection() {
                   }}
                 />
               </div>
-              <h3 className="text-lg font-medium mb-2 text-primary">
+              <h3 className="text-lg font-medium mb-sm text-primary">
                 {place.name}
               </h3>
               <p className="text-sm text-secondary">

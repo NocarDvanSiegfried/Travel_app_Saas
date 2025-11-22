@@ -26,8 +26,8 @@ export function RouteSchedule({ schedule: _schedule, flights }: RouteSchedulePro
 
   if (!flights || flights.length === 0) {
     return (
-      <div className="card p-5">
-        <h2 className="text-xl font-medium mb-3" style={{ color: 'var(--color-text-heading)' }}>
+      <div className="card p-lg">
+        <h2 className="text-xl font-medium mb-md text-heading">
           Расписание рейсов
         </h2>
         <p className="text-secondary">Нет доступных рейсов на выбранную дату</p>
@@ -36,63 +36,56 @@ export function RouteSchedule({ schedule: _schedule, flights }: RouteSchedulePro
   }
 
   return (
-    <div className="card p-5">
-      <h2 className="text-xl font-medium mb-3" style={{ color: 'var(--color-text-heading)' }}>
+    <div className="card p-lg">
+      <h2 className="text-xl font-medium mb-md text-heading">
         Расписание рейсов
       </h2>
       
-      <div className="space-y-3">
+      <div className="space-y-md">
         {flights.map((flight) => (
           <div
             key={flight.Ref_Key}
-            className="border border-divider rounded-sm p-4 hover:shadow-sm transition-fast"
+            className="border border-divider rounded-sm p-md transition-fast hover:shadow-sm"
           >
             <div className="flex items-center justify-between">
               <div className="flex-1">
-                <div className="flex items-center gap-4 mb-2">
-                  <span className="font-medium text-base text-primary">
+                <div className="flex items-center gap-md mb-sm">
+                  <span className="font-medium text-md text-primary">
                     {flight.НомерРейса || 'Без номера'}
                   </span>
                   {flight.Статус && (
                     <span
-                      className="px-2 py-1 rounded-sm text-xs"
-                      style={{
-                        backgroundColor: flight.Статус === 'Отправлен'
-                          ? 'var(--color-success)'
+                      className={`px-sm py-xs rounded-sm text-xs ${
+                        flight.Статус === 'Отправлен'
+                          ? 'bg-success-light text-success'
                           : flight.Статус === 'Задержан'
-                          ? 'var(--color-warning)'
-                          : 'var(--color-background-subtle)',
-                        color: flight.Статус === 'Отправлен'
-                          ? 'var(--color-success)'
-                          : flight.Статус === 'Задержан'
-                          ? 'var(--color-warning)'
-                          : 'var(--color-text-secondary)',
-                        opacity: flight.Статус === 'Отправлен' || flight.Статус === 'Задержан' ? 0.15 : 1,
-                      }}
+                          ? 'bg-warning-light text-warning'
+                          : 'bg-background-subtle text-secondary'
+                      }`}
                     >
                       {flight.Статус}
                     </span>
                   )}
                 </div>
                 
-                <div className="flex items-center gap-6 text-sm">
+                <div className="flex items-center gap-lg text-sm">
                   <div>
                     <span className="text-secondary">Отправление:</span>
-                    <span className="ml-2 font-medium text-primary">
+                    <span className="ml-sm font-medium text-primary">
                       {formatTime(flight.ВремяОтправления)}
                     </span>
                   </div>
                   
                   <div>
                     <span className="text-secondary">Прибытие:</span>
-                    <span className="ml-2 font-medium text-primary">
+                    <span className="ml-sm font-medium text-primary">
                       {formatTime(flight.ВремяПрибытия)}
                     </span>
                   </div>
                   
                   <div>
                     <span className="text-secondary">Свободных мест:</span>
-                    <span className="ml-2 font-medium text-primary">
+                    <span className="ml-sm font-medium text-primary">
                       {flight.availableSeats}
                     </span>
                   </div>

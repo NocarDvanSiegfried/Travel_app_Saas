@@ -38,7 +38,7 @@ export function OfflineNotification() {
 
   return (
     <div
-      className={`fixed top-4 left-1/2 transform -translate-x-1/2 z-50 px-6 py-4 rounded-sm shadow-sm transition-fast ${
+      className={`fixed top-md left-1/2 z-50 transform -translate-x-1/2 px-xl py-md rounded-sm shadow-sm transition-fast ${
         isOnline
           ? 'bg-success text-inverse'
           : 'bg-error text-inverse'
@@ -46,7 +46,7 @@ export function OfflineNotification() {
       role="alert"
       aria-live="polite"
     >
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-md">
         {isOnline ? (
           <>
             <svg
@@ -86,7 +86,7 @@ export function OfflineNotification() {
         )}
         <button
           onClick={() => setShowNotification(false)}
-          className="ml-4 text-inverse hover:opacity-80 transition-fast"
+          className="ml-md text-inverse transition-fast hover:opacity-80"
           aria-label="Закрыть уведомление"
         >
           <svg

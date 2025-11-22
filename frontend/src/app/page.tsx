@@ -106,12 +106,16 @@ export default function Home() {
     return (
       <div className="min-h-screen bg-background flex flex-col">
         <Header />
-        <main className="container-main section-spacing-compact flex-1">
-          <div className="text-center mb-6">
-            <h1 className="text-2xl md:text-3xl lg:text-4xl font-medium mb-2 leading-tight text-balance" style={{ color: 'var(--color-text-heading)' }}>
-              Путешествия, которые соединяют Якутию и Россию
-            </h1>
+        <div className="bg-header-bg">
+          <div className="container-main section-spacing-compact">
+            <div className="text-center mb-xl">
+              <h1 className="text-2xl md:text-3xl lg:text-4xl font-medium mb-sm leading-tight text-balance text-header-text">
+                Путешествия, которые соединяют Якутию и Россию
+              </h1>
+            </div>
           </div>
+        </div>
+        <main className="container-main section-spacing-compact flex-1">
         </main>
         <Footer />
       </div>
@@ -122,28 +126,34 @@ export default function Home() {
     <div className="min-h-screen bg-background flex flex-col">
       <Header />
 
-      <main className="container-main section-spacing-compact flex-1">
-        {/* Центральный заголовок */}
-        <div className="text-center mb-6">
-          <h1 className="text-2xl md:text-3xl lg:text-4xl font-medium mb-2 leading-tight text-balance" style={{ color: 'var(--color-text-heading)' }}>
-            Путешествия, которые соединяют Якутию и Россию
-          </h1>
-          {displaySection === 'routes' && (
-            <h2 className="text-lg md:text-xl font-normal text-secondary">
-              Ваш маршрут начинается здесь
-            </h2>
-          )}
-        </div>
+      {/* Тёмная верхняя зона: заголовок + табы */}
+      <div className="bg-header-bg">
+        <div className="container-main section-spacing-compact">
+          {/* Центральный заголовок */}
+          <div className="text-center mb-xl">
+            <h1 className="text-2xl md:text-3xl lg:text-4xl font-medium mb-sm leading-tight text-balance text-header-text">
+              Путешествия, которые соединяют Якутию и Россию
+            </h1>
+            {displaySection === 'routes' && (
+              <h2 className="text-lg md:text-xl font-normal text-header-secondary">
+                Ваш маршрут начинается здесь
+              </h2>
+            )}
+          </div>
 
-        {/* Навигационные табы */}
-        <div className="mb-6">
-          <NavigationTabs onSectionChange={handleSectionChange} activeSection={activeSection} />
+          {/* Навигационные табы */}
+          <div className="mb-xl">
+            <NavigationTabs onSectionChange={handleSectionChange} activeSection={activeSection} />
+          </div>
         </div>
+      </div>
 
+      {/* Светлая контентная часть */}
+      <main className="container-main section-spacing-compact flex-1" aria-live="polite" aria-atomic="false">
         {/* Контент с плавной анимацией */}
-        <section aria-label={`Секция ${displaySection}`} className="relative min-h-[400px]">
+        <section aria-label={`Секция ${displaySection}`} className="relative min-h-screen">
           <div
-            className={`${isTransitioning ? 'opacity-0' : 'animate-fade-in'} transition-opacity duration-base ${isTransitioning ? 'pointer-events-none' : 'pointer-events-auto'}`}
+            className={`${isTransitioning ? 'opacity-0 pointer-events-none' : 'animate-fade-in pointer-events-auto'} transition-opacity`}
           >
             {renderContent()}
           </div>

@@ -11,6 +11,8 @@ interface CityAutocompleteProps {
   value: string
   onChange: (value: string) => void
   onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void
+  error?: string
+  'aria-describedby'?: string
 }
 
 /**
@@ -37,6 +39,8 @@ export function CityAutocomplete({
   value,
   onChange,
   onKeyDown,
+  error,
+  'aria-describedby': ariaDescribedBy,
 }: CityAutocompleteProps) {
   const { cities: availableCities, isLoading: loading } = useCities()
   const [isOpen, setIsOpen] = useState(false)
@@ -259,7 +263,7 @@ export function CityAutocomplete({
   }
 
   return (
-    <div className="space-y-1.5 relative z-10" ref={containerRef}>
+    <div className="space-y-xs relative z-10" ref={containerRef}>
       <label
         htmlFor={id}
         className="block text-xs font-normal text-left text-secondary"
@@ -280,11 +284,22 @@ export function CityAutocomplete({
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
           className="input"
+          aria-autocomplete="list"
+          aria-expanded={isOpen}
+          aria-controls={isOpen ? `${id}-listbox` : undefined}
+          aria-activedescendant={isOpen && highlightedIndex >= 0 ? `${id}-option-${highlightedIndex}` : undefined}
+          aria-haspopup="listbox"
+          aria-owns={isOpen ? `${id}-listbox` : undefined}
+          aria-describedby={error ? `${id}-error` : ariaDescribedBy}
+          aria-invalid={error ? 'true' : 'false'}
         />
         {isOpen && filteredCities.filter((city) => city && typeof city === 'string' && city.trim().length > 1).length > 0 && (
           <ul
             ref={listRef}
-            className="absolute z-[1000] w-full max-h-60 overflow-auto rounded-sm shadow-sm border border-border bg-surface mt-1"
+            id={`${id}-listbox`}
+            role="listbox"
+            className="dropdown-menu mt-xs"
+            aria-label={`Список городов для ${label}`}
           >
             {filteredCities
               .filter((city) => city && typeof city === 'string' && city.trim().length > 1)
@@ -293,6 +308,7 @@ export function CityAutocomplete({
                 return (
                   <li
                     key={`${trimmedCity}-${index}`}
+                    id={`${id}-option-${index}`}
                     role="option"
                     aria-selected={index === highlightedIndex}
                     onClick={() => handleSelectCity(trimmedCity)}
@@ -302,12 +318,8 @@ export function CityAutocomplete({
                         handleSelectCity(trimmedCity)
                       }
                     }}
-                    tabIndex={0}
-                    className={`px-4 py-3 cursor-pointer transition-fast ${
-                      index === highlightedIndex
-                        ? 'bg-primary-light text-primary font-medium'
-                        : 'hover:bg-surface-hover text-primary'
-                    }`}
+                    tabIndex={-1}
+                    className={`dropdown-item ${index === highlightedIndex ? 'dropdown-item-active' : ''}`}
                     onMouseEnter={() => setHighlightedIndex(index)}
                   >
                     {trimmedCity}
@@ -317,6 +329,11 @@ export function CityAutocomplete({
           </ul>
         )}
       </div>
+      {error && (
+        <p id={`${id}-error`} className="text-sm mt-xs text-error" role="alert" aria-live="polite">
+          {error}
+        </p>
+      )}
     </div>
   )
 }

@@ -144,9 +144,9 @@ export function SearchForm() {
   return (
     <form
       onSubmit={handleSubmit}
-      className="card card-hover p-5 w-full relative"
+      className="card card-hover p-lg w-full relative"
     >
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-md mb-lg">
         {/* Откуда */}
         <div>
           <CityAutocomplete
@@ -162,12 +162,9 @@ export function SearchForm() {
                 setErrors((prev) => ({ ...prev, from: undefined }))
               }
             }}
+            error={errors.from}
+            aria-describedby={errors.from ? 'from-error' : undefined}
           />
-          {errors.from && (
-            <p className="text-sm mt-1 text-error">
-              {errors.from}
-            </p>
-          )}
         </div>
 
         {/* Куда */}
@@ -185,12 +182,9 @@ export function SearchForm() {
                 setErrors((prev) => ({ ...prev, to: undefined }))
               }
             }}
+            error={errors.to}
+            aria-describedby={errors.to ? 'to-error' : undefined}
           />
-          {errors.to && (
-            <p className="text-sm mt-1 text-error">
-              {errors.to}
-            </p>
-          )}
         </div>
 
         {/* Когда */}
@@ -206,12 +200,9 @@ export function SearchForm() {
                 setErrors((prev) => ({ ...prev, date: undefined }))
               }
             }}
+            error={errors.date}
+            aria-describedby={errors.date ? 'date-error' : undefined}
           />
-          {errors.date && (
-            <p className="text-sm mt-1 text-error">
-              {errors.date}
-            </p>
-          )}
         </div>
 
         {/* Обратно */}
@@ -227,8 +218,8 @@ export function SearchForm() {
           />
         </div>
 
-        {/* Пассажиры */}
-        <div className="space-y-1.5">
+          {/* Пассажиры */}
+        <div className="space-y-xs">
           <label htmlFor="passengers" className="block text-xs font-normal text-left text-secondary">
             Пассажиры
           </label>
@@ -243,9 +234,12 @@ export function SearchForm() {
               max="9"
               aria-label="Количество пассажиров"
               aria-describedby="passengers-description"
-              className="input pr-12"
+              className="input pr-xl"
             />
-            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex flex-col gap-0.5">
+            <span id="passengers-description" className="sr-only">
+              Введите количество пассажиров от 1 до 9. Используйте кнопки вверх и вниз для изменения значения.
+            </span>
+            <div className="absolute right-sm top-1/2 -translate-y-1/2 flex flex-col gap-xs">
               <button
                 type="button"
                 onClick={() => {
@@ -257,7 +251,7 @@ export function SearchForm() {
                     return prev
                   })
                 }}
-                className="w-6 h-4 flex items-center justify-center rounded text-xs transition-fast hover:bg-surface-hover text-secondary"
+                className="w-sm h-xs flex items-center justify-center rounded text-xs text-secondary hover:bg-surface-hover hover:text-primary transition-fast"
                 aria-label="Увеличить количество пассажиров"
                 aria-controls="passengers"
               >
@@ -274,7 +268,7 @@ export function SearchForm() {
                     return prev
                   })
                 }}
-                className="w-6 h-4 flex items-center justify-center rounded text-xs transition-fast hover:bg-surface-hover text-secondary"
+                className="w-sm h-xs flex items-center justify-center rounded text-xs text-secondary hover:bg-surface-hover hover:text-primary transition-fast"
                 aria-label="Уменьшить количество пассажиров"
                 aria-controls="passengers"
               >
@@ -285,7 +279,7 @@ export function SearchForm() {
         </div>
 
         {/* Класс поездки */}
-        <div className="space-y-1.5 relative">
+        <div className="space-y-xs relative">
           <label htmlFor="class" className="block text-xs font-normal text-left text-secondary">
             Класс поездки
           </label>
@@ -301,13 +295,13 @@ export function SearchForm() {
       </div>
 
       {/* Кнопка поиска */}
-      <div className="flex justify-center md:justify-start relative z-20 mt-2">
+      <div className="flex justify-center md:justify-start relative z-20 mt-sm">
         <button
           type="submit"
           disabled={!isFormValid()}
           aria-label="Найти маршрут"
           aria-disabled={!isFormValid()}
-          className="btn-primary w-full md:w-auto px-8 py-2.5"
+          className="btn-primary w-full md:w-auto px-2xl py-sm"
         >
           Найти маршрут
         </button>

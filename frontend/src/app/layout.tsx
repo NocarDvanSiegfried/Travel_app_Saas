@@ -85,8 +85,38 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
+  // Schema.org разметка для SEO
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'TravelAgency',
+    name: 'Travel App',
+    description: 'Путешествия, которые соединяют Якутию и Россию',
+    url: process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
+    logo: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/og-image.jpg`,
+    sameAs: [
+      'https://vk.com',
+      'https://ok.ru',
+      'https://t.me',
+    ],
+    contactPoint: {
+      '@type': 'ContactPoint',
+      contactType: 'customer service',
+      availableLanguage: ['Russian'],
+    },
+    areaServed: {
+      '@type': 'Country',
+      name: 'Russia',
+    },
+  }
+
   return (
     <html lang="ru" className={`${inter.variable} antialiased`}>
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      </head>
       <body className="font-sans">
         <QueryProvider>
           <ErrorBoundaryProvider>

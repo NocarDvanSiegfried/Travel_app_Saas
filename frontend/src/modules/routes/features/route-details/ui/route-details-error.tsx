@@ -33,12 +33,12 @@ export function RouteDetailsError({ error }: RouteDetailsErrorProps) {
   const { title, message } = getErrorMessage(error);
 
   return (
-    <div className="card p-6 text-center">
-      <div className="text-4xl mb-4">⚠️</div>
-      <h2 className="text-xl font-medium mb-3" style={{ color: 'var(--color-text-heading)' }}>
+    <div className="card p-lg text-center">
+      <div className="text-4xl mb-md">⚠️</div>
+      <h2 className="text-xl font-medium mb-md text-heading">
         {title}
       </h2>
-      <p className="text-secondary mb-6">{message}</p>
+      <p className="text-secondary mb-lg">{message}</p>
       <button
         onClick={() => window.history.back()}
         className="btn-primary"

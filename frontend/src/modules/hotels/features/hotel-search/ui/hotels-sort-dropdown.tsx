@@ -43,14 +43,14 @@ export function HotelsSortDropdown({ sortOption, onSortChange }: HotelsSortDropd
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="input flex items-center gap-2"
+        className="input flex items-center gap-sm"
       >
         <span>{sortLabels[sortOption]}</span>
         <span>{isOpen ? '▲' : '▼'}</span>
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 mt-2 card p-2 min-w-[200px] z-50 fade-in">
+        <div className="absolute top-full left-0 mt-sm dropdown min-w-xs z-50 fade-in">
           {(['price-desc', 'price-asc', 'rating'] as SortOption[]).map((option) => {
             const isActive = sortOption === option
             return (
@@ -58,11 +58,7 @@ export function HotelsSortDropdown({ sortOption, onSortChange }: HotelsSortDropd
                 key={option}
                 type="button"
                 onClick={() => handleSelect(option)}
-                className={`w-full text-left px-4 py-2 rounded-sm transition-fast text-sm ${
-                  isActive 
-                    ? 'bg-primary text-inverse' 
-                    : 'text-primary hover:bg-surface-hover'
-                }`}
+                className={`dropdown-item ${isActive ? 'dropdown-item-active' : ''}`}
               >
                 {sortLabels[option]}
               </button>

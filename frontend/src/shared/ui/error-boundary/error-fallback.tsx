@@ -18,28 +18,28 @@ export function ErrorFallback({ error, errorInfo, resetError }: ErrorFallbackPro
   return (
     <div className="min-h-screen bg-background relative flex flex-col">
       <main className="container-main section-spacing-compact relative z-10 flex-1 flex items-center justify-center">
-        <div className="card p-6 max-w-2xl w-full text-center">
-          <div className="mb-6">
-            <h1 className="text-2xl md:text-3xl font-medium mb-3" style={{ color: 'var(--color-text-heading)' }}>
+        <div className="card p-xl max-w-2xl w-full text-center">
+          <div className="mb-xl">
+            <h1 className="text-2xl md:text-3xl font-medium mb-md text-heading">
               Что-то пошло не так
             </h1>
-            <p className="text-base mb-2 text-secondary">
+            <p className="text-md mb-sm text-secondary">
               Произошла непредвиденная ошибка. Мы уже работаем над её исправлением.
             </p>
           </div>
 
           {/* Детали ошибки только в development */}
           {isDevelopment && error && (
-            <div className="mb-6 p-4 rounded-sm text-left" style={{ backgroundColor: 'var(--color-error)', opacity: 0.1 }}>
-              <p className="text-sm font-medium mb-2" style={{ color: 'var(--color-error)' }}>
+            <div className="mb-xl p-md rounded-sm text-left bg-error-light">
+              <p className="text-sm font-medium mb-sm text-error">
                 Детали ошибки (только в development):
               </p>
-              <p className="text-xs font-mono mb-2 text-primary">
+              <p className="text-xs font-mono mb-sm text-primary">
                 {error.message}
               </p>
               {errorInfo && errorInfo.componentStack && (
                 <details className="text-xs font-mono text-primary">
-                  <summary className="cursor-pointer mb-2">Stack trace</summary>
+                  <summary className="cursor-pointer mb-sm">Stack trace</summary>
                   <pre className="overflow-auto max-h-40 whitespace-pre-wrap">
                     {errorInfo.componentStack}
                   </pre>
@@ -49,7 +49,7 @@ export function ErrorFallback({ error, errorInfo, resetError }: ErrorFallbackPro
           )}
 
           {/* Действия */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex flex-col sm:flex-row gap-md justify-center">
             <button
               onClick={resetError}
               aria-label="Попробовать снова"

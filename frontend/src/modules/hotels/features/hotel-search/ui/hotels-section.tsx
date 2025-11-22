@@ -128,8 +128,8 @@ export function HotelsSection() {
 
       {/* Фильтры и сортировка - показываем только если поиск активен */}
       {isSearchActive && searchQuery.trim() && (
-        <div className="mb-3">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+        <div className="mb-md">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-md">
             <HotelsFilters
               filters={filters}
               onFiltersChange={setFilters}
@@ -146,17 +146,12 @@ export function HotelsSection() {
       {/* Карточки гостиниц */}
       {isSearchActive && searchQuery.trim() && (
         <div
-          className="space-y-4"
-          style={{
-            opacity: isAnimating || isContentAnimating ? 0 : 1,
-            transition: 'opacity 0.3s ease-in-out',
-            pointerEvents: isAnimating || isContentAnimating ? 'none' : 'auto',
-          }}
+          className={`space-y-md transition-opacity-slow ${isAnimating || isContentAnimating ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'}`}
         >
           {showNoResults ? (
             // Сообщение "не найдено"
-            <div className="card p-5 text-center fade-in">
-              <p className="text-base text-secondary">
+            <div className="card p-lg text-center fade-in">
+              <p className="text-md text-secondary">
                 Гостиницы не найдены
               </p>
             </div>
@@ -170,6 +165,7 @@ export function HotelsSection() {
                   style={{
                     animationDelay: `${index * 0.05}s`,
                   }}
+                  // animationDelay - динамическое значение, оставляем inline
                 >
                   <HotelCard hotel={hotel} />
                 </div>

@@ -25,8 +25,8 @@ interface RouteSegmentsProps {
 export function RouteSegments({ segments }: RouteSegmentsProps) {
   if (!segments || segments.length === 0) {
     return (
-      <div className="card p-5">
-        <h2 className="text-xl font-medium mb-3" style={{ color: 'var(--color-text-heading)' }}>
+      <div className="card p-lg">
+        <h2 className="text-xl font-medium mb-md text-heading">
           Сегменты маршрута
         </h2>
         <p className="text-secondary">Сегменты маршрута не найдены</p>
@@ -35,24 +35,24 @@ export function RouteSegments({ segments }: RouteSegmentsProps) {
   }
 
   return (
-    <div className="card p-5">
-      <h2 className="text-xl font-medium mb-3" style={{ color: 'var(--color-text-heading)' }}>
+    <div className="card p-lg">
+      <h2 className="text-xl font-medium mb-md text-heading">
         Сегменты маршрута
       </h2>
       
-      <div className="space-y-3">
+      <div className="space-y-md">
         {segments.map((segment, index) => (
           <div
             key={index}
-            className="border-l-4 border-primary pl-4 py-2"
+            className="border-l-primary pl-md py-sm"
           >
-            <div className="flex items-start gap-4">
+            <div className="flex items-start gap-md">
               <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-inverse flex items-center justify-center font-medium">
                 {segment.order + 1}
               </div>
               
               <div className="flex-1">
-                <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center justify-between mb-sm">
                   <div className="font-medium text-primary">
                     {segment.from?.Наименование || segment.from?.Код || 'Неизвестно'}
                   </div>
@@ -62,15 +62,15 @@ export function RouteSegments({ segments }: RouteSegmentsProps) {
                     </div>
                   )}
                 </div>
-                <div className="text-secondary text-sm mt-1">
+                <div className="text-secondary text-sm mt-sm">
                   {segment.from?.Адрес}
                 </div>
                 
-                <div className="my-2 flex items-center gap-2">
-                  <div className="flex-1 h-px" style={{ backgroundColor: 'var(--color-divider)' }}></div>
-                  <div className="flex items-center gap-2">
+                <div className="my-sm flex items-center gap-sm">
+                  <div className="flex-1 h-px bg-divider"></div>
+                  <div className="flex items-center gap-sm">
                     {segment.transportType && (
-                      <span className="text-xs px-2 py-1 rounded-sm" style={{ backgroundColor: 'var(--color-primary-light)', color: 'var(--color-primary)' }}>
+                      <span className="text-xs px-sm py-xs rounded-sm bg-primary-light text-primary">
                         {segment.transportType === 'airplane' ? '✈️ Самолёт' :
                          segment.transportType === 'bus' ? '🚌 Автобус' :
                          segment.transportType === 'train' ? '🚂 Поезд' :
@@ -81,10 +81,10 @@ export function RouteSegments({ segments }: RouteSegmentsProps) {
                     )}
                     <span className="text-xs text-tertiary">↓</span>
                   </div>
-                  <div className="flex-1 h-px" style={{ backgroundColor: 'var(--color-divider)' }}></div>
+                  <div className="flex-1 h-px bg-divider"></div>
                 </div>
                 
-                <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center justify-between mb-sm">
                   <div className="font-medium text-primary">
                     {segment.to?.Наименование || segment.to?.Код || 'Неизвестно'}
                   </div>
@@ -94,10 +94,10 @@ export function RouteSegments({ segments }: RouteSegmentsProps) {
                     </div>
                   )}
                 </div>
-                <div className="text-secondary text-sm mt-1">
+                <div className="text-secondary text-sm mt-sm">
                   {segment.to?.Адрес}
                   {segment.duration && (
-                    <span className="ml-2 text-xs">
+                    <span className="ml-sm text-xs">
                       ({Math.floor(segment.duration / 60)}ч {segment.duration % 60}м)
                     </span>
                   )}

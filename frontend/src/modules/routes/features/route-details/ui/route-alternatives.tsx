@@ -23,8 +23,8 @@ interface RouteAlternativesProps {
 export function RouteAlternatives({ routes }: RouteAlternativesProps) {
   if (!routes || routes.length <= 1) {
     return (
-      <div className="card p-5">
-        <h2 className="text-xl font-medium mb-3" style={{ color: 'var(--color-text-heading)' }}>
+      <div className="card p-lg">
+        <h2 className="text-xl font-medium mb-md text-heading">
           Альтернативные варианты
         </h2>
         <p className="text-secondary">Альтернативные маршруты не найдены</p>
@@ -84,15 +84,15 @@ export function RouteAlternatives({ routes }: RouteAlternativesProps) {
     .sort((a, b) => a.price - b.price)[0];
 
   return (
-    <div className="card p-5">
-      <h2 className="text-xl font-medium mb-3" style={{ color: 'var(--color-text-heading)' }}>
+    <div className="card p-lg">
+      <h2 className="text-xl font-medium mb-md text-heading">
         Альтернативные варианты
       </h2>
       
-      <div className="space-y-3">
+      <div className="space-y-md">
         {fastest && (
-          <div className="border-l-4 border-primary pl-4 py-2 rounded-sm" style={{ backgroundColor: 'var(--color-primary-light)' }}>
-            <div className="font-medium mb-1" style={{ color: 'var(--color-primary)' }}>
+          <div className="border-l-primary pl-md py-sm rounded-sm bg-primary-light">
+            <div className="font-medium mb-sm text-primary">
               ⚡ Быстрее
             </div>
             <div className="text-sm text-primary">
@@ -107,8 +107,8 @@ export function RouteAlternatives({ routes }: RouteAlternativesProps) {
         )}
 
         {cheapest && (
-          <div className="border-l-4 border-accent pl-4 py-2 rounded-sm" style={{ backgroundColor: 'var(--color-accent)', opacity: 0.1 }}>
-            <div className="font-medium mb-1" style={{ color: 'var(--color-accent)' }}>
+          <div className="border-l-accent pl-md py-sm rounded-sm bg-accent-light">
+            <div className="font-medium mb-sm text-accent">
               💰 Дешевле
             </div>
             <div className="text-sm text-primary">
@@ -123,7 +123,7 @@ export function RouteAlternatives({ routes }: RouteAlternativesProps) {
         )}
 
         {alternatives.length > 2 && (
-          <div className="text-sm text-secondary mt-4">
+          <div className="text-sm text-secondary mt-md">
             Всего альтернативных маршрутов: {alternatives.length}
           </div>
         )}

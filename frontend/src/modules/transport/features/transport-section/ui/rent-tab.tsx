@@ -85,9 +85,9 @@ export function RentTab() {
   return (
     <div className="w-full">
       {/* Форма поиска */}
-      <div className="card p-5 mb-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-          <div className="space-y-1.5">
+      <div className="card p-lg mb-lg">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-md">
+          <div className="space-y-xs">
             <label htmlFor="rent-city" className="block text-xs font-normal text-secondary">
               Город
             </label>
@@ -102,7 +102,7 @@ export function RentTab() {
             />
           </div>
 
-          <div className="space-y-1.5">
+          <div className="space-y-xs">
             <label htmlFor="rent-start" className="block text-xs font-normal text-secondary">
               Дата начала
             </label>
@@ -116,7 +116,7 @@ export function RentTab() {
             />
           </div>
 
-          <div className="space-y-1.5">
+          <div className="space-y-xs">
             <label htmlFor="rent-end" className="block text-xs font-normal text-secondary">
               Дата окончания
             </label>
@@ -130,7 +130,7 @@ export function RentTab() {
             />
           </div>
 
-          <div className="space-y-1.5">
+          <div className="space-y-xs">
             <label htmlFor="rent-car-type" className="block text-xs font-normal text-secondary">
               Тип авто
             </label>
@@ -149,7 +149,7 @@ export function RentTab() {
             </select>
           </div>
 
-          <div className="space-y-1.5">
+          <div className="space-y-xs">
             <div className="block text-xs font-normal opacity-0 text-secondary">
               Поиск
             </div>
@@ -166,7 +166,7 @@ export function RentTab() {
 
       {/* Фильтры - показываем только если поиск активен */}
       {isSearchActive && city.trim() && startDate && endDate && (
-        <div className="mb-3">
+        <div className="mb-md">
           <RentFilters
             filters={filters}
             onFiltersChange={setFilters}
@@ -179,16 +179,12 @@ export function RentTab() {
       {/* Результаты поиска */}
       {isSearchActive && city.trim() && startDate && endDate && (
         <div
-          className="space-y-4"
-          style={{
-            opacity: isContentAnimating ? 0 : 1,
-            transition: 'opacity 0.3s ease-in-out',
-          }}
+          className={`space-y-4 transition-opacity-slow ${isContentAnimating ? 'opacity-0' : 'opacity-100'}`}
         >
           {filteredCars.length > 0 ? (
             filteredCars.map((car) => (
-              <div key={car.id} className="card p-5 fade-in">
-                <div className="flex flex-col md:flex-row gap-4">
+                <div key={car.id} className="card p-lg fade-in">
+                <div className="flex flex-col md:flex-row gap-md">
                   <div className="w-full md:w-64 h-48 md:h-40 rounded-sm overflow-hidden flex-shrink-0">
                     <div
                       className="w-full h-full"
@@ -203,7 +199,7 @@ export function RentTab() {
                   </div>
 
                   <div className="flex-1 flex flex-col">
-                    <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-start justify-between mb-sm">
                       <div>
                         <h3 className="text-lg font-medium text-primary">
                           {car.brand} {car.model}
@@ -238,8 +234,8 @@ export function RentTab() {
               </div>
             ))
           ) : (
-            <div className="card p-5 text-center fade-in">
-              <p className="text-base text-secondary">
+            <div className="card p-lg text-center fade-in">
+              <p className="text-md text-secondary">
                 Автомобили не найдены
               </p>
             </div>

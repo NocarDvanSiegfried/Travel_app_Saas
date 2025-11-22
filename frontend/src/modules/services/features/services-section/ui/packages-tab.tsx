@@ -5,16 +5,16 @@ import { servicePackagesMock } from '@/modules/services/lib'
 export function PackagesTab() {
   return (
     <div className="w-full">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-lg">
         {servicePackagesMock.map((pkg) => (
-          <div key={pkg.id} className="card p-5 fade-in">
-            <h3 className="text-lg font-medium mb-3 text-center text-primary">
+          <div key={pkg.id} className="card p-lg fade-in">
+            <h3 className="text-lg font-medium mb-md text-center text-primary">
               {pkg.name}
             </h3>
-            <ul className="space-y-2">
+            <ul className="space-y-sm">
               {pkg.features.map((feature, index) => (
                 <li key={index} className="flex items-start">
-                  <span className="mr-2 text-base text-primary">
+                  <span className="mr-sm text-md text-primary">
                     ✓
                   </span>
                   <span className="text-sm text-primary">
@@ -25,7 +25,7 @@ export function PackagesTab() {
             </ul>
             <button
               type="button"
-              className="btn-primary w-full mt-4"
+              className="btn-primary w-full mt-lg"
             >
               Выбрать пакет
             </button>

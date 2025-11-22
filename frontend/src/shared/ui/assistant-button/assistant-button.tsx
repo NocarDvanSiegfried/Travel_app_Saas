@@ -1,36 +1,19 @@
 'use client'
 
-import { useState } from 'react'
+import { memo } from 'react'
 import { MammothIcon } from '@/shared/icons'
 
-export function AssistantButton() {
-  const [isHovered, setIsHovered] = useState(false)
-
+export const AssistantButton = memo(function AssistantButton() {
   return (
     <button
-      className={`
-        fixed bottom-6 right-6 w-14 h-14 rounded-full
-        flex items-center justify-center
-        transition-fast z-50
-        shadow-sm hover:shadow-md
-        ${isHovered ? 'scale-110' : 'scale-100'}
-      `}
-      style={{ backgroundColor: 'var(--color-primary)' }}
-      onMouseEnter={(e) => {
-        setIsHovered(true)
-        e.currentTarget.style.backgroundColor = 'var(--color-primary-hover)'
-      }}
-      onMouseLeave={(e) => {
-        setIsHovered(false)
-        e.currentTarget.style.backgroundColor = 'var(--color-primary)'
-      }}
+      className="fixed bottom-lg right-lg z-50 w-3xl h-3xl rounded-full flex items-center justify-center shadow-sm hover:shadow-sm transition-fast btn-icon btn-assistant"
       aria-label="Помощник мамонтёнок"
     >
       <MammothIcon 
-        className="w-8 h-8" 
+        className="w-logo h-logo" 
         color="var(--color-text-inverse)"
       />
     </button>
   )
-}
+})
 

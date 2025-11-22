@@ -45,8 +45,8 @@ export const RoutePricing = memo(function RoutePricing({ flights }: RoutePricing
 
   if (allTariffs.length === 0) {
     return (
-      <div className="card p-5">
-        <h2 className="text-xl font-medium mb-3" style={{ color: 'var(--color-text-heading)' }}>
+      <div className="card p-lg">
+        <h2 className="text-xl font-medium mb-md text-heading">
           Стоимость и тарифы
         </h2>
         <p className="text-secondary">Тарифы не найдены</p>
@@ -55,17 +55,17 @@ export const RoutePricing = memo(function RoutePricing({ flights }: RoutePricing
   }
 
   return (
-    <div className="card p-5">
-      <h2 className="text-xl font-medium mb-3" style={{ color: 'var(--color-text-heading)' }}>
+    <div className="card p-lg">
+      <h2 className="text-xl font-medium mb-md text-heading">
         Стоимость и тарифы
       </h2>
       
-      <div className="mb-4 p-4 rounded-sm" style={{ backgroundColor: 'var(--color-primary-light)' }}>
+      <div className="mb-md p-md rounded-sm bg-primary-light">
         <div className="flex items-center justify-between">
           <span className="text-secondary">Диапазон цен:</span>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-md">
             {minPrice !== Infinity && (
-              <span className="text-xl font-medium" style={{ color: 'var(--color-success)' }}>
+              <span className="text-xl font-medium text-success">
                 от {formatPrice(minPrice)}
               </span>
             )}
@@ -78,24 +78,24 @@ export const RoutePricing = memo(function RoutePricing({ flights }: RoutePricing
         </div>
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-md">
         {flights.map((flight) => (
-          <div key={flight.Ref_Key} className="border border-divider rounded-sm p-4">
-            <div className="font-medium mb-2 text-primary">
+          <div key={flight.Ref_Key} className="border border-divider rounded-sm p-md">
+            <div className="font-medium mb-sm text-primary">
               Рейс {flight.НомерРейса || 'Без номера'}
             </div>
             
             {flight.tariffs.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-md">
                 {flight.tariffs.map((tariff, index) => (
                   <div
                     key={index}
-                    className="border border-divider rounded-sm p-3 hover:shadow-sm transition-fast"
+                    className="border border-divider rounded-sm p-md transition-fast hover:shadow-sm"
                   >
-                    <div className="font-medium mb-1 text-primary">
+                    <div className="font-medium mb-sm text-primary">
                       {tariff.Наименование || tariff.Код || 'Тариф'}
                     </div>
-                    <div className="text-xl font-medium" style={{ color: 'var(--color-success)' }}>
+                    <div className="text-xl font-medium text-success">
                       {tariff.Цена ? formatPrice(tariff.Цена) : '—'}
                     </div>
                   </div>

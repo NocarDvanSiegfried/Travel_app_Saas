@@ -33,10 +33,10 @@ export function HotelsSearchForm({
   }
 
   return (
-    <div className="card p-5 mb-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+    <div className="card p-lg mb-lg">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-md">
         {/* Город или отель */}
-        <div className="space-y-1.5">
+        <div className="space-y-xs">
           <label htmlFor="hotel-search" className="block text-xs font-normal text-secondary">
             Город или отель
           </label>
@@ -52,7 +52,7 @@ export function HotelsSearchForm({
         </div>
 
         {/* Дата заселения */}
-        <div className="space-y-1.5">
+          <div className="space-y-xs">
           <label htmlFor="check-in" className="block text-xs font-normal text-secondary">
             Дата заселения
           </label>
@@ -67,7 +67,7 @@ export function HotelsSearchForm({
         </div>
 
         {/* Дата выезда */}
-        <div className="space-y-1.5">
+          <div className="space-y-xs">
           <label htmlFor="check-out" className="block text-xs font-normal text-secondary">
             Дата выезда
           </label>
@@ -82,7 +82,7 @@ export function HotelsSearchForm({
         </div>
 
         {/* Количество гостей */}
-        <div className="space-y-1.5">
+          <div className="space-y-xs">
           <label htmlFor="guests" className="block text-xs font-normal text-secondary">
             Гостей
           </label>
@@ -98,7 +98,7 @@ export function HotelsSearchForm({
         </div>
 
         {/* Кнопка поиска */}
-        <div className="space-y-1.5">
+          <div className="space-y-xs">
           <div className="block text-xs font-normal opacity-0 text-secondary">
             Поиск
           </div>

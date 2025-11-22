@@ -21,11 +21,11 @@ export function RentFilters({ filters, onFiltersChange, isOpen, onToggle }: Rent
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center justify-between mb-sm">
         <button
           type="button"
           onClick={onToggle}
-          className={`px-6 py-2 rounded-sm transition-fast font-medium text-sm border ${
+          className={`px-xl py-sm rounded-sm font-medium text-sm border transition-fast ${
             isOpen 
               ? 'btn-primary border-primary' 
               : 'bg-input-bg text-secondary border-divider hover:bg-surface-hover'
@@ -36,10 +36,10 @@ export function RentFilters({ filters, onFiltersChange, isOpen, onToggle }: Rent
       </div>
 
       {isOpen && (
-        <div className="card p-5 fade-in">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="card p-lg fade-in">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-md">
             {/* Возраст водителя */}
-            <div className="space-y-2">
+            <div className="space-y-sm">
               <label htmlFor="driver-age" className="block text-xs font-normal text-secondary">
                 Возраст водителя
               </label>
@@ -56,7 +56,7 @@ export function RentFilters({ filters, onFiltersChange, isOpen, onToggle }: Rent
             </div>
 
             {/* Тип авто */}
-            <div className="space-y-2">
+            <div className="space-y-sm">
               <label htmlFor="car-type" className="block text-xs font-normal text-secondary">
                 Тип авто
               </label>
@@ -76,7 +76,7 @@ export function RentFilters({ filters, onFiltersChange, isOpen, onToggle }: Rent
             </div>
 
             {/* Коробка передач */}
-            <div className="space-y-2">
+            <div className="space-y-sm">
               <label htmlFor="transmission" className="block text-xs font-normal text-secondary">
                 Коробка передач
               </label>
@@ -109,7 +109,7 @@ export function RentFilters({ filters, onFiltersChange, isOpen, onToggle }: Rent
             </label>
 
             {/* Цена от */}
-            <div className="space-y-2">
+            <div className="space-y-sm">
               <label htmlFor="price-min-rent" className="block text-xs font-normal text-secondary">
                 Цена от (₽)
               </label>
@@ -125,7 +125,7 @@ export function RentFilters({ filters, onFiltersChange, isOpen, onToggle }: Rent
             </div>
 
             {/* Цена до */}
-            <div className="space-y-2">
+            <div className="space-y-sm">
               <label htmlFor="price-max-rent" className="block text-xs font-normal text-secondary">
                 Цена до (₽)
               </label>

@@ -26,9 +26,9 @@ export function BusTab() {
   return (
     <div className="w-full">
       {/* Форма поиска */}
-      <div className="card p-5 mb-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="space-y-1.5">
+      <div className="card p-lg mb-lg">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-md">
+          <div className="space-y-xs">
             <label htmlFor="bus-from" className="block text-xs font-normal text-secondary">
               Откуда
             </label>
@@ -43,7 +43,7 @@ export function BusTab() {
             />
           </div>
 
-          <div className="space-y-1.5">
+          <div className="space-y-xs">
             <label htmlFor="bus-to" className="block text-xs font-normal text-secondary">
               Куда
             </label>
@@ -58,7 +58,7 @@ export function BusTab() {
             />
           </div>
 
-          <div className="space-y-1.5">
+          <div className="space-y-xs">
             <label htmlFor="bus-date" className="block text-xs font-normal text-secondary">
               Дата
             </label>
@@ -72,7 +72,7 @@ export function BusTab() {
             />
           </div>
 
-          <div className="space-y-1.5">
+          <div className="space-y-xs">
             <div className="block text-xs font-normal opacity-0 text-secondary">
               Поиск
             </div>
@@ -91,28 +91,28 @@ export function BusTab() {
       {isSearchActive && from.trim() && to.trim() && (
         <div className="space-y-4 fade-in">
           {busRoutesMock.map((bus) => (
-            <div key={bus.id} className="card p-5">
-              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div key={bus.id} className="card p-lg">
+              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-md">
                 <div className="flex-1">
-                  <h3 className="text-lg font-medium mb-2 text-primary">
+                  <h3 className="text-lg font-medium mb-sm text-primary">
                     {bus.route}
                   </h3>
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-md">
                     <div>
                       <span className="text-sm text-secondary">Отправление: </span>
-                      <span className="text-base font-medium text-primary">
+                      <span className="text-md font-medium text-primary">
                         {bus.departureTime}
                       </span>
                     </div>
                     <div>
                       <span className="text-sm text-secondary">Прибытие: </span>
-                      <span className="text-base font-medium text-primary">
+                      <span className="text-md font-medium text-primary">
                         {bus.arrivalTime}
                       </span>
                     </div>
                   </div>
                 </div>
-                <div className="flex flex-col items-end gap-2">
+                <div className="flex flex-col items-end gap-sm">
                   <span className="text-xl font-medium text-primary">
                     {bus.price.toLocaleString('ru-RU')} ₽
                   </span>
