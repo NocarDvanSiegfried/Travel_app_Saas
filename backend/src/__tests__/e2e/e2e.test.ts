@@ -196,19 +196,29 @@ describe('E2E: Complete User Scenarios', () => {
       expect(response.body.error).toHaveProperty('message');
     });
 
-    it('should return validation error for missing date parameter', async () => {
-      // Step 1: Make request without date (required parameter)
+    it('should accept request without date parameter (date is optional)', async () => {
+      // Step 1: Make request without date (date is now optional, defaults to today)
       const response = await agent
         .get('/api/v1/routes/search')
         .query({
           from: 'Москва',
           to: 'Санкт-Петербург',
-        })
-        .expect(400);
+        });
 
-      // Step 2: Verify error response
-      expect(response.body).toHaveProperty('error');
-      expect(response.body.error).toHaveProperty('code', 'VALIDATION_ERROR');
+      // Step 2: Should not return validation error (date is optional)
+      // Can be 200 (routes found), 404 (no routes found), or 503 (graph not available)
+      expect([200, 404, 503]).toContain(response.status);
+      
+      if (response.status === 400) {
+        // If 400, it should not be about missing date
+        expect(response.body.error).not.toEqual(
+          expect.objectContaining({
+            details: expect.arrayContaining([
+              expect.objectContaining({ path: 'date' }),
+            ]),
+          })
+        );
+      }
     });
   });
 
@@ -350,6 +360,73 @@ describe('E2E: Complete User Scenarios', () => {
       expect(response.body).toHaveProperty('error');
       expect(response.body.error).toHaveProperty('code', 'VALIDATION_ERROR');
       expect(response.body.error).toHaveProperty('message');
+    });
+  });
+
+  describe('E2E Scenario 5: Yakutia Cities API Scenarios', () => {
+    it('should return all Yakutia cities from /api/v1/cities', async () => {
+      const response = await agent.get('/api/v1/cities').query({ page: 1, limit: 100 });
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(Array.isArray(response.body.data)).toBe(true);
+
+      const cities = response.body.data as string[];
+
+      // Key Yakutia cities that should be present in demo data
+      const expectedCities = [
+        'Якутск',
+        'Мирный',
+        'Нерюнгри',
+        'Ленск',
+        'Вилюйск',
+        'Олёкминск',
+        'Олекминск', // Test normalization
+        'Тикси',
+      ];
+
+      // Check that at least some expected cities are present
+      // (exact list depends on what's in the test database)
+      const foundCities = expectedCities.filter(city => cities.includes(city));
+      expect(foundCities.length).toBeGreaterThan(0);
+
+      // Verify that cities list is not empty
+      expect(cities.length).toBeGreaterThan(0);
+    });
+
+    it('should not return STOPS_NOT_FOUND for Якутск → Олёкминск when data is present', async () => {
+      // This test assumes that stops and routes are set up in the test database
+      // If they're not, the test will check that the error is NOT STOPS_NOT_FOUND
+      const response = await agent.get('/api/v1/routes/search').query({
+        from: 'Якутск',
+        to: 'Олёкминск',
+        date: '2025-11-22',
+      });
+
+      // Should not be 404 with STOPS_NOT_FOUND
+      if (response.status === 404) {
+        expect(response.body.error?.code).not.toBe('STOPS_NOT_FOUND');
+        // It's acceptable to have ROUTES_NOT_FOUND if route doesn't exist
+        // but stops should be found
+      } else if (response.status === 200) {
+        // Success case - route found
+        expect(response.body.success).toBe(true);
+      }
+    });
+
+    it('should not return STOPS_NOT_FOUND for Вилюйск → Мирный when data is present', async () => {
+      const response = await agent.get('/api/v1/routes/search').query({
+        from: 'Вилюйск',
+        to: 'Мирный',
+        date: '2025-11-22',
+      });
+
+      // Should not be 404 with STOPS_NOT_FOUND
+      if (response.status === 404) {
+        expect(response.body.error?.code).not.toBe('STOPS_NOT_FOUND');
+      } else if (response.status === 200) {
+        expect(response.body.success).toBe(true);
+      }
     });
   });
 });

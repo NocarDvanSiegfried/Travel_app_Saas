@@ -24,6 +24,7 @@ import { RealStop } from '../../domain/entities/RealStop';
 import { Route, type RouteStop, type TransportType } from '../../domain/entities/Route';
 import { Flight } from '../../domain/entities/Flight';
 import { Dataset } from '../../domain/entities/Dataset';
+import { extractCityFromStopName } from '../../shared/utils/city-normalizer';
 
 /**
  * OData API response structure
@@ -260,13 +261,10 @@ export class ODataSyncWorker extends BaseBackgroundWorker {
       const longitude = stopData.coordinates?.longitude ?? stopData.longitude;
       
       // Extract city name from stop name if not provided
+      // Use unified utility for consistent city extraction across the system
       let cityName = stopData.cityName;
       if (!cityName && stopData.name) {
-        // Try to extract city from name (e.g., "Аэропорт Якутск" -> "Якутск")
-        const cityMatch = stopData.name.match(/(?:г\.\s*)?([А-Яа-яЁё]+)/);
-        if (cityMatch) {
-          cityName = cityMatch[1];
-        }
+        cityName = extractCityFromStopName(stopData.name, stopData.address);
       }
 
       // Determine if airport or railway station

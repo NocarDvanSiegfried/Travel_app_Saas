@@ -4,7 +4,10 @@
     "name": "Якутск - Москва (Авиа)",
     "routeNumber": "SU-1234",
     "transportType": "PLANE",
-    "stops": ["stop-001", "stop-002"],
+    "stops": [
+      "stop-001",
+      "stop-002"
+    ],
     "baseFare": 25000
   },
   {
@@ -12,7 +15,10 @@
     "name": "Якутск - Иркутск (Авиа)",
     "routeNumber": "S7-5678",
     "transportType": "PLANE",
-    "stops": ["stop-001", "stop-003"],
+    "stops": [
+      "stop-001",
+      "stop-003"
+    ],
     "baseFare": 12000
   },
   {
@@ -20,7 +26,11 @@
     "name": "Якутск - Мирный (Автобус)",
     "routeNumber": "101",
     "transportType": "BUS",
-    "stops": ["stop-001", "stop-004", "stop-005"],
+    "stops": [
+      "stop-001",
+      "stop-004",
+      "stop-005"
+    ],
     "baseFare": 2500
   },
   {
@@ -28,7 +38,11 @@
     "name": "Иркутск - Москва (Поезд)",
     "routeNumber": "004А",
     "transportType": "TRAIN",
-    "stops": ["stop-003", "stop-006", "stop-002"],
+    "stops": [
+      "stop-003",
+      "stop-006",
+      "stop-002"
+    ],
     "baseFare": 8000
   },
   {
@@ -36,7 +50,10 @@
     "name": "Мирный - Иркутск (Авиа)",
     "routeNumber": "S7-9012",
     "transportType": "PLANE",
-    "stops": ["stop-005", "stop-003"],
+    "stops": [
+      "stop-005",
+      "stop-003"
+    ],
     "baseFare": 8000
   },
   {
@@ -44,7 +61,10 @@
     "name": "Якутск - Хандыга (Автобус)",
     "routeNumber": "102",
     "transportType": "BUS",
-    "stops": ["stop-001", "stop-007"],
+    "stops": [
+      "stop-001",
+      "stop-007"
+    ],
     "baseFare": 2000
   },
   {
@@ -52,7 +72,10 @@
     "name": "Москва - Санкт-Петербург (Поезд)",
     "routeNumber": "002Б",
     "transportType": "TRAIN",
-    "stops": ["stop-002", "stop-008"],
+    "stops": [
+      "stop-002",
+      "stop-008"
+    ],
     "baseFare": 3500
   },
   {
@@ -60,7 +83,10 @@
     "name": "Якутск - Нерюнгри (Автобус)",
     "routeNumber": "103",
     "transportType": "BUS",
-    "stops": ["stop-001", "stop-009"],
+    "stops": [
+      "stop-001",
+      "stop-009"
+    ],
     "baseFare": 2200
   },
   {
@@ -68,7 +94,10 @@
     "name": "Нерюнгри - Иркутск (Авиа)",
     "routeNumber": "S7-3456",
     "transportType": "PLANE",
-    "stops": ["stop-009", "stop-003"],
+    "stops": [
+      "stop-009",
+      "stop-003"
+    ],
     "baseFare": 9000
   },
   {
@@ -76,7 +105,1286 @@
     "name": "Иркутск - Красноярск (Поезд)",
     "routeNumber": "070М",
     "transportType": "TRAIN",
-    "stops": ["stop-003", "stop-010"],
+    "stops": [
+      "stop-003",
+      "stop-010"
+    ],
     "baseFare": 4000
+  },
+  {
+    "id": "route-011",
+    "name": "Якутск - Олёкминск (Автобус)",
+    "routeNumber": "104",
+    "transportType": "BUS",
+    "stops": [
+      "stop-011",
+      "stop-013"
+    ],
+    "baseFare": 1800
+  },
+  {
+    "id": "route-012",
+    "name": "Якутск - Ленск (Автобус)",
+    "routeNumber": "105",
+    "transportType": "BUS",
+    "stops": [
+      "stop-011",
+      "stop-015"
+    ],
+    "baseFare": 2000
+  },
+  {
+    "id": "route-013",
+    "name": "Якутск - Ленск (Авиа)",
+    "routeNumber": "YAK-LNS",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-001",
+      "stop-014"
+    ],
+    "baseFare": 8000
+  },
+  {
+    "id": "route-014",
+    "name": "Вилюйск - Мирный (Автобус)",
+    "routeNumber": "106",
+    "transportType": "BUS",
+    "stops": [
+      "stop-017",
+      "stop-005"
+    ],
+    "baseFare": 2200
+  },
+  {
+    "id": "route-015",
+    "name": "Вилюйск - Мирный (Авиа)",
+    "routeNumber": "VIL-MIR",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-016",
+      "stop-005"
+    ],
+    "baseFare": 7500
+  },
+  {
+    "id": "route-016",
+    "name": "Якутск - Тикси (Авиа)",
+    "routeNumber": "YAK-TIX",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-001",
+      "stop-018"
+    ],
+    "baseFare": 15000
+  },
+  {
+    "id": "route-017",
+    "name": "Ленск - Мирный (Автобус)",
+    "routeNumber": "107",
+    "transportType": "BUS",
+    "stops": [
+      "stop-015",
+      "stop-005"
+    ],
+    "baseFare": 1800
+  },
+  {
+    "id": "route-018",
+    "name": "Якутск - Вилюйск (Автобус)",
+    "routeNumber": "108",
+    "transportType": "BUS",
+    "stops": [
+      "stop-011",
+      "stop-017"
+    ],
+    "baseFare": 2500
+  },
+  {
+    "id": "route-019",
+    "name": "Якутск - Вилюйск (Авиа)",
+    "routeNumber": "YAK-VIL",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-001",
+      "stop-016"
+    ],
+    "baseFare": 6000
+  },
+  {
+    "id": "route-020",
+    "name": "Олёкминск - Ленск (Автобус)",
+    "routeNumber": "109",
+    "transportType": "BUS",
+    "stops": [
+      "stop-013",
+      "stop-015"
+    ],
+    "baseFare": 1500
+  },
+  {
+    "id": "route-021",
+    "name": "Нерюнгри - Алдан (Автобус)",
+    "routeNumber": "110",
+    "transportType": "BUS",
+    "stops": [
+      "stop-009",
+      "stop-020"
+    ],
+    "baseFare": 1200
+  },
+  {
+    "id": "route-022",
+    "name": "Якутск - Покровск (Автобус)",
+    "routeNumber": "111",
+    "transportType": "BUS",
+    "stops": [
+      "stop-011",
+      "stop-021"
+    ],
+    "baseFare": 800
+  },
+  {
+    "id": "route-023",
+    "name": "Мирный - Удачный (Автобус)",
+    "routeNumber": "112",
+    "transportType": "BUS",
+    "stops": [
+      "stop-005",
+      "stop-022"
+    ],
+    "baseFare": 1500
+  },
+  {
+    "id": "route-024",
+    "name": "Якутск - Верхоянск (Авиа)",
+    "routeNumber": "YAK-VER",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-001",
+      "stop-023"
+    ],
+    "baseFare": 12000
+  },
+  {
+    "id": "route-025",
+    "name": "Якутск - Жиганск (Авиа)",
+    "routeNumber": "YAK-ZHI",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-001",
+      "stop-024"
+    ],
+    "baseFare": 10000
+  },
+  {
+    "id": "route-026",
+    "name": "Тикси - Среднеколымск (Авиа)",
+    "routeNumber": "TIX-SKO",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-018",
+      "stop-025"
+    ],
+    "baseFare": 11000
+  },
+  {
+    "id": "route-027",
+    "name": "Тикси - Чокурдах (Авиа)",
+    "routeNumber": "TIX-CHO",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-018",
+      "stop-026"
+    ],
+    "baseFare": 9000
+  },
+  {
+    "id": "route-028",
+    "name": "Якутск - Мирный (Авиа)",
+    "routeNumber": "ЯКУ-МИР",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-011",
+      "stop-005"
+    ],
+    "baseFare": 10113
+  },
+  {
+    "id": "route-029",
+    "name": "Якутск - Нерюнгри (Авиа)",
+    "routeNumber": "ЯКУ-НЕР",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-011",
+      "stop-009"
+    ],
+    "baseFare": 7863
+  },
+  {
+    "id": "route-030",
+    "name": "Якутск - Ленск (Авиа)",
+    "routeNumber": "ЯКУ-ЛЕН",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-011",
+      "stop-014"
+    ],
+    "baseFare": 9975
+  },
+  {
+    "id": "route-031",
+    "name": "Якутск - Вилюйск (Автобус)",
+    "routeNumber": "131",
+    "transportType": "BUS",
+    "stops": [
+      "stop-011",
+      "stop-016"
+    ],
+    "baseFare": 1575
+  },
+  {
+    "id": "route-033",
+    "name": "Якутск - Тикси (Авиа)",
+    "routeNumber": "ЯКУ-ТИК",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-011",
+      "stop-018"
+    ],
+    "baseFare": 13350
+  },
+  {
+    "id": "route-034",
+    "name": "Якутск - Алдан (Автобус)",
+    "routeNumber": "134",
+    "transportType": "BUS",
+    "stops": [
+      "stop-011",
+      "stop-020"
+    ],
+    "baseFare": 1572
+  },
+  {
+    "id": "route-035",
+    "name": "Якутск - Хандыга (Автобус)",
+    "routeNumber": "135",
+    "transportType": "BUS",
+    "stops": [
+      "stop-011",
+      "stop-007"
+    ],
+    "baseFare": 1096
+  },
+  {
+    "id": "route-037",
+    "name": "Якутск - Удачный (Авиа)",
+    "routeNumber": "ЯКУ-УДА",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-011",
+      "stop-022"
+    ],
+    "baseFare": 12025
+  },
+  {
+    "id": "route-038",
+    "name": "Якутск - Верхоянск (Авиа)",
+    "routeNumber": "ЯКУ-ВЕР",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-011",
+      "stop-023"
+    ],
+    "baseFare": 7975
+  },
+  {
+    "id": "route-039",
+    "name": "Якутск - Жиганск (Авиа)",
+    "routeNumber": "ЯКУ-ЖИГ",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-011",
+      "stop-024"
+    ],
+    "baseFare": 7575
+  },
+  {
+    "id": "route-040",
+    "name": "Якутск - Среднеколымск (Авиа)",
+    "routeNumber": "ЯКУ-СРЕ",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-011",
+      "stop-025"
+    ],
+    "baseFare": 15975
+  },
+  {
+    "id": "route-041",
+    "name": "Якутск - Чокурдах (Авиа)",
+    "routeNumber": "ЯКУ-ЧОК",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-011",
+      "stop-026"
+    ],
+    "baseFare": 15550
+  },
+  {
+    "id": "route-042",
+    "name": "Мирный - Нерюнгри (Авиа)",
+    "routeNumber": "МИР-НЕР",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-005",
+      "stop-009"
+    ],
+    "baseFare": 10888
+  },
+  {
+    "id": "route-043",
+    "name": "Мирный - Ленск (Автобус)",
+    "routeNumber": "143",
+    "transportType": "BUS",
+    "stops": [
+      "stop-005",
+      "stop-014"
+    ],
+    "baseFare": 725
+  },
+  {
+    "id": "route-044",
+    "name": "Мирный - Вилюйск (Автобус)",
+    "routeNumber": "144",
+    "transportType": "BUS",
+    "stops": [
+      "stop-005",
+      "stop-016"
+    ],
+    "baseFare": 1414
+  },
+  {
+    "id": "route-045",
+    "name": "Мирный - Олёкминск (Автобус)",
+    "routeNumber": "145",
+    "transportType": "BUS",
+    "stops": [
+      "stop-005",
+      "stop-013"
+    ],
+    "baseFare": 1456
+  },
+  {
+    "id": "route-046",
+    "name": "Мирный - Тикси (Авиа)",
+    "routeNumber": "МИР-ТИК",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-005",
+      "stop-018"
+    ],
+    "baseFare": 14888
+  },
+  {
+    "id": "route-047",
+    "name": "Мирный - Алдан (Авиа)",
+    "routeNumber": "МИР-АЛД",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-005",
+      "stop-020"
+    ],
+    "baseFare": 9475
+  },
+  {
+    "id": "route-048",
+    "name": "Мирный - Хандыга (Авиа)",
+    "routeNumber": "МИР-ХАН",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-005",
+      "stop-007"
+    ],
+    "baseFare": 13725
+  },
+  {
+    "id": "route-049",
+    "name": "Мирный - Покровск (Авиа)",
+    "routeNumber": "МИР-ПОК",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-005",
+      "stop-021"
+    ],
+    "baseFare": 9938
+  },
+  {
+    "id": "route-051",
+    "name": "Мирный - Верхоянск (Авиа)",
+    "routeNumber": "МИР-ВЕР",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-005",
+      "stop-023"
+    ],
+    "baseFare": 13238
+  },
+  {
+    "id": "route-052",
+    "name": "Мирный - Жиганск (Авиа)",
+    "routeNumber": "МИР-ЖИГ",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-005",
+      "stop-024"
+    ],
+    "baseFare": 8088
+  },
+  {
+    "id": "route-053",
+    "name": "Мирный - Среднеколымск (Авиа)",
+    "routeNumber": "МИР-СРЕ",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-005",
+      "stop-025"
+    ],
+    "baseFare": 23813
+  },
+  {
+    "id": "route-054",
+    "name": "Мирный - Чокурдах (Авиа)",
+    "routeNumber": "МИР-ЧОК",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-005",
+      "stop-026"
+    ],
+    "baseFare": 21400
+  },
+  {
+    "id": "route-055",
+    "name": "Нерюнгри - Ленск (Авиа)",
+    "routeNumber": "НЕР-ЛЕН",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-009",
+      "stop-014"
+    ],
+    "baseFare": 8913
+  },
+  {
+    "id": "route-056",
+    "name": "Нерюнгри - Вилюйск (Авиа)",
+    "routeNumber": "НЕР-ВИЛ",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-009",
+      "stop-016"
+    ],
+    "baseFare": 9775
+  },
+  {
+    "id": "route-057",
+    "name": "Нерюнгри - Олёкминск (Автобус)",
+    "routeNumber": "157",
+    "transportType": "BUS",
+    "stops": [
+      "stop-009",
+      "stop-013"
+    ],
+    "baseFare": 1624
+  },
+  {
+    "id": "route-058",
+    "name": "Нерюнгри - Тикси (Авиа)",
+    "routeNumber": "НЕР-ТИК",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-009",
+      "stop-018"
+    ],
+    "baseFare": 20588
+  },
+  {
+    "id": "route-060",
+    "name": "Нерюнгри - Хандыга (Авиа)",
+    "routeNumber": "НЕР-ХАН",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-009",
+      "stop-007"
+    ],
+    "baseFare": 10900
+  },
+  {
+    "id": "route-061",
+    "name": "Нерюнгри - Покровск (Авиа)",
+    "routeNumber": "НЕР-ПОК",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-009",
+      "stop-021"
+    ],
+    "baseFare": 7025
+  },
+  {
+    "id": "route-062",
+    "name": "Нерюнгри - Удачный (Авиа)",
+    "routeNumber": "НЕР-УДА",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-009",
+      "stop-022"
+    ],
+    "baseFare": 15513
+  },
+  {
+    "id": "route-063",
+    "name": "Нерюнгри - Верхоянск (Авиа)",
+    "routeNumber": "НЕР-ВЕР",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-009",
+      "stop-023"
+    ],
+    "baseFare": 15738
+  },
+  {
+    "id": "route-064",
+    "name": "Нерюнгри - Жиганск (Авиа)",
+    "routeNumber": "НЕР-ЖИГ",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-009",
+      "stop-024"
+    ],
+    "baseFare": 13725
+  },
+  {
+    "id": "route-065",
+    "name": "Нерюнгри - Среднеколымск (Авиа)",
+    "routeNumber": "НЕР-СРЕ",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-009",
+      "stop-025"
+    ],
+    "baseFare": 23363
+  },
+  {
+    "id": "route-066",
+    "name": "Нерюнгри - Чокурдах (Авиа)",
+    "routeNumber": "НЕР-ЧОК",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-009",
+      "stop-026"
+    ],
+    "baseFare": 23400
+  },
+  {
+    "id": "route-067",
+    "name": "Ленск - Вилюйск (Автобус)",
+    "routeNumber": "167",
+    "transportType": "BUS",
+    "stops": [
+      "stop-014",
+      "stop-016"
+    ],
+    "baseFare": 1694
+  },
+  {
+    "id": "route-068",
+    "name": "Ленск - Олёкминск (Автобус)",
+    "routeNumber": "168",
+    "transportType": "BUS",
+    "stops": [
+      "stop-014",
+      "stop-013"
+    ],
+    "baseFare": 1064
+  },
+  {
+    "id": "route-069",
+    "name": "Ленск - Тикси (Авиа)",
+    "routeNumber": "ЛЕН-ТИК",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-014",
+      "stop-018"
+    ],
+    "baseFare": 16975
+  },
+  {
+    "id": "route-070",
+    "name": "Ленск - Алдан (Авиа)",
+    "routeNumber": "ЛЕН-АЛД",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-014",
+      "stop-020"
+    ],
+    "baseFare": 7913
+  },
+  {
+    "id": "route-071",
+    "name": "Ленск - Хандыга (Авиа)",
+    "routeNumber": "ЛЕН-ХАН",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-014",
+      "stop-007"
+    ],
+    "baseFare": 13825
+  },
+  {
+    "id": "route-072",
+    "name": "Ленск - Покровск (Авиа)",
+    "routeNumber": "ЛЕН-ПОК",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-014",
+      "stop-021"
+    ],
+    "baseFare": 9600
+  },
+  {
+    "id": "route-073",
+    "name": "Ленск - Удачный (Авиа)",
+    "routeNumber": "ЛЕН-УДА",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-014",
+      "stop-022"
+    ],
+    "baseFare": 8075
+  },
+  {
+    "id": "route-074",
+    "name": "Ленск - Верхоянск (Авиа)",
+    "routeNumber": "ЛЕН-ВЕР",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-014",
+      "stop-023"
+    ],
+    "baseFare": 14588
+  },
+  {
+    "id": "route-075",
+    "name": "Ленск - Жиганск (Авиа)",
+    "routeNumber": "ЛЕН-ЖИГ",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-014",
+      "stop-024"
+    ],
+    "baseFare": 9875
+  },
+  {
+    "id": "route-076",
+    "name": "Ленск - Среднеколымск (Авиа)",
+    "routeNumber": "ЛЕН-СРЕ",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-014",
+      "stop-025"
+    ],
+    "baseFare": 24838
+  },
+  {
+    "id": "route-077",
+    "name": "Ленск - Чокурдах (Авиа)",
+    "routeNumber": "ЛЕН-ЧОК",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-014",
+      "stop-026"
+    ],
+    "baseFare": 22900
+  },
+  {
+    "id": "route-078",
+    "name": "Вилюйск - Олёкминск (Автобус)",
+    "routeNumber": "178",
+    "transportType": "BUS",
+    "stops": [
+      "stop-016",
+      "stop-013"
+    ],
+    "baseFare": 1334
+  },
+  {
+    "id": "route-079",
+    "name": "Вилюйск - Тикси (Авиа)",
+    "routeNumber": "ВИЛ-ТИК",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-016",
+      "stop-018"
+    ],
+    "baseFare": 11575
+  },
+  {
+    "id": "route-080",
+    "name": "Вилюйск - Алдан (Авиа)",
+    "routeNumber": "ВИЛ-АЛД",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-016",
+      "stop-020"
+    ],
+    "baseFare": 7600
+  },
+  {
+    "id": "route-081",
+    "name": "Вилюйск - Хандыга (Авиа)",
+    "routeNumber": "ВИЛ-ХАН",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-016",
+      "stop-007"
+    ],
+    "baseFare": 8863
+  },
+  {
+    "id": "route-082",
+    "name": "Вилюйск - Покровск (Автобус)",
+    "routeNumber": "182",
+    "transportType": "BUS",
+    "stops": [
+      "stop-016",
+      "stop-021"
+    ],
+    "baseFare": 1610
+  },
+  {
+    "id": "route-083",
+    "name": "Вилюйск - Удачный (Авиа)",
+    "routeNumber": "ВИЛ-УДА",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-016",
+      "stop-022"
+    ],
+    "baseFare": 6538
+  },
+  {
+    "id": "route-084",
+    "name": "Вилюйск - Верхоянск (Авиа)",
+    "routeNumber": "ВИЛ-ВЕР",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-016",
+      "stop-023"
+    ],
+    "baseFare": 8538
+  },
+  {
+    "id": "route-085",
+    "name": "Вилюйск - Жиганск (Автобус)",
+    "routeNumber": "185",
+    "transportType": "BUS",
+    "stops": [
+      "stop-016",
+      "stop-024"
+    ],
+    "baseFare": 1208
+  },
+  {
+    "id": "route-086",
+    "name": "Вилюйск - Среднеколымск (Авиа)",
+    "routeNumber": "ВИЛ-СРЕ",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-016",
+      "stop-025"
+    ],
+    "baseFare": 18875
+  },
+  {
+    "id": "route-087",
+    "name": "Вилюйск - Чокурдах (Авиа)",
+    "routeNumber": "ВИЛ-ЧОК",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-016",
+      "stop-026"
+    ],
+    "baseFare": 16863
+  },
+  {
+    "id": "route-088",
+    "name": "Олёкминск - Тикси (Авиа)",
+    "routeNumber": "ОЛЁ-ТИК",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-013",
+      "stop-018"
+    ],
+    "baseFare": 16325
+  },
+  {
+    "id": "route-089",
+    "name": "Олёкминск - Алдан (Автобус)",
+    "routeNumber": "189",
+    "transportType": "BUS",
+    "stops": [
+      "stop-013",
+      "stop-020"
+    ],
+    "baseFare": 1201
+  },
+  {
+    "id": "route-090",
+    "name": "Олёкминск - Хандыга (Авиа)",
+    "routeNumber": "ОЛЁ-ХАН",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-013",
+      "stop-007"
+    ],
+    "baseFare": 10513
+  },
+  {
+    "id": "route-091",
+    "name": "Олёкминск - Покровск (Автобус)",
+    "routeNumber": "191",
+    "transportType": "BUS",
+    "stops": [
+      "stop-013",
+      "stop-021"
+    ],
+    "baseFare": 1705
+  },
+  {
+    "id": "route-092",
+    "name": "Олёкминск - Удачный (Авиа)",
+    "routeNumber": "ОЛЁ-УДА",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-013",
+      "stop-022"
+    ],
+    "baseFare": 9750
+  },
+  {
+    "id": "route-093",
+    "name": "Олёкминск - Верхоянск (Авиа)",
+    "routeNumber": "ОЛЁ-ВЕР",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-013",
+      "stop-023"
+    ],
+    "baseFare": 12675
+  },
+  {
+    "id": "route-094",
+    "name": "Олёкминск - Жиганск (Авиа)",
+    "routeNumber": "ОЛЁ-ЖИГ",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-013",
+      "stop-024"
+    ],
+    "baseFare": 9075
+  },
+  {
+    "id": "route-095",
+    "name": "Олёкминск - Среднеколымск (Авиа)",
+    "routeNumber": "ОЛЁ-СРЕ",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-013",
+      "stop-025"
+    ],
+    "baseFare": 22225
+  },
+  {
+    "id": "route-096",
+    "name": "Олёкминск - Чокурдах (Авиа)",
+    "routeNumber": "ОЛЁ-ЧОК",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-013",
+      "stop-026"
+    ],
+    "baseFare": 20963
+  },
+  {
+    "id": "route-097",
+    "name": "Тикси - Алдан (Авиа)",
+    "routeNumber": "ТИК-АЛД",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-018",
+      "stop-020"
+    ],
+    "baseFare": 18225
+  },
+  {
+    "id": "route-098",
+    "name": "Тикси - Хандыга (Авиа)",
+    "routeNumber": "ТИК-ХАН",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-018",
+      "stop-007"
+    ],
+    "baseFare": 12975
+  },
+  {
+    "id": "route-099",
+    "name": "Тикси - Покровск (Авиа)",
+    "routeNumber": "ТИК-ПОК",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-018",
+      "stop-021"
+    ],
+    "baseFare": 14113
+  },
+  {
+    "id": "route-100",
+    "name": "Тикси - Удачный (Авиа)",
+    "routeNumber": "ТИК-УДА",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-018",
+      "stop-022"
+    ],
+    "baseFare": 10875
+  },
+  {
+    "id": "route-101",
+    "name": "Тикси - Верхоянск (Автобус)",
+    "routeNumber": "201",
+    "transportType": "BUS",
+    "stops": [
+      "stop-018",
+      "stop-023"
+    ],
+    "baseFare": 1701
+  },
+  {
+    "id": "route-102",
+    "name": "Тикси - Жиганск (Авиа)",
+    "routeNumber": "ТИК-ЖИГ",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-018",
+      "stop-024"
+    ],
+    "baseFare": 7275
+  },
+  {
+    "id": "route-105",
+    "name": "Алдан - Хандыга (Авиа)",
+    "routeNumber": "АЛД-ХАН",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-020",
+      "stop-007"
+    ],
+    "baseFare": 8925
+  },
+  {
+    "id": "route-106",
+    "name": "Алдан - Покровск (Автобус)",
+    "routeNumber": "206",
+    "transportType": "BUS",
+    "stops": [
+      "stop-020",
+      "stop-021"
+    ],
+    "baseFare": 1337
+  },
+  {
+    "id": "route-107",
+    "name": "Алдан - Удачный (Авиа)",
+    "routeNumber": "АЛД-УДА",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-020",
+      "stop-022"
+    ],
+    "baseFare": 13638
+  },
+  {
+    "id": "route-108",
+    "name": "Алдан - Верхоянск (Авиа)",
+    "routeNumber": "АЛД-ВЕР",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-020",
+      "stop-023"
+    ],
+    "baseFare": 13388
+  },
+  {
+    "id": "route-109",
+    "name": "Алдан - Жиганск (Авиа)",
+    "routeNumber": "АЛД-ЖИГ",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-020",
+      "stop-024"
+    ],
+    "baseFare": 11425
+  },
+  {
+    "id": "route-110",
+    "name": "Алдан - Среднеколымск (Авиа)",
+    "routeNumber": "АЛД-СРЕ",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-020",
+      "stop-025"
+    ],
+    "baseFare": 21375
+  },
+  {
+    "id": "route-111",
+    "name": "Алдан - Чокурдах (Авиа)",
+    "routeNumber": "АЛД-ЧОК",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-020",
+      "stop-026"
+    ],
+    "baseFare": 21150
+  },
+  {
+    "id": "route-112",
+    "name": "Хандыга - Покровск (Автобус)",
+    "routeNumber": "212",
+    "transportType": "BUS",
+    "stops": [
+      "stop-007",
+      "stop-021"
+    ],
+    "baseFare": 1260
+  },
+  {
+    "id": "route-113",
+    "name": "Хандыга - Удачный (Авиа)",
+    "routeNumber": "ХАН-УДА",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-007",
+      "stop-022"
+    ],
+    "baseFare": 14713
+  },
+  {
+    "id": "route-114",
+    "name": "Хандыга - Верхоянск (Авиа)",
+    "routeNumber": "ХАН-ВЕР",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-007",
+      "stop-023"
+    ],
+    "baseFare": 6925
+  },
+  {
+    "id": "route-115",
+    "name": "Хандыга - Жиганск (Авиа)",
+    "routeNumber": "ХАН-ЖИГ",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-007",
+      "stop-024"
+    ],
+    "baseFare": 9200
+  },
+  {
+    "id": "route-116",
+    "name": "Хандыга - Среднеколымск (Авиа)",
+    "routeNumber": "ХАН-СРЕ",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-007",
+      "stop-025"
+    ],
+    "baseFare": 12463
+  },
+  {
+    "id": "route-117",
+    "name": "Хандыга - Чокурдах (Авиа)",
+    "routeNumber": "ХАН-ЧОК",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-007",
+      "stop-026"
+    ],
+    "baseFare": 12925
+  },
+  {
+    "id": "route-118",
+    "name": "Покровск - Удачный (Авиа)",
+    "routeNumber": "ПОК-УДА",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-021",
+      "stop-022"
+    ],
+    "baseFare": 12250
+  },
+  {
+    "id": "route-119",
+    "name": "Покровск - Верхоянск (Авиа)",
+    "routeNumber": "ПОК-ВЕР",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-021",
+      "stop-023"
+    ],
+    "baseFare": 8800
+  },
+  {
+    "id": "route-120",
+    "name": "Покровск - Жиганск (Авиа)",
+    "routeNumber": "ПОК-ЖИГ",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-021",
+      "stop-024"
+    ],
+    "baseFare": 8125
+  },
+  {
+    "id": "route-121",
+    "name": "Покровск - Среднеколымск (Авиа)",
+    "routeNumber": "ПОК-СРЕ",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-021",
+      "stop-025"
+    ],
+    "baseFare": 16725
+  },
+  {
+    "id": "route-122",
+    "name": "Покровск - Чокурдах (Авиа)",
+    "routeNumber": "ПОК-ЧОК",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-021",
+      "stop-026"
+    ],
+    "baseFare": 16388
+  },
+  {
+    "id": "route-123",
+    "name": "Удачный - Верхоянск (Авиа)",
+    "routeNumber": "УДА-ВЕР",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-022",
+      "stop-023"
+    ],
+    "baseFare": 11450
+  },
+  {
+    "id": "route-124",
+    "name": "Удачный - Жиганск (Автобус)",
+    "routeNumber": "224",
+    "transportType": "BUS",
+    "stops": [
+      "stop-022",
+      "stop-024"
+    ],
+    "baseFare": 1705
+  },
+  {
+    "id": "route-125",
+    "name": "Удачный - Среднеколымск (Авиа)",
+    "routeNumber": "УДА-СРЕ",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-022",
+      "stop-025"
+    ],
+    "baseFare": 22125
+  },
+  {
+    "id": "route-126",
+    "name": "Удачный - Чокурдах (Авиа)",
+    "routeNumber": "УДА-ЧОК",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-022",
+      "stop-026"
+    ],
+    "baseFare": 18675
+  },
+  {
+    "id": "route-127",
+    "name": "Верхоянск - Жиганск (Автобус)",
+    "routeNumber": "227",
+    "transportType": "BUS",
+    "stops": [
+      "stop-023",
+      "stop-024"
+    ],
+    "baseFare": 1537
+  },
+  {
+    "id": "route-128",
+    "name": "Верхоянск - Среднеколымск (Авиа)",
+    "routeNumber": "ВЕР-СРЕ",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-023",
+      "stop-025"
+    ],
+    "baseFare": 10763
+  },
+  {
+    "id": "route-129",
+    "name": "Верхоянск - Чокурдах (Авиа)",
+    "routeNumber": "ВЕР-ЧОК",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-023",
+      "stop-026"
+    ],
+    "baseFare": 8338
+  },
+  {
+    "id": "route-130",
+    "name": "Жиганск - Среднеколымск (Авиа)",
+    "routeNumber": "ЖИГ-СРЕ",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-024",
+      "stop-025"
+    ],
+    "baseFare": 16250
+  },
+  {
+    "id": "route-131",
+    "name": "Жиганск - Чокурдах (Авиа)",
+    "routeNumber": "ЖИГ-ЧОК",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-024",
+      "stop-026"
+    ],
+    "baseFare": 13363
+  },
+  {
+    "id": "route-132",
+    "name": "Среднеколымск - Чокурдах (Автобус)",
+    "routeNumber": "232",
+    "transportType": "BUS",
+    "stops": [
+      "stop-025",
+      "stop-026"
+    ],
+    "baseFare": 1474
   }
 ]

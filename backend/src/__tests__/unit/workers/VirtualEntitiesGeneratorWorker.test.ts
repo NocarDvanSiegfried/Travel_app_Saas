@@ -40,6 +40,8 @@ describe('VirtualEntitiesGeneratorWorker', () => {
       saveVirtualRoutesBatch: jest.fn(),
       countRoutes: jest.fn(),
       countVirtualRoutes: jest.fn(),
+      findDirectRoutes: jest.fn(),
+      findVirtualConnections: jest.fn(),
     } as any;
 
     mockFlightRepository = {
@@ -98,9 +100,13 @@ describe('VirtualEntitiesGeneratorWorker', () => {
       const mockVirtualStop = { id: 'vstop-1', name: 'Virtual Stop', cityId: 'MissingCity' } as any;
       const mockHubStop = { id: 'stop-1', name: 'Якутск Аэропорт', cityId: 'Якутск' } as any;
       mockStopRepository.getAllRealStops.mockResolvedValue([mockHubStop]);
+      mockStopRepository.getAllVirtualStops.mockResolvedValue([]); // For ensureYakutiaCitiesConnectivity
       // Mock for findHubStop() - getRealStopsByCity('якутск')
       mockStopRepository.getRealStopsByCity.mockResolvedValue([mockHubStop]);
       mockStopRepository.saveVirtualStopsBatch.mockResolvedValue([mockVirtualStop]);
+      // Mock for ensureYakutiaCitiesConnectivity - checkRouteExists
+      mockRouteRepository.findDirectRoutes.mockResolvedValue([]);
+      mockRouteRepository.findVirtualConnections.mockResolvedValue([]);
       mockRouteRepository.saveVirtualRoutesBatch.mockResolvedValue([]);
       mockFlightRepository.saveFlightsBatch.mockResolvedValue([]);
       mockRouteRepository.countVirtualRoutes

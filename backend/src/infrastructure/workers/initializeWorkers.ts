@@ -24,24 +24,7 @@ import {
   PostgresDatasetRepository,
   PostgresGraphRepository,
 } from '../repositories';
-
-/**
- * Yakutia cities coordinates directory
- * 
- * TODO: Move to separate data file
- */
-const YAKUTIA_CITIES: Record<string, { latitude: number; longitude: number }> = {
-  'Якутск': { latitude: 62.0355, longitude: 129.6755 },
-  'Мирный': { latitude: 62.5354, longitude: 113.9564 },
-  'Нерюнгри': { latitude: 56.6669, longitude: 124.7164 },
-  'Ленск': { latitude: 60.7242, longitude: 114.9166 },
-  'Алдан': { latitude: 58.6031, longitude: 125.3883 },
-  'Удачный': { latitude: 66.4167, longitude: 112.4000 },
-  'Вилюйск': { latitude: 63.7547, longitude: 121.6274 },
-  'Нюрба': { latitude: 63.2842, longitude: 118.3362 },
-  'Покровск': { latitude: 61.4833, longitude: 129.1500 },
-  'Олёкминск': { latitude: 60.3744, longitude: 120.4272 },
-};
+import { getYakutiaCitiesDirectory } from '../../shared/utils/yakutia-cities-loader';
 
 /**
  * Simple OData Client Mock
@@ -169,12 +152,14 @@ export async function initializeWorkers(
     );
 
     // Worker 2: Virtual Entities Generator
+    // Load Yakutia cities directory from reference file
+    const yakutiaCitiesDirectory = getYakutiaCitiesDirectory();
     const virtualEntitiesWorker = new VirtualEntitiesGeneratorWorker(
       stopRepository,
       routeRepository,
       flightRepository,
       datasetRepository,
-      YAKUTIA_CITIES
+      yakutiaCitiesDirectory
     );
 
     // Worker 3: Graph Builder

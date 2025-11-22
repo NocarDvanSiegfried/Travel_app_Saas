@@ -100,6 +100,86 @@ export function isCityInDirectory(
 }
 
 /**
+ * Извлечь название города из названия остановки
+ * 
+ * Единая логика для всех мест системы:
+ * - Всегда берется последнее слово из названия остановки
+ * - Работает для любых форматов: "Аэропорт Якутск", "Автостанция Центральная Якутск", "Вокзал Санкт-Петербург Московский"
+ * 
+ * @param stopName - Название остановки (может содержать префиксы типа "Аэропорт", "Автостанция", "Вокзал")
+ * @param address - Опциональный адрес (используется как fallback)
+ * @returns Название города (оригинальное, без нормализации)
+ * 
+ * @example
+ * extractCityFromStopName("Аэропорт Якутск (Туймаада)") => "Туймаада" (последнее слово в скобках)
+ * extractCityFromStopName("Автостанция Центральная Якутск") => "Якутск" (последнее слово, не прилагательное)
+ * extractCityFromStopName("Автостанция Олёкминск") => "Олёкминск" (последнее слово, не тип остановки)
+ * extractCityFromStopName("Вокзал Санкт-Петербург Московский") => "Московский" (последнее слово)
+ * extractCityFromStopName("Остановка Беркакит") => "Беркакит" (последнее слово, не тип остановки)
+ * extractCityFromStopName("Якутск Аэропорт") => "Якутск" (первое слово, последнее - тип остановки)
+ */
+export function extractCityFromStopName(stopName?: string, address?: string): string {
+  // Priority 1: Extract from stop name
+  if (stopName) {
+    // Remove common prefixes and patterns
+    // Examples: "Аэропорт Якутск", "Автостанция Олёкминск", "Вокзал Санкт-Петербург Московский"
+    
+    // First, try to extract city from patterns like "г. CityName"
+    const cityMatch = stopName.match(/г\.\s*([А-Яа-яЁё\-\s]+)/i);
+    if (cityMatch) {
+      return cityMatch[1].trim();
+    }
+    
+    // Extract all Cyrillic words (including hyphenated names like "Санкт-Петербург")
+    const words = stopName.match(/[А-Яа-яЁё]+(?:-[А-Яа-яЁё]+)*/g);
+    if (words && words.length > 0) {
+      // Common stop type words that should be skipped
+      const stopTypeWords = new Set([
+        'аэропорт', 'вокзал', 'автостанция', 'автовокзал', 'остановка', 'станция',
+        'центральная', 'главный', 'пассажирский'
+      ]);
+      
+      // Try to find city name (usually the last significant word, not a stop type)
+      // For "Аэропорт Якутск" -> "Якутск" (last word, not a stop type)
+      // For "Якутск Аэропорт" -> "Якутск" (first word, last is stop type)
+      // For "Автостанция Центральная Якутск" -> "Якутск" (last word, middle is adjective)
+      
+      // Strategy: take the last word if it's not a stop type, otherwise take the first word
+      const lastWord = words[words.length - 1].toLowerCase();
+      if (!stopTypeWords.has(lastWord) && words.length > 1) {
+        // Last word is not a stop type, likely the city name
+        return words[words.length - 1];
+      } else if (words.length > 1) {
+        // Last word is a stop type, take the first word (likely the city)
+        return words[0];
+      } else {
+        // Only one word, return it
+        return words[0];
+      }
+    }
+    
+    // Fallback: if no Cyrillic words found, try splitting by comma
+    const parts = stopName.split(',');
+    if (parts.length > 1) {
+      return parts[parts.length - 1].trim();
+    }
+    
+    // Last resort: return trimmed name
+    return stopName.trim();
+  }
+  
+  // Priority 2: Extract from address
+  if (address) {
+    const addressParts = address.split(',');
+    if (addressParts.length > 0) {
+      return addressParts[addressParts.length - 1].trim();
+    }
+  }
+  
+  return '';
+}
+
+/**
  * Генерировать стабильный ID для виртуальной остановки на основе названия города
  * 
  * ID всегда одинаковый для одного и того же города, независимо от времени создания

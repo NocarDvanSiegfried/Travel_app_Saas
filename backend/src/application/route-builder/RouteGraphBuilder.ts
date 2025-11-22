@@ -15,7 +15,7 @@ import {
   SeatOccupancyService,
 } from '../../infrastructure/api/odata-client';
 import { ITransportDataset, IRoute } from '../../domain/entities/TransportDataset';
-import { normalizeCityName, generateVirtualStopId } from '../../shared/utils/city-normalizer';
+import { normalizeCityName, generateVirtualStopId, extractCityFromStopName } from '../../shared/utils/city-normalizer';
 
 export class RouteGraphBuilder {
   constructor(
@@ -69,7 +69,7 @@ export class RouteGraphBuilder {
         ? { lat: stop.coordinates.latitude, lng: stop.coordinates.longitude }
         : undefined;
       const stopName = stop.name;
-      const cityName = this.extractCityFromStop(stop.name, stop.metadata?.address);
+      const cityName = extractCityFromStopName(stop.name, stop.metadata?.address);
       const isVirtual = stop.metadata?._virtual === true;
       
       const node = new RouteNode(
@@ -342,7 +342,7 @@ export class RouteGraphBuilder {
     for (const stop of allStops) {
       const coordinates = this.parseCoordinates(stop.Координаты);
       const stopName = stop.Наименование || stop.Код || '';
-      const cityName = this.extractCityName(stop.Наименование, stop.Адрес, stop.Код);
+      const cityName = extractCityFromStopName(stop.Наименование, stop.Адрес);
       const node = new RouteNode(
         stop.Ref_Key,
         stopName,
@@ -712,43 +712,6 @@ export class RouteGraphBuilder {
     return Math.round(avgDuration);
   }
 
-  /**
-   * Извлечь название города из наименования остановки или адреса
-   */
-  private extractCityName(
-    наименование?: string,
-    адрес?: string,
-    код?: string
-  ): string {
-    if (наименование) {
-      const name = наименование.trim();
-      const parts = name.split(',');
-      if (parts.length > 1) {
-        return parts[parts.length - 1].trim();
-      }
-      if (parts.length === 1) {
-        const firstPart = parts[0].trim();
-        const words = firstPart.split(/\s+/);
-        if (words.length > 1) {
-          return words[words.length - 1];
-        }
-        return firstPart;
-      }
-    }
-
-    if (адрес) {
-      const addressParts = адрес.split(',');
-      if (addressParts.length > 0) {
-        return addressParts[addressParts.length - 1].trim();
-      }
-    }
-
-    if (код) {
-      return код.trim();
-    }
-
-    return наименование || '';
-  }
 
   /**
    * Парсинг координат из строки
@@ -770,39 +733,6 @@ export class RouteGraphBuilder {
     return undefined;
   }
 
-  /**
-   * Извлечь название города из остановки (для Dataset)
-   */
-  private extractCityFromStop(name?: string, address?: string): string {
-    const fullName = name || address || '';
-    
-    // Обработка формата "г. ГородName" (виртуальные остановки)
-    const cityMatch = fullName.match(/г\.\s*([А-Яа-яЁё\-\s]+)/i);
-    if (cityMatch) {
-      return cityMatch[1].trim();
-    }
-    
-    if (name) {
-      const nameParts = name.split(',');
-      if (nameParts.length > 1) {
-        return nameParts[nameParts.length - 1].trim();
-      }
-      const words = name.trim().split(/\s+/);
-      if (words.length > 1) {
-        return words[words.length - 1];
-      }
-      return name.trim();
-    }
-
-    if (address) {
-      const addressParts = address.split(',');
-      if (addressParts.length > 0) {
-        return addressParts[addressParts.length - 1].trim();
-      }
-    }
-
-    return name || '';
-  }
 
   /**
    * КРИТИЧЕСКИ ВАЖНО: Диагностическое логирование весов рёбер

@@ -1,0 +1,132 @@
+{
+  "description": "Единый справочник городов Якутии для демо-окружения. Используется как источник правды для создания остановок и маршрутов.",
+  "version": "1.0.0",
+  "cities": [
+    {
+      "name": "Якутск",
+      "normalizedName": "якутск",
+      "latitude": 62.0278,
+      "longitude": 129.7042,
+      "isKeyCity": true,
+      "description": "Столица Республики Саха (Якутия)"
+    },
+    {
+      "name": "Мирный",
+      "normalizedName": "мирный",
+      "latitude": 62.5353,
+      "longitude": 113.9611,
+      "isKeyCity": true,
+      "description": "Город алмазодобывающей промышленности"
+    },
+    {
+      "name": "Нерюнгри",
+      "normalizedName": "нерюнгри",
+      "latitude": 56.6583,
+      "longitude": 124.7250,
+      "isKeyCity": true,
+      "description": "Второй по численности город Якутии"
+    },
+    {
+      "name": "Ленск",
+      "normalizedName": "ленск",
+      "latitude": 60.7167,
+      "longitude": 114.9167,
+      "isKeyCity": true,
+      "description": "Город на реке Лена"
+    },
+    {
+      "name": "Вилюйск",
+      "normalizedName": "вилюйск",
+      "latitude": 63.7553,
+      "longitude": 121.6244,
+      "isKeyCity": true,
+      "description": "Районный центр на реке Вилюй"
+    },
+    {
+      "name": "Олёкминск",
+      "normalizedName": "олекминск",
+      "latitude": 60.3733,
+      "longitude": 120.4264,
+      "isKeyCity": true,
+      "description": "Районный центр на реке Лена"
+    },
+    {
+      "name": "Тикси",
+      "normalizedName": "тикси",
+      "latitude": 71.6333,
+      "longitude": 128.8667,
+      "isKeyCity": true,
+      "description": "Портовый город на берегу моря Лаптевых"
+    },
+    {
+      "name": "Алдан",
+      "normalizedName": "алдан",
+      "latitude": 58.6000,
+      "longitude": 125.4000,
+      "isKeyCity": false,
+      "description": "Город золотодобывающей промышленности"
+    },
+    {
+      "name": "Хандыга",
+      "normalizedName": "хандыга",
+      "latitude": 62.6542,
+      "longitude": 135.5900,
+      "isKeyCity": false,
+      "description": "Поселок на реке Алдан"
+    },
+    {
+      "name": "Покровск",
+      "normalizedName": "покровск",
+      "latitude": 61.4833,
+      "longitude": 129.1500,
+      "isKeyCity": false,
+      "description": "Город близ Якутска"
+    },
+    {
+      "name": "Удачный",
+      "normalizedName": "удачный",
+      "latitude": 66.4167,
+      "longitude": 112.4000,
+      "isKeyCity": false,
+      "description": "Город алмазодобывающей промышленности"
+    },
+    {
+      "name": "Верхоянск",
+      "normalizedName": "верхоянск",
+      "latitude": 67.5500,
+      "longitude": 133.3833,
+      "isKeyCity": false,
+      "description": "Один из самых холодных городов мира"
+    },
+    {
+      "name": "Жиганск",
+      "normalizedName": "жиганск",
+      "latitude": 66.7667,
+      "longitude": 123.4000,
+      "isKeyCity": false,
+      "description": "Районный центр на реке Лена"
+    },
+    {
+      "name": "Среднеколымск",
+      "normalizedName": "среднеколымск",
+      "latitude": 67.4500,
+      "longitude": 153.7000,
+      "isKeyCity": false,
+      "description": "Районный центр на реке Колыма"
+    },
+    {
+      "name": "Чокурдах",
+      "normalizedName": "чокурдах",
+      "latitude": 70.6167,
+      "longitude": 147.9000,
+      "isKeyCity": false,
+      "description": "Районный центр в арктической зоне"
+    }
+  ],
+  "notes": [
+    "normalizedName используется для согласованной нормализации через normalizeCityName()",
+    "isKeyCity=true означает, что для этого города обязательно должны быть остановки и маршруты в демо-данных",
+    "Координаты соответствуют реальным географическим координатам городов Якутии"
+  ]
+}
+

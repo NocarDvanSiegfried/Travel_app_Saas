@@ -311,6 +311,8 @@ export async function buildRoute(req: Request, res: Response): Promise<void> {
       res.status(200).json({
         success: true,
         routes: result.routes,
+        alternatives: result.alternatives,
+        riskAssessment: result.riskAssessment,
         executionTimeMs: totalExecutionTime,
         graphVersion: result.graphVersion,
         graphAvailable: result.graphAvailable,
@@ -327,7 +329,32 @@ export async function buildRoute(req: Request, res: Response): Promise<void> {
           executionTimeMs: totalExecutionTime,
           graphAvailable: result.graphAvailable,
         });
-      } else if (result.error?.includes('No stops found') || result.error?.includes('No path found')) {
+      } else if (result.error?.includes('out of sync') || result.error?.includes('Missing nodes')) {
+        // Graph synchronization issue - return 503 to indicate service degradation
+        res.status(503).json({
+          success: false,
+          error: {
+            code: 'GRAPH_OUT_OF_SYNC',
+            message: result.error,
+          },
+          executionTimeMs: totalExecutionTime,
+          graphAvailable: result.graphAvailable,
+          graphVersion: result.graphVersion,
+        });
+      } else if (result.error?.includes('No stops found')) {
+        // Stops not found in database - 404 is correct
+        res.status(404).json({
+          success: false,
+          error: {
+            code: 'STOPS_NOT_FOUND',
+            message: result.error,
+          },
+          executionTimeMs: totalExecutionTime,
+          graphAvailable: result.graphAvailable,
+          graphVersion: result.graphVersion,
+        });
+      } else if (result.error?.includes('No route found') || result.error?.includes('No path found')) {
+        // Route not found between existing stops - 404 is correct
         res.status(404).json({
           success: false,
           error: {

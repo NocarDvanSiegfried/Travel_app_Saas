@@ -24,6 +24,13 @@ import type { IDatasetRepository } from '../../domain/repositories/IDatasetRepos
 import { VirtualStop } from '../../domain/entities/VirtualStop';
 import { VirtualRoute } from '../../domain/entities/VirtualRoute';
 import { Flight } from '../../domain/entities/Flight';
+import {
+  getAllYakutiaCities,
+  getYakutiaCity,
+  isYakutiaCity,
+  type YakutiaCity,
+} from '../../shared/utils/yakutia-cities-loader';
+import { normalizeCityName } from '../../shared/utils/city-normalizer';
 
 /**
  * City coordinates from directory
@@ -143,11 +150,18 @@ export class VirtualEntitiesGeneratorWorker extends BaseBackgroundWorker {
       // ====================================================================
       this.log('INFO', 'Step 4: Generating virtual routes...');
       
-      const virtualRoutes = await this.generateVirtualRoutes(virtualStops);
+      // Step 4a: Generate hub-based routes for newly created virtual stops
+      const hubBasedRoutes = await this.generateVirtualRoutes(virtualStops);
       
-      if (virtualRoutes.length > 0) {
-        const savedRoutes = await this.routeRepository.saveVirtualRoutesBatch(virtualRoutes);
-        this.log('INFO', `Generated ${savedRoutes.length} virtual routes`);
+      // Step 4b: Ensure connectivity for all Yakutia cities
+      const connectivityRoutes = await this.ensureYakutiaCitiesConnectivity();
+      
+      // Combine all virtual routes
+      const allVirtualRoutes = [...hubBasedRoutes, ...connectivityRoutes];
+      
+      if (allVirtualRoutes.length > 0) {
+        const savedRoutes = await this.routeRepository.saveVirtualRoutesBatch(allVirtualRoutes);
+        this.log('INFO', `Generated ${savedRoutes.length} virtual routes (${hubBasedRoutes.length} hub-based, ${connectivityRoutes.length} connectivity)`);
       }
 
       // ====================================================================
@@ -155,7 +169,7 @@ export class VirtualEntitiesGeneratorWorker extends BaseBackgroundWorker {
       // ====================================================================
       this.log('INFO', 'Step 5: Generating virtual flights...');
       
-      const virtualFlights = this.generateVirtualFlights(virtualRoutes);
+      const virtualFlights = this.generateVirtualFlights(allVirtualRoutes);
       
       if (virtualFlights.length > 0) {
         const savedFlights = await this.flightRepository.saveFlightsBatch(virtualFlights);
@@ -188,9 +202,9 @@ export class VirtualEntitiesGeneratorWorker extends BaseBackgroundWorker {
         success: true,
         workerId: this.workerId,
         executionTimeMs: Date.now() - startTime,
-        message: `Virtual entities generated: ${virtualStops.length} stops, ${virtualRoutes.length} routes, ${virtualFlights.length} flights`,
+        message: `Virtual entities generated: ${virtualStops.length} stops, ${allVirtualRoutes.length} routes, ${virtualFlights.length} flights`,
         dataProcessed: {
-          added: virtualStops.length + virtualRoutes.length + virtualFlights.length,
+          added: virtualStops.length + allVirtualRoutes.length + virtualFlights.length,
           updated: 0,
           deleted: 0,
         },
@@ -472,6 +486,216 @@ export class VirtualEntitiesGeneratorWorker extends BaseBackgroundWorker {
   private generateStableId(...parts: string[]): string {
     const input = parts.join('-');
     return input.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+  }
+
+  /**
+   * Ensure connectivity for all Yakutia cities
+   * 
+   * For each pair of Yakutia cities that have stops but no route,
+   * creates a virtual route to ensure connectivity.
+   * 
+   * @returns Array of virtual routes for connectivity
+   */
+  private async ensureYakutiaCitiesConnectivity(): Promise<VirtualRoute[]> {
+    const routes: VirtualRoute[] = [];
+    const yakutiaCities = getAllYakutiaCities();
+
+    if (yakutiaCities.length === 0) {
+      this.log('WARN', 'No Yakutia cities found in reference - skipping connectivity check');
+      return routes;
+    }
+
+    this.log('INFO', `Ensuring connectivity for ${yakutiaCities.length} Yakutia cities...`);
+
+    // Get all stops (real + virtual) grouped by city
+    const allRealStops = await this.stopRepository.getAllRealStops();
+    const allVirtualStops = await this.stopRepository.getAllVirtualStops();
+    const allStops = [...allRealStops, ...allVirtualStops];
+
+    // Group stops by normalized city name
+    const stopsByCity = new Map<string, Array<{ id: string; name: string; latitude?: number; longitude?: number }>>();
+    
+    for (const stop of allStops) {
+      const cityName = stop.cityId || this.extractCityFromStopName(stop.name);
+      if (!cityName) continue;
+
+      const normalizedCity = normalizeCityName(cityName);
+      if (!isYakutiaCity(normalizedCity)) continue; // Only process Yakutia cities
+
+      if (!stopsByCity.has(normalizedCity)) {
+        stopsByCity.set(normalizedCity, []);
+      }
+      stopsByCity.get(normalizedCity)!.push({
+        id: stop.id,
+        name: stop.name,
+        latitude: stop.latitude,
+        longitude: stop.longitude,
+      });
+    }
+
+    this.log('INFO', `Found stops for ${stopsByCity.size} Yakutia cities`);
+
+    // For each pair of cities, check if route exists
+    const cityNames = Array.from(stopsByCity.keys());
+    let routesCreated = 0;
+    let routesSkipped = 0;
+
+    for (let i = 0; i < cityNames.length; i++) {
+      for (let j = i + 1; j < cityNames.length; j++) {
+        const city1Name = cityNames[i];
+        const city2Name = cityNames[j];
+
+        const city1Stops = stopsByCity.get(city1Name)!;
+        const city2Stops = stopsByCity.get(city2Name)!;
+
+        // Get "main" stop for each city (prefer airport, then first stop)
+        const city1MainStop = this.selectMainStop(city1Stops);
+        const city2MainStop = this.selectMainStop(city2Stops);
+
+        if (!city1MainStop || !city2MainStop) continue;
+
+        // Check if route already exists (real or virtual)
+        const existingRoute = await this.checkRouteExists(
+          city1MainStop.id,
+          city2MainStop.id
+        );
+
+        if (existingRoute) {
+          routesSkipped++;
+          continue; // Route already exists, skip
+        }
+
+        // Create virtual route in both directions
+        const distance = this.calculateDistance(city1MainStop, city2MainStop);
+        const duration = this.estimateDuration(city1MainStop, city2MainStop);
+
+        // Route city1 → city2
+        routes.push(
+          new VirtualRoute(
+            `virtual-route-connectivity-${this.generateStableId(city1Name, city2Name)}`,
+            'VIRTUAL_TO_VIRTUAL',
+            city1MainStop.id,
+            city2MainStop.id,
+            distance,
+            duration,
+            'SHUTTLE',
+            {
+              name: `${city1Name} → ${city2Name}`,
+              generationMethod: 'yakutia-connectivity',
+              sourceCity: city1Name,
+              targetCity: city2Name,
+            },
+            new Date()
+          )
+        );
+
+        // Route city2 → city1
+        routes.push(
+          new VirtualRoute(
+            `virtual-route-connectivity-${this.generateStableId(city2Name, city1Name)}`,
+            'VIRTUAL_TO_VIRTUAL',
+            city2MainStop.id,
+            city1MainStop.id,
+            distance,
+            duration,
+            'SHUTTLE',
+            {
+              name: `${city2Name} → ${city1Name}`,
+              generationMethod: 'yakutia-connectivity',
+              sourceCity: city2Name,
+              targetCity: city1Name,
+            },
+            new Date()
+          )
+        );
+
+        routesCreated += 2;
+      }
+    }
+
+    this.log(
+      'INFO',
+      `Connectivity check: ${routesCreated} routes created, ${routesSkipped} routes already exist`
+    );
+
+    return routes;
+  }
+
+  /**
+   * Check if route exists between two stops (real or virtual)
+   * 
+   * @param fromStopId - Source stop ID
+   * @param toStopId - Target stop ID
+   * @returns True if route exists
+   */
+  private async checkRouteExists(
+    fromStopId: string,
+    toStopId: string
+  ): Promise<boolean> {
+    // Check real routes
+    const realRoutes = await this.routeRepository.findDirectRoutes(fromStopId, toStopId);
+    if (realRoutes.length > 0) return true;
+
+    // Check virtual routes
+    const virtualRoutes = await this.routeRepository.findVirtualConnections(fromStopId, toStopId);
+    if (virtualRoutes.length > 0) return true;
+
+    return false;
+  }
+
+  /**
+   * Select "main" stop for a city
+   * 
+   * Priority: airport > railway station > first stop
+   * 
+   * @param stops - Array of stops for the city
+   * @returns Main stop or undefined
+   */
+  private selectMainStop(
+    stops: Array<{ id: string; name: string; latitude?: number; longitude?: number }>
+  ): { id: string; name: string; latitude?: number; longitude?: number } | undefined {
+    if (stops.length === 0) return undefined;
+
+    // Prefer airport
+    const airport = stops.find(s =>
+      s.name.toLowerCase().includes('аэропорт') ||
+      s.name.toLowerCase().includes('airport')
+    );
+    if (airport) return airport;
+
+    // Then railway station
+    const railway = stops.find(s =>
+      s.name.toLowerCase().includes('вокзал') ||
+      s.name.toLowerCase().includes('railway') ||
+      s.name.toLowerCase().includes('station')
+    );
+    if (railway) return railway;
+
+    // Otherwise, first stop
+    return stops[0];
+  }
+
+  /**
+   * Extract city name from stop name
+   * 
+   * @param stopName - Stop name
+   * @returns City name or empty string
+   */
+  private extractCityFromStopName(stopName: string): string {
+    // Try to extract city from common patterns
+    const patterns = [
+      /(?:г\.\s*)?([А-Яа-яЁё]+)/, // "г. Город" or "Город"
+      /([А-Яа-яЁё]+)(?:\s+\([^)]+\))?$/, // "Город (доп. инф)"
+    ];
+
+    for (const pattern of patterns) {
+      const match = stopName.match(pattern);
+      if (match && match[1]) {
+        return match[1];
+      }
+    }
+
+    return '';
   }
 }
 

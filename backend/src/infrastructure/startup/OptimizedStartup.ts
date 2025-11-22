@@ -183,6 +183,26 @@ export class OptimizedStartup {
     }
 
     // ========================================================================
+    // Optional: Graph Consistency Check (dev-only)
+    // ========================================================================
+    if (graphAvailable && redisClient && process.env.ENABLE_GRAPH_CONSISTENCY_CHECK === 'true' && process.env.NODE_ENV !== 'production') {
+      try {
+        const { checkGraphConsistency } = await import('./GraphConsistencyCheck');
+        const consistencyResult = await checkGraphConsistency(postgresPool, redisClient);
+        
+        if (!consistencyResult.isConsistent) {
+          console.warn('⚠️ Graph consistency check failed:');
+          consistencyResult.issues.forEach(issue => console.warn(`   - ${issue}`));
+          console.warn('💡 To rebuild graph, call: POST /api/v1/admin/rebuild-graph');
+        } else {
+          console.log('✅ Graph consistency check passed');
+        }
+      } catch (error: any) {
+        console.warn('⚠️ Graph consistency check error:', error?.message || String(error));
+      }
+    }
+
+    // ========================================================================
     // Final Metrics
     // ========================================================================
     const totalDurationMs = Date.now() - startTime;

@@ -10,8 +10,7 @@ import { z } from 'zod';
 export const routeSearchSchema = z.object({
   from: z.string().min(1, 'Параметр from обязателен'),
   to: z.string().min(1, 'Параметр to обязателен'),
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Дата должна быть в формате YYYY-MM-DD'),
-  tripClass: z.enum(['economy', 'business', 'first']).optional(),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Дата должна быть в формате YYYY-MM-DD').optional(),
   passengers: z.coerce.number().int().positive().max(9).optional(),
 });
 
@@ -28,8 +27,7 @@ export const routeDetailsSchema = z.object({
 export const routeBuildSchema = z.object({
   from: z.string().min(1, 'Параметр from обязателен'),
   to: z.string().min(1, 'Параметр to обязателен'),
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Дата должна быть в формате YYYY-MM-DD'),
-  tripClass: z.enum(['economy', 'business', 'first']).optional(),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Дата должна быть в формате YYYY-MM-DD').optional(),
   passengers: z.coerce.number().int().positive().max(9).optional(),
 });
 

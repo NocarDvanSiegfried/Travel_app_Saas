@@ -13,6 +13,12 @@ import type { IGraphRepository } from '../../../domain/repositories/IGraphReposi
 import type { IFlightRepository } from '../../../domain/repositories/IFlightRepository';
 import type { IStopRepository } from '../../../domain/repositories/IStopRepository';
 import type { IRouteRepository } from '../../../domain/repositories/IRouteRepository';
+import { getLogger } from '../../../shared/logger/Logger';
+import { extractCityFromStopName } from '../../../shared/utils/city-normalizer';
+import { AssessRouteRiskUseCase } from '../../risk-engine/AssessRouteRiskUseCase';
+import type { IBuiltRoute } from '../../../domain/entities/BuiltRoute';
+import type { IRiskAssessment } from '../../../domain/entities/RiskAssessment';
+import { TransportType } from '../../../domain/entities/RouteSegment';
 
 /**
  * Route search request
@@ -58,6 +64,8 @@ export type RouteResult = {
 export type BuildRouteResponse = {
   success: boolean;
   routes: RouteResult[];
+  alternatives?: RouteResult[];
+  riskAssessment?: IRiskAssessment;
   executionTimeMs: number;
   error?: string;
   graphAvailable: boolean;
@@ -75,6 +83,8 @@ export type BuildRouteResponse = {
  * @class
  */
 export class OptimizedBuildRouteUseCase {
+  private readonly logger = getLogger('OptimizedBuildRouteUseCase');
+
   constructor(
     private readonly graphRepository: IGraphRepository,
     private readonly flightRepository: IFlightRepository,
@@ -126,7 +136,20 @@ export class OptimizedBuildRouteUseCase {
       const fromStops = await this.findStopsForCity(request.fromCity);
       const toStops = await this.findStopsForCity(request.toCity);
 
+      this.logger.debug('Stops found for cities', {
+        fromCity: request.fromCity,
+        toCity: request.toCity,
+        fromStopsCount: fromStops.length,
+        toStopsCount: toStops.length,
+        fromStopIds: fromStops.map(s => s.id),
+        toStopIds: toStops.map(s => s.id),
+      });
+
       if (fromStops.length === 0) {
+        this.logger.warn('No stops found for from city', {
+          city: request.fromCity,
+          graphVersion,
+        });
         return {
           success: false,
           routes: [],
@@ -138,6 +161,10 @@ export class OptimizedBuildRouteUseCase {
       }
 
       if (toStops.length === 0) {
+        this.logger.warn('No stops found for to city', {
+          city: request.toCity,
+          graphVersion,
+        });
         return {
           success: false,
           routes: [],
@@ -151,22 +178,75 @@ export class OptimizedBuildRouteUseCase {
       // ====================================================================
       // Step 3: Find Best Path Using Dijkstra (Readonly Graph)
       // ====================================================================
-      const path = await this.findShortestPath(
-        fromStops[0].id, // Use first stop as start
-        toStops[0].id, // Use first stop as end
-        graphVersion
-      );
+      const fromStopId = fromStops[0].id;
+      const toStopId = toStops[0].id;
 
-      if (!path || path.length === 0) {
+      this.logger.debug('Searching path in graph', {
+        fromStopId,
+        toStopId,
+        graphVersion,
+      });
+
+      // Check if nodes exist in graph before searching path
+      const fromNodeExists = await this.graphRepository.hasNode(fromStopId);
+      const toNodeExists = await this.graphRepository.hasNode(toStopId);
+      
+      if (!fromNodeExists || !toNodeExists) {
+        const missingNodes = [];
+        if (!fromNodeExists) missingNodes.push(fromStopId);
+        if (!toNodeExists) missingNodes.push(toStopId);
+        
+        this.logger.warn('Graph nodes missing for found stops', {
+          fromCity: request.fromCity,
+          toCity: request.toCity,
+          fromStopId,
+          toStopId,
+          missingNodes,
+          graphVersion,
+          message: 'Stops found in database but not in graph. Graph needs to be rebuilt.',
+        });
+        
         return {
           success: false,
           routes: [],
           executionTimeMs: Date.now() - startTime,
-          error: `No path found between ${request.fromCity} and ${request.toCity}`,
+          error: `Stops found but graph is out of sync. Please rebuild graph. Missing nodes: ${missingNodes.join(', ')}`,
           graphAvailable: true,
           graphVersion,
         };
       }
+
+      const path = await this.findShortestPath(
+        fromStopId,
+        toStopId,
+        graphVersion
+      );
+
+      if (!path || path.length === 0) {
+        this.logger.warn('No path found in graph (nodes exist but no route)', {
+          fromCity: request.fromCity,
+          toCity: request.toCity,
+          fromStopId,
+          toStopId,
+          graphVersion,
+          message: 'Stops and nodes exist, but no path found between them.',
+        });
+        
+        return {
+          success: false,
+          routes: [],
+          executionTimeMs: Date.now() - startTime,
+          error: `No route found between ${request.fromCity} and ${request.toCity}`,
+          graphAvailable: true,
+          graphVersion,
+        };
+      }
+
+      this.logger.debug('Path found in graph', {
+        pathLength: path.length,
+        path: path.join(' -> '),
+        graphVersion,
+      });
 
       // ====================================================================
       // Step 4: Build Route Segments from Path
@@ -177,11 +257,76 @@ export class OptimizedBuildRouteUseCase {
         request.passengers
       );
 
+      // ====================================================================
+      // Step 5: Find Alternative Routes (2-3 additional options)
+      // ====================================================================
+      const alternatives = await this.findAlternativePaths(
+        fromStopId,
+        toStopId,
+        path,
+        graphVersion,
+        request.date,
+        request.passengers
+      );
+
+      // ====================================================================
+      // Step 6: Assess Route Risk
+      // ====================================================================
+      let riskAssessment: IRiskAssessment | undefined;
+      try {
+        const builtRoute: IBuiltRoute = {
+          routeId: `route-${fromStopId}-${toStopId}-${Date.now()}`,
+          fromCity: route.fromCity,
+          toCity: route.toCity,
+          date: request.date.toISOString(),
+          passengers: request.passengers,
+          segments: route.segments.map((seg, idx) => ({
+            segment: {
+              segmentId: `seg-${idx}`,
+              fromStopId: seg.fromStopId,
+              toStopId: seg.toStopId,
+              routeId: seg.routeId || '',
+              transportType: this.mapTransportType(seg.transportType),
+              distance: seg.distance,
+              estimatedDuration: seg.duration,
+              basePrice: seg.price,
+            },
+            selectedFlight: seg.departureTime && seg.arrivalTime ? {
+              flightId: `flight-${seg.fromStopId}-${seg.toStopId}`,
+              flightNumber: undefined,
+              departureTime: seg.departureTime,
+              arrivalTime: seg.arrivalTime,
+              price: seg.price,
+              availableSeats: 10,
+              status: 'scheduled',
+            } : undefined,
+            departureTime: seg.departureTime || '',
+            arrivalTime: seg.arrivalTime || '',
+            duration: seg.duration,
+            price: seg.price || 0,
+          })),
+          totalDuration: route.totalDuration,
+          totalPrice: route.totalPrice,
+          transferCount: route.segments.length - 1,
+          transportTypes: route.segments.map(seg => this.mapTransportType(seg.transportType)),
+          departureTime: route.segments[0]?.departureTime || '',
+          arrivalTime: route.segments[route.segments.length - 1]?.arrivalTime || '',
+        };
+
+        const riskUseCase = new AssessRouteRiskUseCase();
+        riskAssessment = await riskUseCase.execute(builtRoute);
+      } catch (error) {
+        this.logger.warn('Failed to assess route risk', { error });
+        // Continue without risk assessment
+      }
+
       const executionTimeMs = Date.now() - startTime;
 
       return {
         success: true,
         routes: [route],
+        alternatives: alternatives.length > 0 ? alternatives : undefined,
+        riskAssessment,
         executionTimeMs,
         graphAvailable: true,
         graphVersion,
@@ -231,14 +376,36 @@ export class OptimizedBuildRouteUseCase {
   private async findShortestPath(
     startNodeId: string,
     endNodeId: string,
-    _graphVersion: string
+    graphVersion: string
   ): Promise<string[] | null> {
     // Check if nodes exist in graph
     const startExists = await this.graphRepository.hasNode(startNodeId);
     const endExists = await this.graphRepository.hasNode(endNodeId);
 
+    this.logger.debug('Checking nodes existence in graph', {
+      startNodeId,
+      endNodeId,
+      startExists,
+      endExists,
+      graphVersion,
+    });
+
     if (!startExists || !endExists) {
-      return null;
+      const missingNodes = [];
+      if (!startExists) missingNodes.push(startNodeId);
+      if (!endExists) missingNodes.push(endNodeId);
+      
+      this.logger.warn('Nodes not found in graph', {
+        startNodeId,
+        endNodeId,
+        startExists,
+        endExists,
+        missingNodes,
+        graphVersion,
+        message: 'Graph may be out of sync with database. Consider rebuilding graph.',
+      });
+      // Return special marker to distinguish from "path not found"
+      return null; // Will be handled as "graph sync issue" in execute()
     }
 
     // Dijkstra's algorithm implementation
@@ -406,8 +573,8 @@ export class OptimizedBuildRouteUseCase {
       totalDistance,
       totalDuration,
       totalPrice: totalPrice * passengers,
-      fromCity: fromStop ? this.extractCityFromStopName(fromStop.name) : 'Unknown',
-      toCity: toStop ? this.extractCityFromStopName(toStop.name) : 'Unknown',
+      fromCity: fromStop ? extractCityFromStopName(fromStop.name) : 'Unknown',
+      toCity: toStop ? extractCityFromStopName(toStop.name) : 'Unknown',
       departureDate: date,
     };
   }
@@ -426,36 +593,183 @@ export class OptimizedBuildRouteUseCase {
   }
 
   /**
-   * Extract city name from stop name
+   * Find alternative paths (2-3 additional routes)
+   * Uses modified Dijkstra to find paths that differ from the shortest path
    * 
    * @private
    */
-  private extractCityFromStopName(stopName: string): string {
-    if (!stopName) {
-      return '';
+  private async findAlternativePaths(
+    startNodeId: string,
+    endNodeId: string,
+    shortestPath: string[],
+    graphVersion: string,
+    date: Date,
+    passengers: number
+  ): Promise<RouteResult[]> {
+    const alternatives: RouteResult[] = [];
+    const maxAlternatives = 2;
+    const visitedPaths = new Set<string>([shortestPath.join('->')]);
+
+    // Try to find alternative paths by excluding edges from the shortest path
+    for (let attempt = 0; attempt < maxAlternatives * 2 && alternatives.length < maxAlternatives; attempt++) {
+      const alternativePath = await this.findAlternativePath(
+        startNodeId,
+        endNodeId,
+        shortestPath,
+        visitedPaths,
+        graphVersion
+      );
+
+      if (!alternativePath || alternativePath.length === 0) {
+        continue;
+      }
+
+      const pathKey = alternativePath.join('->');
+      if (visitedPaths.has(pathKey)) {
+        continue;
+      }
+
+      visitedPaths.add(pathKey);
+
+      try {
+        const route = await this.buildRouteFromPath(alternativePath, date, passengers);
+        alternatives.push(route);
+      } catch (error) {
+        this.logger.debug('Failed to build alternative route', { error, path: alternativePath });
+        continue;
+      }
     }
 
-    // Handle "г. CityName" format (virtual stops)
-    const cityMatch = stopName.match(/г\.\s*([А-Яа-яЁё\-\s]+)/i);
-    if (cityMatch) {
-      return cityMatch[1].trim();
-    }
-
-    // If name contains comma, take last part (usually city)
-    const nameParts = stopName.split(',');
-    if (nameParts.length > 1) {
-      return nameParts[nameParts.length - 1].trim();
-    }
-
-    // Remove prefixes like "Аэропорт", "Вокзал", "Автостанция"
-    const cleaned = stopName
-      .replace(/^(Аэропорт|Вокзал|Автостанция|Остановка)\s+/i, '')
-      .trim();
-
-    // Extract first word (city name)
-    const parts = cleaned.split(/[\s,()]/);
-    return parts[0] || stopName;
+    // Sort alternatives by total duration (fastest first)
+    return alternatives.sort((a, b) => a.totalDuration - b.totalDuration);
   }
+
+  /**
+   * Find a single alternative path by excluding edges from the shortest path
+   * 
+   * @private
+   */
+  private async findAlternativePath(
+    startNodeId: string,
+    endNodeId: string,
+    excludePath: string[],
+    visitedPaths: Set<string>,
+    graphVersion: string
+  ): Promise<string[] | null> {
+    // Create a set of edges to exclude (from the shortest path)
+    const excludeEdges = new Set<string>();
+    for (let i = 0; i < excludePath.length - 1; i++) {
+      const edgeKey = `${excludePath[i]}->${excludePath[i + 1]}`;
+      excludeEdges.add(edgeKey);
+    }
+
+    // Modified Dijkstra that avoids excluded edges
+    const distances = new Map<string, number>();
+    const previous = new Map<string, string | null>();
+    const visited = new Set<string>();
+    const queue: string[] = [];
+
+    distances.set(startNodeId, 0);
+    queue.push(startNodeId);
+
+    while (queue.length > 0) {
+      let currentNodeId = queue[0];
+      let minDistance = distances.get(currentNodeId) || Infinity;
+
+      for (const nodeId of queue) {
+        const dist = distances.get(nodeId) || Infinity;
+        if (dist < minDistance) {
+          minDistance = dist;
+          currentNodeId = nodeId;
+        }
+      }
+
+      const index = queue.indexOf(currentNodeId);
+      queue.splice(index, 1);
+      visited.add(currentNodeId);
+
+      if (currentNodeId === endNodeId) {
+        break;
+      }
+
+      const neighbors = await this.graphRepository.getNeighbors(currentNodeId);
+
+      for (const neighbor of neighbors) {
+        // Skip if this edge is in the exclude list
+        const edgeKey = `${currentNodeId}->${neighbor.neighborId}`;
+        if (excludeEdges.has(edgeKey)) {
+          continue;
+        }
+
+        if (visited.has(neighbor.neighborId)) {
+          continue;
+        }
+
+        const weight = neighbor.weight;
+        const currentDistance = distances.get(currentNodeId) || 0;
+        const newDistance = currentDistance + weight;
+        const existingDistance = distances.get(neighbor.neighborId) || Infinity;
+
+        if (newDistance < existingDistance) {
+          distances.set(neighbor.neighborId, newDistance);
+          previous.set(neighbor.neighborId, currentNodeId);
+
+          if (!queue.includes(neighbor.neighborId)) {
+            queue.push(neighbor.neighborId);
+          }
+        }
+      }
+    }
+
+    if (!distances.has(endNodeId)) {
+      return null;
+    }
+
+    const path: string[] = [];
+    let current: string | null | undefined = endNodeId;
+
+    while (current) {
+      path.unshift(current);
+      current = previous.get(current);
+    }
+
+    const pathKey = path.join('->');
+    if (visitedPaths.has(pathKey) || path.length === 0) {
+      return null;
+    }
+
+    return path.length > 0 ? path : null;
+  }
+
+  /**
+   * Map transport type string to TransportType enum
+   * 
+   * @private
+   */
+  private mapTransportType(transportType: string): TransportType {
+    const normalized = transportType.toLowerCase();
+    switch (normalized) {
+      case 'airplane':
+      case 'plane':
+      case 'самолет':
+        return TransportType.AIRPLANE;
+      case 'bus':
+      case 'автобус':
+        return TransportType.BUS;
+      case 'train':
+      case 'поезд':
+        return TransportType.TRAIN;
+      case 'ferry':
+      case 'паром':
+        return TransportType.FERRY;
+      case 'taxi':
+      case 'такси':
+        return TransportType.TAXI;
+      default:
+        return TransportType.UNKNOWN;
+    }
+  }
+
 }
 
 

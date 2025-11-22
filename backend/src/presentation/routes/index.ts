@@ -4,6 +4,8 @@ import * as RouteBuilderController from '../controllers/RouteBuilderController';
 import * as RiskController from '../controllers/RiskController';
 import * as DiagnosticsController from '../controllers/DiagnosticsController';
 import * as CitiesController from '../controllers/CitiesController';
+import * as GraphRebuildController from '../controllers/GraphRebuildController';
+import * as DataReinitController from '../controllers/DataReinitController';
 import { getMetrics } from '../controllers/MetricsController';
 import { routeSearchLimiter, routeRiskLimiter } from '../middleware/rate-limiter';
 import { validateRequest } from '../middleware/validation.middleware';
@@ -61,6 +63,10 @@ router.get('/diagnostics/redis', DiagnosticsController.checkRedis);
 router.get('/diagnostics/odata', DiagnosticsController.checkOData);
 router.get('/diagnostics/adaptive-data', DiagnosticsController.checkAdaptiveDataLoading);
 router.get('/diagnostics', DiagnosticsController.fullDiagnostics);
+
+// Admin endpoints (dev-only)
+router.post('/admin/rebuild-graph', GraphRebuildController.rebuildGraph);
+router.post('/admin/reinit-data', DataReinitController.reinitData);
 
 export default router;
 

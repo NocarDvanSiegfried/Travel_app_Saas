@@ -1,6 +1,7 @@
 import type { Pool } from 'pg';
 import type { IStopRepository } from '../../domain/repositories/IStopRepository';
 import { RealStop, VirtualStop } from '../../domain/entities';
+import { normalizeCityName } from '../../shared/utils/city-normalizer';
 
 /**
  * PostgreSQL implementation of IStopRepository
@@ -49,11 +50,12 @@ export class PostgresStopRepository implements IStopRepository {
    * @returns Array of stops matching the city name
    */
   async getRealStopsByCityName(cityName: string): Promise<RealStop[]> {
-    // Normalize city name for search (remove common prefixes)
-    const normalizedCity = cityName.trim().toLowerCase();
+    // Normalize city name for search using shared utility (handles "ё" -> "е", prefixes, etc.)
+    const normalizedCity = normalizeCityName(cityName);
     
     // Use full-text search with GIN index
     // Search for city name in stop names using to_tsvector
+    // Also search in city_id field (which may contain original city name with "ё")
     const query = `
       SELECT id, name, latitude, longitude, city_id, is_airport, is_railway_station, metadata, created_at, updated_at
       FROM stops
@@ -61,11 +63,15 @@ export class PostgresStopRepository implements IStopRepository {
         to_tsvector('russian', name) @@ to_tsquery('russian', $1)
         OR name ILIKE $2
         OR city_id ILIKE $3
+        OR LOWER(REPLACE(city_id, 'ё', 'е')) = $4
+        OR LOWER(REPLACE(name, 'ё', 'е')) LIKE $5
       ORDER BY 
         CASE 
-          WHEN city_id ILIKE $3 THEN 1
-          WHEN name ILIKE $2 THEN 2
-          ELSE 3
+          WHEN LOWER(REPLACE(city_id, 'ё', 'е')) = $4 THEN 1
+          WHEN city_id ILIKE $3 THEN 2
+          WHEN LOWER(REPLACE(name, 'ё', 'е')) LIKE $5 THEN 3
+          WHEN name ILIKE $2 THEN 4
+          ELSE 5
         END,
         name
       LIMIT 100
@@ -74,9 +80,11 @@ export class PostgresStopRepository implements IStopRepository {
     // Create search patterns
     const tsQuery = normalizedCity.split(/\s+/).join(' & '); // Full-text search query
     const ilikePattern = `%${normalizedCity}%`; // ILIKE pattern for partial match
-    const cityIdPattern = `%${normalizedCity}%`; // City ID pattern
+    const cityIdPattern = `%${normalizedCity}%`; // City ID pattern (normalized)
+    const exactNormalized = normalizedCity; // Exact match for normalized city_id
+    const normalizedLikePattern = `%${normalizedCity}%`; // Normalized pattern for name search
     
-    const result = await this.pool.query(query, [tsQuery, ilikePattern, cityIdPattern]);
+    const result = await this.pool.query(query, [tsQuery, ilikePattern, cityIdPattern, exactNormalized, normalizedLikePattern]);
     return result.rows.map(row => this.mapRowToRealStop(row));
   }
 
@@ -87,10 +95,11 @@ export class PostgresStopRepository implements IStopRepository {
    * @returns Array of virtual stops matching the city name
    */
   async getVirtualStopsByCityName(cityName: string): Promise<VirtualStop[]> {
-    // Normalize city name for search
-    const normalizedCity = cityName.trim().toLowerCase();
+    // Normalize city name for search using shared utility (handles "ё" -> "е", prefixes, etc.)
+    const normalizedCity = normalizeCityName(cityName);
     
     // Use full-text search
+    // Also search in city_id field (which may contain original city name with "ё")
     const query = `
       SELECT id, name, latitude, longitude, city_id, grid_type, grid_position, real_stops_nearby, created_at
       FROM virtual_stops
@@ -98,11 +107,15 @@ export class PostgresStopRepository implements IStopRepository {
         to_tsvector('russian', name) @@ to_tsquery('russian', $1)
         OR name ILIKE $2
         OR city_id ILIKE $3
+        OR LOWER(REPLACE(city_id, 'ё', 'е')) = $4
+        OR LOWER(REPLACE(name, 'ё', 'е')) LIKE $5
       ORDER BY 
         CASE 
-          WHEN city_id ILIKE $3 THEN 1
-          WHEN name ILIKE $2 THEN 2
-          ELSE 3
+          WHEN LOWER(REPLACE(city_id, 'ё', 'е')) = $4 THEN 1
+          WHEN city_id ILIKE $3 THEN 2
+          WHEN LOWER(REPLACE(name, 'ё', 'е')) LIKE $5 THEN 3
+          WHEN name ILIKE $2 THEN 4
+          ELSE 5
         END,
         name
       LIMIT 100
@@ -112,8 +125,10 @@ export class PostgresStopRepository implements IStopRepository {
     const tsQuery = normalizedCity.split(/\s+/).join(' & ');
     const ilikePattern = `%${normalizedCity}%`;
     const cityIdPattern = `%${normalizedCity}%`;
+    const exactNormalized = normalizedCity; // Exact match for normalized city_id
+    const normalizedLikePattern = `%${normalizedCity}%`; // Normalized pattern for name search
     
-    const result = await this.pool.query(query, [tsQuery, ilikePattern, cityIdPattern]);
+    const result = await this.pool.query(query, [tsQuery, ilikePattern, cityIdPattern, exactNormalized, normalizedLikePattern]);
     return result.rows.map(row => this.mapRowToVirtualStop(row));
   }
 

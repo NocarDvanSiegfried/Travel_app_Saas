@@ -160,6 +160,25 @@ export async function getCities(req: Request, res: Response): Promise<void> {
       }
     }
 
+    // Дополнительно: добавляем города из справочника Якутии, если их нет в остановках
+    // Это гарантирует, что все города из yakutia-cities-reference.json будут доступны
+    try {
+      const { getAllYakutiaCities } = await import('../../shared/utils/yakutia-cities-loader');
+      const yakutiaCities = getAllYakutiaCities();
+      
+      for (const city of yakutiaCities) {
+        // Добавляем город, если его еще нет в списке
+        // Используем normalizedName для согласованности
+        const normalizedCityName = city.normalizedName || city.name.toLowerCase();
+        if (!citiesSet.has(city.name) && !Array.from(citiesSet).some(c => c.toLowerCase() === normalizedCityName)) {
+          citiesSet.add(city.name);
+        }
+      }
+    } catch (error) {
+      // Если не удалось загрузить справочник, продолжаем без него
+      logger.warn('Failed to load Yakutia cities reference', error as Error);
+    }
+
     const cities = Array.from(citiesSet).sort();
 
     // Apply pagination

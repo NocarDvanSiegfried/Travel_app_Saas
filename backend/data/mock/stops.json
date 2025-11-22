@@ -106,5 +106,131 @@
       "longitude": 104.2661
     },
     "type": "train_station"
+  },
+  {
+    "id": "stop-013",
+    "name": "Автостанция Олёкминск",
+    "coordinates": {
+      "latitude": 60.3744,
+      "longitude": 120.4272
+    },
+    "type": "bus_station"
+  },
+  {
+    "id": "stop-014",
+    "name": "Аэропорт Ленск",
+    "coordinates": {
+      "latitude": 60.7167,
+      "longitude": 114.9167
+    },
+    "type": "airport"
+  },
+  {
+    "id": "stop-015",
+    "name": "Автостанция Ленск",
+    "coordinates": {
+      "latitude": 60.7167,
+      "longitude": 114.9167
+    },
+    "type": "bus_station"
+  },
+  {
+    "id": "stop-016",
+    "name": "Аэропорт Вилюйск",
+    "coordinates": {
+      "latitude": 63.7553,
+      "longitude": 121.6244
+    },
+    "type": "airport"
+  },
+  {
+    "id": "stop-017",
+    "name": "Автостанция Вилюйск",
+    "coordinates": {
+      "latitude": 63.7553,
+      "longitude": 121.6244
+    },
+    "type": "bus_station"
+  },
+  {
+    "id": "stop-018",
+    "name": "Аэропорт Тикси",
+    "coordinates": {
+      "latitude": 71.6333,
+      "longitude": 128.8667
+    },
+    "type": "airport"
+  },
+  {
+    "id": "stop-019",
+    "name": "Порт Тикси",
+    "coordinates": {
+      "latitude": 71.6333,
+      "longitude": 128.8667
+    },
+    "type": "bus_station"
+  },
+  {
+    "id": "stop-020",
+    "name": "Автостанция Алдан",
+    "coordinates": {
+      "latitude": 58.6000,
+      "longitude": 125.4000
+    },
+    "type": "bus_station"
+  },
+  {
+    "id": "stop-021",
+    "name": "Аэропорт Покровск",
+    "coordinates": {
+      "latitude": 61.4833,
+      "longitude": 129.1500
+    },
+    "type": "airport"
+  },
+  {
+    "id": "stop-022",
+    "name": "Автостанция Удачный",
+    "coordinates": {
+      "latitude": 66.4167,
+      "longitude": 112.4000
+    },
+    "type": "bus_station"
+  },
+  {
+    "id": "stop-023",
+    "name": "Аэропорт Верхоянск",
+    "coordinates": {
+      "latitude": 67.5500,
+      "longitude": 133.3833
+    },
+    "type": "airport"
+  },
+  {
+    "id": "stop-024",
+    "name": "Автостанция Жиганск",
+    "coordinates": {
+      "latitude": 66.7667,
+      "longitude": 123.4000
+    },
+    "type": "bus_station"
+  },
+  {
+    "id": "stop-025",
+    "name": "Аэропорт Среднеколымск",
+    "coordinates": {
+      "latitude": 67.4500,
+      "longitude": 153.7000
+    },
+    "type": "airport"
+  },
+  {
+    "id": "stop-026",
+    "name": "Аэропорт Чокурдах",
+    "coordinates": {
+      "latitude": 70.6167,
+      "longitude": 147.9000
+    },
+    "type": "airport"
   }
 ]
