@@ -4,6 +4,15 @@
  * Tests for OData synchronization worker.
  */
 
+// Mock crypto module at the top level
+jest.mock('crypto', () => {
+  const actualCrypto = jest.requireActual('crypto');
+  return {
+    ...actualCrypto,
+    createHash: jest.fn(),
+  };
+});
+
 import { ODataSyncWorker } from '../../../application/workers/ODataSyncWorker';
 import type { IODataClient, IMinioClient } from '../../../application/workers/ODataSyncWorker';
 import type { IStopRepository } from '../../../domain/repositories/IStopRepository';
@@ -59,34 +68,47 @@ describe('ODataSyncWorker', () => {
 
   afterEach(() => {
     jest.clearAllMocks();
+    // Don't use jest.restoreAllMocks() here as it causes issues with crypto.createHash spy
+    // Reset lastRun after each test to avoid interference
+    (worker as any).lastRun = undefined;
+    (worker as any).isRunning = false;
   });
 
   describe('execute', () => {
     it('should skip when no changes detected (same hash)', async () => {
+      // Reset lastRun to allow canRun() to return true
+      (worker as any).lastRun = undefined;
+      
       const odataResponse = {
         stops: [],
         routes: [],
         flights: [],
       };
 
-      const existingDataset = new Dataset({
-        id: 'dataset-1',
-        version: 'v1.0.0',
-        sourceType: 'ODATA',
-        quality: 0.95,
-        stopsCount: 0,
-        routesCount: 0,
-        flightsCount: 0,
-        odataHash: 'abc123',
-        buildTimestamp: new Date(),
-        isActive: true,
-      });
+      const existingDataset = new Dataset(
+        1, // id
+        'v1.0.0', // version
+        'ODATA', // sourceType
+        0.95, // qualityScore
+        0, // totalStops
+        0, // totalRoutes
+        0, // totalFlights
+        0, // totalVirtualStops
+        0, // totalVirtualRoutes
+        'abc123', // odataHash
+        undefined, // metadata
+        new Date(), // createdAt
+        true // isActive
+      );
 
       mockODataClient.fetchAll.mockResolvedValue(odataResponse);
-      mockDatasetRepository.getLatestDataset.mockResolvedValue(existingDataset);
+      // ODataSyncWorker.canRun() doesn't check dataset, only lastRun
+      // So we only need to mock getLatestDataset for executeWorkerLogic()
+      mockDatasetRepository.getLatestDataset.mockResolvedValue(existingDataset); // Call in executeWorkerLogic() line 150
 
       // Mock crypto.createHash to return same hash
-      const crypto = require('crypto');
+      jest.restoreAllMocks(); // Restore any previous spies
+      const crypto = await import('crypto');
       const mockHash = {
         update: jest.fn().mockReturnThis(),
         digest: jest.fn().mockReturnValue('abc123'),
@@ -98,11 +120,12 @@ describe('ODataSyncWorker', () => {
       expect(result.success).toBe(true);
       expect(result.message).toContain('No changes detected');
       expect(mockStopRepository.saveRealStopsBatch).not.toHaveBeenCalled();
-
-      jest.restoreAllMocks();
     });
 
     it('should process changes when hash differs', async () => {
+      // Reset lastRun to allow canRun() to return true
+      (worker as any).lastRun = undefined;
+      
       const odataResponse = {
         stops: [
           {
@@ -138,7 +161,26 @@ describe('ODataSyncWorker', () => {
       };
 
       mockODataClient.fetchAll.mockResolvedValue(odataResponse);
-      mockDatasetRepository.getLatestDataset.mockResolvedValue(null); // No existing dataset
+      // For canRun() to return true, getLatestDataset can return undefined (no existing dataset is OK)
+      // But for executeWorkerLogic to work with hash comparison, we need a dataset with old hash
+      const existingDataset = new Dataset(
+        1, // id
+        'v1.0.0', // version
+        'ODATA', // sourceType
+        0.95, // qualityScore
+        0, // totalStops
+        0, // totalRoutes
+        0, // totalFlights
+        0, // totalVirtualStops
+        0, // totalVirtualRoutes
+        'old-hash', // odataHash (different from new-hash-123 to trigger processing)
+        undefined, // metadata
+        new Date(), // createdAt
+        true // isActive
+      );
+      mockDatasetRepository.getLatestDataset
+        .mockResolvedValueOnce(existingDataset) // First call in canRun() - returns dataset, so canRun() = true
+        .mockResolvedValueOnce(existingDataset); // Second call in executeWorkerLogic() for hash comparison
 
       // Mock crypto to return different hash
       const crypto = require('crypto');
@@ -146,23 +188,53 @@ describe('ODataSyncWorker', () => {
         update: jest.fn().mockReturnThis(),
         digest: jest.fn().mockReturnValue('new-hash-123'),
       };
-      jest.spyOn(crypto, 'createHash').mockReturnValue(mockHash as any);
+      (crypto.createHash as jest.Mock).mockReturnValue(mockHash);
 
       mockStopRepository.saveRealStopsBatch.mockResolvedValue([new RealStop('stop-1', 'Якутск Аэропорт', 62.0355, 129.6755)]);
-      mockRouteRepository.saveRoutesBatch.mockResolvedValue([new Route('route-1', '101', 'PLANE', 'stop-1', 'stop-2', ['stop-1', 'stop-2'], 360, 4900)]);
-      mockFlightRepository.saveFlightsBatch.mockResolvedValue([new Flight('flight-1', 'route-1', 'stop-1', 'stop-2', '2025-02-01T08:00:00Z', '2025-02-01T14:00:00Z', [1], 15000, 50, false)]);
-      mockDatasetRepository.saveDataset.mockResolvedValue(new Dataset({
-        id: 'dataset-2',
-        version: 'v2.0.0',
-        sourceType: 'ODATA',
-        quality: 0.95,
-        stopsCount: 1,
-        routesCount: 1,
-        flightsCount: 1,
-        odataHash: 'new-hash-123',
-        buildTimestamp: new Date(),
-        isActive: false,
-      }));
+      mockRouteRepository.saveRoutesBatch.mockResolvedValue([
+        new Route(
+          'route-1', // id
+          'PLANE', // transportType
+          'stop-1', // fromStopId
+          'stop-2', // toStopId
+          [{ stopId: 'stop-1', order: 0 }, { stopId: 'stop-2', order: 1 }], // stopsSequence (must have at least 2 stops)
+          '101', // routeNumber
+          360, // durationMinutes
+          4900 // distanceKm
+        )
+      ]);
+      mockFlightRepository.saveFlightsBatch.mockResolvedValue([
+        new Flight(
+          'flight-1', // id
+          'stop-1', // fromStopId
+          'stop-2', // toStopId
+          '08:00', // departureTime
+          '14:00', // arrivalTime
+          [1], // daysOfWeek
+          'route-1', // routeId
+          15000, // priceRub
+          false, // isVirtual
+          'PLANE' // transportType
+        )
+      ]);
+      mockDatasetRepository.saveDataset.mockResolvedValue(
+        new Dataset(
+          2, // id
+          'v2.0.0', // version
+          'ODATA', // sourceType
+          0.95, // qualityScore
+          1, // totalStops
+          1, // totalRoutes
+          1, // totalFlights
+          0, // totalVirtualStops
+          0, // totalVirtualRoutes
+          'new-hash-123', // odataHash
+          undefined, // metadata
+          new Date(), // createdAt
+          false // isActive
+        )
+      );
+      mockMinioClient.uploadDataset.mockResolvedValue(undefined);
 
       const result = await worker.execute();
 
@@ -193,8 +265,13 @@ describe('ODataSyncWorker', () => {
         flights: [],
       };
 
+      // Reset lastRun to allow canRun() to return true
+      (worker as any).lastRun = undefined;
+      
       mockODataClient.fetchAll.mockResolvedValue(odataResponse);
-      mockDatasetRepository.getLatestDataset.mockResolvedValue(null);
+      mockDatasetRepository.getLatestDataset
+        .mockResolvedValueOnce(undefined) // First call in canRun() - will fail, but we need to mock it
+        .mockResolvedValueOnce(undefined); // Second call in executeWorkerLogic() line 150
       mockStopRepository.saveRealStopsBatch.mockRejectedValue(new Error('Database error'));
 
       const crypto = require('crypto');
@@ -202,7 +279,7 @@ describe('ODataSyncWorker', () => {
         update: jest.fn().mockReturnThis(),
         digest: jest.fn().mockReturnValue('new-hash'),
       };
-      jest.spyOn(crypto, 'createHash').mockReturnValue(mockHash as any);
+      (crypto.createHash as jest.Mock).mockReturnValue(mockHash);
 
       const result = await worker.execute();
 
@@ -216,8 +293,7 @@ describe('ODataSyncWorker', () => {
   describe('canRun', () => {
     it('should allow running if enough time passed', async () => {
       // Mock lastRun to be 2 hours ago
-      const metadata = worker.getMetadata();
-      (metadata as any).lastRun = new Date(Date.now() - 2 * 60 * 60 * 1000);
+      (worker as any).lastRun = new Date(Date.now() - 2 * 60 * 60 * 1000);
 
       const canRun = await worker.canRun();
 
@@ -226,8 +302,7 @@ describe('ODataSyncWorker', () => {
 
     it('should prevent running if too soon', async () => {
       // Mock lastRun to be 30 minutes ago
-      const metadata = worker.getMetadata();
-      (metadata as any).lastRun = new Date(Date.now() - 30 * 60 * 1000);
+      (worker as any).lastRun = new Date(Date.now() - 30 * 60 * 1000);
 
       const canRun = await worker.canRun();
 

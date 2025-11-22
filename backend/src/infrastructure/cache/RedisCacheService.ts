@@ -84,9 +84,12 @@ export class RedisCacheService implements ICacheService {
         return;
       }
 
-      const keys = await client.keys(pattern);
+      // Use SCAN instead of KEYS to avoid blocking Redis
+      const { scanKeysIoredis } = await import('./redis-scan');
+      const keys = await scanKeysIoredis(client, pattern);
+      
       if (keys.length > 0) {
-        await client.del(...keys);
+        await client.del(keys);
       }
     } catch (error) {
       console.error(`❌ Error deleting cache by pattern ${pattern}:`, error);

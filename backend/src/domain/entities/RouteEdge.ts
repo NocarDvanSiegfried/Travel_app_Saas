@@ -2,7 +2,7 @@
  * Ребро графа маршрутов - связь между остановками
  */
 
-import { IRouteSegment, TransportType } from './RouteSegment';
+import { IRouteSegment } from './RouteSegment';
 
 export interface IRouteEdge {
   fromStopId: string;

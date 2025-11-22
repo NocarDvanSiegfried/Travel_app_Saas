@@ -19,28 +19,100 @@ import { PostgresRouteRepository } from '../../infrastructure/repositories/Postg
 import { getStartupResult } from '../../index';
 
 /**
- * Поиск маршрутов (алиас для buildRoute)
+ * @swagger
+ * /routes/search:
+ *   get:
+ *     summary: Поиск маршрутов между городами
+ *     description: Ищет маршруты между двумя городами. Использует оптимизированный алгоритм поиска на основе графа маршрутов.
+ *     tags: [Routes]
+ *     parameters:
+ *       - in: query
+ *         name: from
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Город отправления
+ *         example: Москва
+ *       - in: query
+ *         name: to
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Город назначения
+ *         example: Санкт-Петербург
+ *       - in: query
+ *         name: date
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Дата поездки (по умолчанию - сегодня)
+ *         example: 2024-12-20
+ *       - in: query
+ *         name: passengers
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: Количество пассажиров
+ *     responses:
+ *       200:
+ *         description: Маршруты успешно найдены
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 routes:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                 executionTimeMs:
+ *                   type: integer
+ *                 graphAvailable:
+ *                   type: boolean
+ *                 graphVersion:
+ *                   type: string
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       429:
+ *         $ref: '#/components/responses/RateLimitExceeded'
+ *       503:
+ *         description: Граф недоступен
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
  */
 export async function searchRoute(req: Request, res: Response): Promise<void> {
   return buildRoute(req, res);
 }
 
 /**
- * Получить детали маршрута
+ * @swagger
+ * /routes/details:
+ *   get:
+ *     summary: Получить детали маршрута
+ *     description: Возвращает детальную информацию о маршруте по его ID (пока не реализовано)
+ *     tags: [Routes]
+ *     parameters:
+ *       - in: query
+ *         name: routeId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID маршрута
+ *     responses:
+ *       501:
+ *         description: Функционал пока не реализован
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
  */
 export async function getRouteDetails(req: Request, res: Response): Promise<void> {
   try {
-    const { routeId } = req.query;
-
-    if (!routeId) {
-      res.status(400).json({
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'Параметр routeId обязателен',
-        },
-      });
-      return;
-    }
+    // routeId уже валидирован через middleware
+    const _routeId = req.query.routeId;
 
     // TODO: Реализовать получение деталей маршрута по ID
     res.status(501).json({
@@ -117,74 +189,80 @@ export async function getRouteGraphDiagnostics(req: Request, res: Response): Pro
 }
 
 /**
- * Построить маршрут между двумя городами (оптимизированная версия)
- * 
- * Использует новую архитектуру Phase 2:
- * - Graph из Redis (readonly)
- * - OptimizedBuildRouteUseCase
- * - Быстрый поиск (< 10ms)
- * 
- * Параметры:
- * - from (обязательный) - город отправления
- * - to (обязательный) - город назначения
- * - date (опциональный) - дата поездки (если не указана, используется текущая дата)
- * - passengers (опциональный) - количество пассажиров (по умолчанию 1)
+ * @swagger
+ * /routes/build:
+ *   get:
+ *     summary: Построить маршрут между двумя городами
+ *     description: Строит оптимальный маршрут между двумя городами с использованием графа маршрутов. Использует оптимизированный алгоритм поиска.
+ *     tags: [Routes]
+ *     parameters:
+ *       - in: query
+ *         name: from
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Город отправления
+ *         example: Москва
+ *       - in: query
+ *         name: to
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Город назначения
+ *         example: Санкт-Петербург
+ *       - in: query
+ *         name: date
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Дата поездки (по умолчанию - сегодня)
+ *         example: 2024-12-20
+ *       - in: query
+ *         name: passengers
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: Количество пассажиров
+ *     responses:
+ *       200:
+ *         description: Маршрут успешно построен
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 routes:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                 executionTimeMs:
+ *                   type: integer
+ *                 graphAvailable:
+ *                   type: boolean
+ *                 graphVersion:
+ *                   type: string
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       503:
+ *         description: Граф недоступен
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
  */
 export async function buildRoute(req: Request, res: Response): Promise<void> {
   const requestStartTime = Date.now();
 
   try {
-    // Получаем параметры из query или body
-    const fromCity = (req.query.from || req.body?.from) as string;
-    const toCity = (req.query.to || req.body?.to) as string;
-    const dateStr = (req.query.date || req.body?.date) as string;
-    const passengersStr = (req.query.passengers || req.body?.passengers) as string;
-
-    // Проверяем обязательные параметры
-    if (!fromCity || !toCity) {
-      res.status(400).json({
-        success: false,
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'Параметры "from" и "to" обязательны',
-        },
-        executionTimeMs: Date.now() - requestStartTime,
-      });
-      return;
-    }
+    // Получаем параметры из query (уже валидированы через middleware)
+    const fromCity = req.query.from as string;
+    const toCity = req.query.to as string;
+    const dateStr = req.query.date as string | undefined;
+    const passengers = (req.query.passengers as number | undefined) || 1;
 
     // Парсим дату (по умолчанию сегодня)
-    let date: Date;
-    try {
-      date = dateStr ? new Date(dateStr) : new Date();
-      if (isNaN(date.getTime())) {
-        throw new Error('Invalid date format');
-      }
-    } catch (error) {
-      res.status(400).json({
-        success: false,
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'Неверный формат даты. Используйте YYYY-MM-DD.',
-        },
-        executionTimeMs: Date.now() - requestStartTime,
-      });
-      return;
-    }
-
-    // Парсим количество пассажиров (по умолчанию 1)
-    const passengers = passengersStr ? parseInt(passengersStr, 10) : 1;
-    if (isNaN(passengers) || passengers < 1 || passengers > 100) {
-      res.status(400).json({
-        success: false,
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'Количество пассажиров должно быть от 1 до 100',
-        },
-        executionTimeMs: Date.now() - requestStartTime,
-      });
-      return;
-    }
+    const date = dateStr ? new Date(dateStr) : new Date();
 
     // Проверяем доступность графа
     const startup = getStartupResult();

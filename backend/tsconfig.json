@@ -16,7 +16,7 @@
     "sourceMap": true,
     "allowSyntheticDefaultImports": true,
     "allowImportingTsExtensions": false,
-    "types": ["node"],
+    "types": ["node", "jest"],
     "typeRoots": ["./node_modules/@types"],
     "baseUrl": ".",
     "paths": {}

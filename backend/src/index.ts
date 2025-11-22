@@ -7,6 +7,13 @@ import { initializeDatabase } from './infrastructure/database/init-db';
 import { OptimizedStartup } from './infrastructure/startup';
 import type { StartupResult } from './infrastructure/startup';
 import apiRoutes from './presentation/routes';
+import { generalLimiter } from './presentation/middleware/rate-limiter';
+import { errorHandler } from './presentation/middleware/error-handler.middleware';
+import { requestLogger } from './presentation/middleware/request-logger.middleware';
+import { securityHeaders } from './presentation/middleware/security-headers.middleware';
+import { getCorsConfig } from './shared/utils/cors-config';
+import { initializePrometheusMetrics, updateDatabasePoolMetrics, updateRedisConnectionStatus } from './shared/metrics/prometheus';
+import { setupSwagger } from './presentation/swagger/setup';
 
 // ============================================================================
 // Environment Configuration
@@ -30,13 +37,22 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 const API_VERSION = process.env.API_VERSION || 'v1';
 
+// Initialize Prometheus metrics
+initializePrometheusMetrics();
+
+// Setup Swagger UI
+setupSwagger(app, `/api/${API_VERSION}`);
+
+// Security headers (first, before other middleware)
+app.use(securityHeaders);
+
 // Middleware
-app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
-  credentials: true
-}));
+app.use(cors(getCorsConfig()));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Request logging (before routes)
+app.use(requestLogger);
 
 // ============================================================================
 // Global Startup State
@@ -53,30 +69,42 @@ export function getStartupResult(): StartupResult | null {
 }
 
 // ============================================================================
-// Health Check Endpoint
+// Health Check Endpoints (before API routes for orchestration)
 // ============================================================================
+// Direct health endpoints for orchestration systems (Kubernetes, Docker Swarm)
+// Also available via API routes: /api/v1/health, /api/v1/health/live, /api/v1/health/ready
 
-app.get('/health', (req, res) => {
-  const metrics = startupResult?.metrics;
-  
-  res.json({ 
-    status: metrics?.success ? 'ok' : 'degraded',
-    timestamp: new Date().toISOString(),
-    startup: {
-      totalDurationMs: metrics?.totalDurationMs || 0,
-      postgresConnected: (metrics?.postgresConnectionMs || 0) > 0,
-      redisConnected: (metrics?.redisConnectionMs || 0) > 0,
-      graphAvailable: metrics?.graphAvailable || false,
-      graphVersion: metrics?.graphVersion || null,
-    }
+app.get('/health', async (req, res) => {
+  const { check } = await import('./presentation/controllers/HealthController');
+  await check(req, res);
+});
+
+app.get('/health/live', (req, res) => {
+  import('./presentation/controllers/HealthController').then(({ live }) => {
+    live(req, res);
   });
+});
+
+app.get('/health/ready', async (req, res) => {
+  const { ready } = await import('./presentation/controllers/HealthController');
+  await ready(req, res);
 });
 
 // ============================================================================
 // API Routes
 // ============================================================================
 
+// Apply general rate limiting to all API endpoints
+app.use(`/api/${API_VERSION}`, generalLimiter);
+
+// Apply API routes
 app.use(`/api/${API_VERSION}`, apiRoutes);
+
+// ============================================================================
+// Error Handling Middleware (must be last)
+// ============================================================================
+
+app.use(errorHandler);
 
 app.get(`/api/${API_VERSION}/`, (req, res) => {
   res.json({ 
@@ -122,6 +150,17 @@ async function start() {
     
     startupResult = await OptimizedStartup.initialize();
 
+    // Update Prometheus metrics for database and Redis
+    if (startupResult.postgresPool) {
+      const { DatabaseConfig } = await import('./infrastructure/config/database.config');
+      const poolStats = DatabaseConfig.getPoolStats();
+      updateDatabasePoolMetrics(poolStats);
+    }
+
+    if (startupResult.redisClient) {
+      updateRedisConnectionStatus(startupResult.redisClient.isOpen);
+    }
+
     // ========================================================================
     // Step 2.5: Ensure Data Initialization (if database is empty)
     // ========================================================================
@@ -146,26 +185,44 @@ async function start() {
     console.log('🌐 Step 3: Starting Express Server');
     console.log('─────────────────────────────────────────────────────────────');
 
-    const server = app.listen(PORT, () => {
-      console.log(`✅ Backend server running on port ${PORT}`);
-      console.log(`📡 API: http://localhost:${PORT}/api/${API_VERSION}`);
-      console.log(`💚 Health: http://localhost:${PORT}/health`);
-      console.log('');
-      
-      if (startupResult?.metrics?.graphAvailable) {
-        console.log('✅ Backend ready - Graph available, route search enabled');
-        console.log(`📊 Graph version: ${startupResult.metrics.graphVersion}`);
-      } else {
-        console.log('⚠️ Backend ready - LIMITED MODE (graph not available)');
-        console.log('💡 Run background worker to build graph: npm run worker:graph-builder');
-      }
-      
-      console.log('');
-      console.log('╔════════════════════════════════════════════════════════════╗');
-      console.log('║                    Backend Started ✅                      ║');
-      console.log('╚════════════════════════════════════════════════════════════╝');
-      console.log('');
-    });
+        const server = app.listen(PORT, () => {
+          console.log(`✅ Backend server running on port ${PORT}`);
+          console.log(`📡 API: http://localhost:${PORT}/api/${API_VERSION}`);
+          console.log(`💚 Health: http://localhost:${PORT}/health`);
+          console.log(`📊 Metrics: http://localhost:${PORT}/api/${API_VERSION}/metrics`);
+          console.log(`📖 API Docs: http://localhost:${PORT}/api-docs`);
+          console.log('');
+          
+          if (startupResult?.metrics?.graphAvailable) {
+            console.log('✅ Backend ready - Graph available, route search enabled');
+            console.log(`📊 Graph version: ${startupResult.metrics.graphVersion}`);
+          } else {
+            console.log('⚠️ Backend ready - LIMITED MODE (graph not available)');
+            console.log('💡 Run background worker to build graph: npm run worker:graph-builder');
+          }
+          
+          console.log('');
+          console.log('╔════════════════════════════════════════════════════════════╗');
+          console.log('║                    Backend Started ✅                      ║');
+          console.log('╚════════════════════════════════════════════════════════════╝');
+          console.log('');
+
+          // Update database pool metrics periodically (every 30 seconds)
+          if (startupResult?.postgresPool) {
+            setInterval(async () => {
+              const { DatabaseConfig } = await import('./infrastructure/config/database.config');
+              const poolStats = DatabaseConfig.getPoolStats();
+              updateDatabasePoolMetrics(poolStats);
+            }, 30000);
+          }
+
+          // Update Redis connection status periodically (every 30 seconds)
+          if (startupResult?.redisClient) {
+            setInterval(() => {
+              updateRedisConnectionStatus(startupResult?.redisClient?.isOpen || false);
+            }, 30000);
+          }
+        });
 
     // ========================================================================
     // Error Handling

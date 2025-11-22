@@ -150,7 +150,7 @@ export class RouteBuilder {
     toCity: string,
     date: string,
     passengers: number,
-    graph: RouteGraph
+    _graph: RouteGraph
   ): Promise<IBuiltRoute | null> {
     console.log(`[RouteBuilder.buildRouteFromPath] Построение маршрута: ${fromCity} -> ${toCity}, сегментов: ${pathResult.path.length}`);
     

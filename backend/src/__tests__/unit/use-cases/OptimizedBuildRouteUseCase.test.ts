@@ -47,6 +47,8 @@ describe('OptimizedBuildRouteUseCase', () => {
       getAllVirtualStops: jest.fn(),
       findRealStopById: jest.fn(),
       findVirtualStopById: jest.fn(),
+      getRealStopsByCityName: jest.fn(),
+      getVirtualStopsByCityName: jest.fn(),
     } as any;
 
     mockRouteRepository = {} as any;
@@ -85,16 +87,14 @@ describe('OptimizedBuildRouteUseCase', () => {
     it('should return error when no stops found for fromCity', async () => {
       mockGraphRepository.getGraphVersion.mockResolvedValue('graph-v1.0.0');
       mockGraphRepository.getGraphMetadata.mockResolvedValue({
-        id: 'graph-1',
         version: 'graph-v1.0.0',
+        nodes: 1000,
+        edges: 5000,
+        buildTimestamp: Date.now(),
         datasetVersion: 'v1.0.0',
-        nodesCount: 1000,
-        edgesCount: 5000,
-        buildTimestamp: new Date(),
-        isActive: true,
       });
-      mockStopRepository.getAllRealStops.mockResolvedValue([]);
-      mockStopRepository.getAllVirtualStops.mockResolvedValue([]);
+      mockStopRepository.getRealStopsByCityName.mockResolvedValue([]);
+      mockStopRepository.getVirtualStopsByCityName.mockResolvedValue([]);
 
       const result = await useCase.execute(validRequest);
 
@@ -105,20 +105,20 @@ describe('OptimizedBuildRouteUseCase', () => {
     it('should return error when no stops found for toCity', async () => {
       mockGraphRepository.getGraphVersion.mockResolvedValue('graph-v1.0.0');
       mockGraphRepository.getGraphMetadata.mockResolvedValue({
-        id: 'graph-1',
         version: 'graph-v1.0.0',
+        nodes: 1000,
+        edges: 5000,
+        buildTimestamp: Date.now(),
         datasetVersion: 'v1.0.0',
-        nodesCount: 1000,
-        edgesCount: 5000,
-        buildTimestamp: new Date(),
-        isActive: true,
       });
-      mockStopRepository.getAllRealStops
+      mockStopRepository.getRealStopsByCityName
         .mockResolvedValueOnce([
           { id: 'stop-1', name: 'Якутск Аэропорт' },
         ] as any)
         .mockResolvedValueOnce([]);
-      mockStopRepository.getAllVirtualStops.mockResolvedValue([]);
+      mockStopRepository.getVirtualStopsByCityName
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([]);
 
       const result = await useCase.execute(validRequest);
 
@@ -129,18 +129,22 @@ describe('OptimizedBuildRouteUseCase', () => {
     it('should return error when no path found', async () => {
       mockGraphRepository.getGraphVersion.mockResolvedValue('graph-v1.0.0');
       mockGraphRepository.getGraphMetadata.mockResolvedValue({
-        id: 'graph-1',
         version: 'graph-v1.0.0',
+        nodes: 1000,
+        edges: 5000,
+        buildTimestamp: Date.now(),
         datasetVersion: 'v1.0.0',
-        nodesCount: 1000,
-        edgesCount: 5000,
-        buildTimestamp: new Date(),
-        isActive: true,
       });
-      mockStopRepository.getAllRealStops.mockResolvedValue([
-        { id: 'stop-1', name: 'Якутск Аэропорт' },
-        { id: 'stop-2', name: 'Москва Аэропорт' },
-      ] as any);
+      mockStopRepository.getRealStopsByCityName
+        .mockResolvedValueOnce([
+          { id: 'stop-1', name: 'Якутск Аэропорт' },
+        ] as any)
+        .mockResolvedValueOnce([
+          { id: 'stop-2', name: 'Москва Аэропорт' },
+        ] as any);
+      mockStopRepository.getVirtualStopsByCityName
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([]);
       mockGraphRepository.hasNode.mockResolvedValue(true);
       mockGraphRepository.getNeighbors.mockResolvedValue([]); // No neighbors = no path
 
@@ -153,24 +157,28 @@ describe('OptimizedBuildRouteUseCase', () => {
     it('should find route successfully', async () => {
       mockGraphRepository.getGraphVersion.mockResolvedValue('graph-v1.0.0');
       mockGraphRepository.getGraphMetadata.mockResolvedValue({
-        id: 'graph-1',
         version: 'graph-v1.0.0',
+        nodes: 1000,
+        edges: 5000,
+        buildTimestamp: Date.now(),
         datasetVersion: 'v1.0.0',
-        nodesCount: 1000,
-        edgesCount: 5000,
-        buildTimestamp: new Date(),
-        isActive: true,
       });
-      mockStopRepository.getAllRealStops.mockResolvedValue([
-        { id: 'stop-1', name: 'Якутск Аэропорт' },
-        { id: 'stop-2', name: 'Москва Аэропорт' },
-      ] as any);
+      mockStopRepository.getRealStopsByCityName
+        .mockResolvedValueOnce([
+          { id: 'stop-1', name: 'Якутск Аэропорт' },
+        ] as any)
+        .mockResolvedValueOnce([
+          { id: 'stop-2', name: 'Москва Аэропорт' },
+        ] as any);
+      mockStopRepository.getVirtualStopsByCityName
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([]);
       mockGraphRepository.hasNode.mockResolvedValue(true);
       
       // Path: stop-1 -> stop-2
       mockGraphRepository.getNeighbors
         .mockResolvedValueOnce([
-          { neighborId: 'stop-2', weight: 360, distance: 4900, transportType: 'PLANE', routeId: 'route-1' },
+          { neighborId: 'stop-2', weight: 360, metadata: { distance: 4900, transportType: 'PLANE', routeId: 'route-1' } },
         ])
         .mockResolvedValueOnce([]); // stop-2 has no neighbors (destination)
       
@@ -211,18 +219,22 @@ describe('OptimizedBuildRouteUseCase', () => {
     it('should complete in less than 10ms', async () => {
       mockGraphRepository.getGraphVersion.mockResolvedValue('graph-v1.0.0');
       mockGraphRepository.getGraphMetadata.mockResolvedValue({
-        id: 'graph-1',
         version: 'graph-v1.0.0',
+        nodes: 1000,
+        edges: 5000,
+        buildTimestamp: Date.now(),
         datasetVersion: 'v1.0.0',
-        nodesCount: 1000,
-        edgesCount: 5000,
-        buildTimestamp: new Date(),
-        isActive: true,
       });
-      mockStopRepository.getAllRealStops.mockResolvedValue([
-        { id: 'stop-1', name: 'Якутск Аэропорт' },
-        { id: 'stop-2', name: 'Москва Аэропорт' },
-      ] as any);
+      mockStopRepository.getRealStopsByCityName
+        .mockResolvedValueOnce([
+          { id: 'stop-1', name: 'Якутск Аэропорт' },
+        ] as any)
+        .mockResolvedValueOnce([
+          { id: 'stop-2', name: 'Москва Аэропорт' },
+        ] as any);
+      mockStopRepository.getVirtualStopsByCityName
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([]);
       mockGraphRepository.hasNode.mockResolvedValue(true);
       mockGraphRepository.getNeighbors
         .mockResolvedValueOnce([

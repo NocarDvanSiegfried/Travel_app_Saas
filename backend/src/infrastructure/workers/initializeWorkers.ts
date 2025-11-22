@@ -8,6 +8,8 @@
 
 import { Pool } from 'pg';
 import type { RedisClientType } from 'redis';
+import fs from 'fs';
+import path from 'path';
 import {
   getWorkerOrchestrator,
   ODataSyncWorker,
@@ -49,8 +51,6 @@ const YAKUTIA_CITIES: Record<string, { latitude: number; longitude: number }> = 
  */
 class SimpleODataClient implements IODataClient {
   async fetchAll() {
-    const fs = require('fs');
-    const path = require('path');
 
     try {
       // Load mock data from JSON files

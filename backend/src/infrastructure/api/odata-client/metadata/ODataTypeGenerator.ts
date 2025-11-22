@@ -10,7 +10,7 @@ export class ODataTypeGenerator {
    */
   generateEntityTypeInterface(entityType: IODataEntityType): string {
     const interfaceName = this.toPascalCase(entityType.Name);
-    const properties = entityType.Property.map((prop) =>
+    const _properties = entityType.Property.map((prop) =>
       this.generateProperty(prop)
     );
 

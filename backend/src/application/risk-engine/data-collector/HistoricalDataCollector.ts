@@ -8,7 +8,7 @@ import {
   ScheduleService,
   SeatOccupancyService,
 } from '../../../infrastructure/api/odata-client';
-import { IBuiltRoute, IRouteSegmentDetails } from '../../../domain/entities/BuiltRoute';
+import { IBuiltRoute } from '../../../domain/entities/BuiltRoute';
 import {
   IHistoricalDelayData,
   ICancellationData,

@@ -3,7 +3,7 @@
  */
 
 import { IRouteSegment, TransportType } from './RouteSegment';
-import { IRouteEdge, IAvailableFlight } from './RouteEdge';
+import { IAvailableFlight } from './RouteEdge';
 import { IRiskAssessment } from './RiskAssessment';
 
 export interface IRouteSegmentDetails {

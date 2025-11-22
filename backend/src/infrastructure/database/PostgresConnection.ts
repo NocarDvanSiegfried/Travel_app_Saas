@@ -33,7 +33,7 @@ pool.on('error', (err) => {
 });
 
 // Test connection (non-blocking)
-pool.query('SELECT NOW()', (err, res) => {
+pool.query('SELECT NOW()', (err, _res) => {
   if (err) {
     // Don't log here - will be handled in init-db.ts with retries
     // Only log if it's not a connection error (already handled)

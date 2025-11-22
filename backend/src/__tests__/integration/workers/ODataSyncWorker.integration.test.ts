@@ -39,7 +39,7 @@ class MockODataClient {
  * Mock MinIO client for testing
  */
 class MockMinioClient {
-  async uploadDataset(version: string, data: any): Promise<void> {
+  async uploadDataset(_version: string, _data: any): Promise<void> {
     // Mock implementation
   }
 }

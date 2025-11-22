@@ -7,40 +7,55 @@ import { AssessRouteRiskUseCase } from '../../application/risk-engine';
 import { IBuiltRoute } from '../../domain/entities/BuiltRoute';
 
 /**
- * Оценить риск маршрута
- * Принимает тело в формате: { "route": { ... } } или { ... } (маршрут напрямую)
+ * @swagger
+ * /routes/risk/assess:
+ *   post:
+ *     summary: Оценить риск маршрута
+ *     description: Оценивает уровень риска для заданного маршрута на основе исторических данных, погодных условий и других факторов.
+ *     tags: [Risk]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               route:
+ *                 type: object
+ *                 description: Объект маршрута для оценки риска
+ *           example:
+ *             route:
+ *               fromCity: Москва
+ *               toCity: Санкт-Петербург
+ *               segments: []
+ *     responses:
+ *       200:
+ *         description: Оценка риска успешно выполнена
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 riskLevel:
+ *                   type: number
+ *                   description: Уровень риска (0-1)
+ *                 factors:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       429:
+ *         $ref: '#/components/responses/RateLimitExceeded'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
  */
 export async function assessRouteRisk(req: Request, res: Response): Promise<void> {
   try {
+    // Тело запроса уже валидировано через middleware
     // Поддержка формата { "route": { ... } } и прямого формата { ... }
-    const body = req.body || {};
+    const body = req.body;
     const route: IBuiltRoute = (body.route || body) as IBuiltRoute;
-
-    if (!route) {
-      res.status(400).json({
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'Тело запроса должно содержать маршрут в формате { "route": { ... } } или { ... }',
-        },
-      });
-      return;
-    }
-
-    // Валидация обязательных полей маршрута
-    if (!route.routeId || !route.segments || !Array.isArray(route.segments) || route.segments.length === 0) {
-      res.status(400).json({
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'Маршрут должен содержать routeId и непустой массив segments',
-          details: {
-            hasRouteId: !!route.routeId,
-            hasSegments: !!route.segments,
-            segmentsLength: route.segments?.length || 0,
-          },
-        },
-      });
-      return;
-    }
 
     const useCase = new AssessRouteRiskUseCase();
     const assessment = await useCase.execute(route);

@@ -15,7 +15,6 @@ import {
   isRetryableError,
   calculateRetryDelay,
   waitForRetry,
-  DEFAULT_RETRY_STRATEGY,
 } from './retry-strategy';
 import { ICacheService } from '../../cache/ICacheService';
 import { ODataMetadataService } from './metadata/ODataMetadataService';

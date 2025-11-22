@@ -20,7 +20,7 @@ export class PostgresDatasetRepository implements IDatasetRepository {
 
   async findById(id: number): Promise<Dataset | undefined> {
     const result = await this.pool.query(
-      'SELECT * FROM datasets WHERE id = $1',
+      'SELECT id, version, source_type, quality_score, total_stops, total_routes, total_flights, total_virtual_stops, total_virtual_routes, odata_hash, metadata, created_at, is_active FROM datasets WHERE id = $1',
       [id]
     );
 
@@ -31,7 +31,7 @@ export class PostgresDatasetRepository implements IDatasetRepository {
 
   async findByVersion(version: string): Promise<Dataset | undefined> {
     const result = await this.pool.query(
-      'SELECT * FROM datasets WHERE version = $1',
+      'SELECT id, version, source_type, quality_score, total_stops, total_routes, total_flights, total_virtual_stops, total_virtual_routes, odata_hash, metadata, created_at, is_active FROM datasets WHERE version = $1',
       [version]
     );
 
@@ -42,7 +42,7 @@ export class PostgresDatasetRepository implements IDatasetRepository {
 
   async getActiveDataset(): Promise<Dataset | undefined> {
     const result = await this.pool.query(
-      'SELECT * FROM datasets WHERE is_active = TRUE LIMIT 1'
+      'SELECT id, version, source_type, quality_score, total_stops, total_routes, total_flights, total_virtual_stops, total_virtual_routes, odata_hash, metadata, created_at, is_active FROM datasets WHERE is_active = TRUE LIMIT 1'
     );
 
     if (result.rows.length === 0) return undefined;
@@ -52,7 +52,7 @@ export class PostgresDatasetRepository implements IDatasetRepository {
 
   async getLatestDataset(): Promise<Dataset | undefined> {
     const result = await this.pool.query(
-      'SELECT * FROM datasets ORDER BY created_at DESC LIMIT 1'
+      'SELECT id, version, source_type, quality_score, total_stops, total_routes, total_flights, total_virtual_stops, total_virtual_routes, odata_hash, metadata, created_at, is_active FROM datasets ORDER BY created_at DESC LIMIT 1'
     );
 
     if (result.rows.length === 0) return undefined;
@@ -62,8 +62,8 @@ export class PostgresDatasetRepository implements IDatasetRepository {
 
   async getAllDatasets(limit?: number): Promise<Dataset[]> {
     const query = limit
-      ? 'SELECT * FROM datasets ORDER BY created_at DESC LIMIT $1'
-      : 'SELECT * FROM datasets ORDER BY created_at DESC';
+      ? 'SELECT id, version, source_type, quality_score, total_stops, total_routes, total_flights, total_virtual_stops, total_virtual_routes, odata_hash, metadata, created_at, is_active FROM datasets ORDER BY created_at DESC LIMIT $1'
+      : 'SELECT id, version, source_type, quality_score, total_stops, total_routes, total_flights, total_virtual_stops, total_virtual_routes, odata_hash, metadata, created_at, is_active FROM datasets ORDER BY created_at DESC';
 
     const result = limit
       ? await this.pool.query(query, [limit])
@@ -74,7 +74,7 @@ export class PostgresDatasetRepository implements IDatasetRepository {
 
   async getDatasetsBySourceType(sourceType: string): Promise<Dataset[]> {
     const result = await this.pool.query(
-      'SELECT * FROM datasets WHERE source_type = $1 ORDER BY created_at DESC',
+      'SELECT id, version, source_type, quality_score, total_stops, total_routes, total_flights, total_virtual_stops, total_virtual_routes, odata_hash, metadata, created_at, is_active FROM datasets WHERE source_type = $1 ORDER BY created_at DESC',
       [sourceType]
     );
     return result.rows.map(row => this.mapRowToDataset(row));
@@ -82,7 +82,7 @@ export class PostgresDatasetRepository implements IDatasetRepository {
 
   async getDatasetsByQuality(minQualityScore: number): Promise<Dataset[]> {
     const result = await this.pool.query(
-      'SELECT * FROM datasets WHERE quality_score >= $1 ORDER BY quality_score DESC, created_at DESC',
+      'SELECT id, version, source_type, quality_score, total_stops, total_routes, total_flights, total_virtual_stops, total_virtual_routes, odata_hash, metadata, created_at, is_active FROM datasets WHERE quality_score >= $1 ORDER BY quality_score DESC, created_at DESC',
       [minQualityScore]
     );
     return result.rows.map(row => this.mapRowToDataset(row));
@@ -327,7 +327,7 @@ export class PostgresDatasetRepository implements IDatasetRepository {
     }
 
     return new Dataset(
-      parseInt(row.id as string, 10),
+      typeof row.id === 'number' ? row.id : parseInt(row.id as string, 10),
       row.version as string,
       row.source_type as DataSourceType,
       typeof row.quality_score === 'number' 

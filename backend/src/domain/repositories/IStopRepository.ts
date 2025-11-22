@@ -48,12 +48,28 @@ export interface IStopRepository {
   getRealStopsByCity(cityId: string): Promise<RealStop[]>;
 
   /**
+   * Gets real stops by city name using full-text search at database level
+   * 
+   * @param cityName - City name to search for
+   * @returns Array of real stops matching the city name
+   */
+  getRealStopsByCityName(cityName: string): Promise<RealStop[]>;
+
+  /**
    * Gets virtual stops by city
    * 
    * @param cityId - City identifier
    * @returns Array of virtual stops in the city
    */
   getVirtualStopsByCity(cityId: string): Promise<VirtualStop[]>;
+
+  /**
+   * Gets virtual stops by city name using full-text search at database level
+   * 
+   * @param cityName - City name to search for
+   * @returns Array of virtual stops matching the city name
+   */
+  getVirtualStopsByCityName(cityName: string): Promise<VirtualStop[]>;
 
   /**
    * Gets real stops by type (airport, railway station, etc.)

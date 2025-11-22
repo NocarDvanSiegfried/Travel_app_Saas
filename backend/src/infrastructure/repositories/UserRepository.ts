@@ -5,7 +5,7 @@ import { pool } from '../database/PostgresConnection';
 export class UserRepository implements IUserRepository {
   async findById(id: string): Promise<User | null> {
     const result = await pool.query(
-      'SELECT * FROM users WHERE id = $1',
+      'SELECT id, email, password_hash, name, created_at, updated_at FROM users WHERE id = $1',
       [id]
     );
     
@@ -18,7 +18,7 @@ export class UserRepository implements IUserRepository {
 
   async findByEmail(email: string): Promise<User | null> {
     const result = await pool.query(
-      'SELECT * FROM users WHERE email = $1',
+      'SELECT id, email, password_hash, name, created_at, updated_at FROM users WHERE email = $1',
       [email]
     );
     

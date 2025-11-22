@@ -4,12 +4,12 @@
  * Mocks for PostgreSQL Pool and query execution.
  */
 
-import type { Pool, PoolClient, QueryResult } from 'pg';
+import type { Pool, PoolClient, QueryResult, QueryResultRow } from 'pg';
 
 /**
  * Mock query result
  */
-export function createMockQueryResult<T = any>(
+export function createMockQueryResult<T extends QueryResultRow = any>(
   rows: T[] = [],
   rowCount?: number
 ): QueryResult<T> {
@@ -30,7 +30,7 @@ export function createMockPoolClient(): Partial<PoolClient> {
   let queryIndex = 0;
 
   return {
-    query: jest.fn().mockImplementation(async (text: string, params?: any[]) => {
+    query: jest.fn().mockImplementation(async (_text: string, _params?: any[]) => {
       if (queryIndex < queryResults.length) {
         return queryResults[queryIndex++];
       }
@@ -56,7 +56,7 @@ export function createMockPool(): Partial<Pool> {
   const mockClient = createMockPoolClient();
 
   return {
-    query: jest.fn().mockImplementation(async (text: string, params?: any[]) => {
+    query: jest.fn().mockImplementation(async (text: string, params?: unknown[]) => {
       return (mockClient as any).query(text, params);
     }),
     connect: jest.fn().mockResolvedValue(mockClient as PoolClient),

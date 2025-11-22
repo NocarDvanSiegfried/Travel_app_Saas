@@ -124,16 +124,15 @@ describe('PostgresFlightRepository', () => {
   describe('saveFlight', () => {
     it('should save flight', async () => {
       const flight = new Flight(
-        'flight-1',
-        'route-1',
-        'stop-1',
-        'stop-2',
-        new Date('2025-02-01T08:00:00Z').toISOString(),
-        new Date('2025-02-01T10:00:00Z').toISOString(),
-        [1],
-        1500,
-        50,
-        false
+        'flight-1', // id
+        'stop-1', // fromStopId
+        'stop-2', // toStopId
+        '08:00', // departureTime
+        '10:00', // arrivalTime
+        [1], // daysOfWeek
+        'route-1', // routeId
+        1500, // priceRub
+        false // isVirtual
       );
 
       const mockRow = {
@@ -164,8 +163,8 @@ describe('PostgresFlightRepository', () => {
   describe('saveFlightsBatch', () => {
     it('should save multiple flights in transaction', async () => {
       const flights = [
-        new Flight('flight-1', 'route-1', 'stop-1', 'stop-2', '2025-02-01T08:00:00Z', '2025-02-01T10:00:00Z', [1], 1500, 50, false),
-        new Flight('flight-2', 'route-1', 'stop-1', 'stop-2', '2025-02-01T14:00:00Z', '2025-02-01T16:00:00Z', [1], 1500, 50, false),
+        new Flight('flight-1', 'stop-1', 'stop-2', '08:00', '10:00', [1], 'route-1', 1500, false),
+        new Flight('flight-2', 'stop-1', 'stop-2', '14:00', '16:00', [1], 'route-1', 1500, false),
       ];
 
       const mockClient = (mockPool as any).getMockClient();
@@ -174,11 +173,10 @@ describe('PostgresFlightRepository', () => {
         route_id: f.routeId,
         from_stop_id: f.fromStopId,
         to_stop_id: f.toStopId,
-        departure_time: new Date(f.departureTime),
-        arrival_time: new Date(f.arrivalTime),
+        departure_time: f.departureTime,
+        arrival_time: f.arrivalTime,
         day_of_week: f.daysOfWeek?.[0] || 1,
         price_rub: f.priceRub,
-        available_seats: f.availableSeats,
         is_virtual: f.isVirtual,
         created_at: new Date(),
       }));

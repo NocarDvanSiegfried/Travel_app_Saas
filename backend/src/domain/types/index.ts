@@ -4,9 +4,8 @@
  * Содержит utility types для работы с доменными сущностями.
  */
 
-import { ITransportDataset, IRoute, IStop, IFlight } from '../entities/TransportDataset';
+import { ITransportDataset, IRoute } from '../entities/TransportDataset';
 import { DataSourceMode } from '../enums/DataSourceMode';
-import { IQualityReport } from '../entities/QualityReport';
 
 // Re-export ITransportDataset and related interfaces for convenience
 export type { ITransportDataset, IRoute, IStop, IFlight } from '../entities/TransportDataset';

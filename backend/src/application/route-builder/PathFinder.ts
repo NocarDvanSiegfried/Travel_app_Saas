@@ -6,13 +6,6 @@ import { RouteGraph } from './RouteGraph';
 import { IRouteEdge } from '../../domain/entities/RouteEdge';
 import { normalizeCityName } from '../../shared/utils/city-normalizer';
 
-interface IPathNode {
-  stopId: string;
-  distance: number;
-  previous?: IPathNode;
-  edges: IRouteEdge[];
-}
-
 export interface IPathResult {
   path: IRouteEdge[];
   totalWeight: number;
@@ -532,7 +525,7 @@ export class PathFinder {
         // Показываем ближайшие достижимые узлы для диагностики
         // КРИТИЧЕСКИ ВАЖНО: Используем ТЕ ЖЕ ключи, что в distances Map
         const reachableNodes = Array.from(distances.entries())
-          .filter(([nodeId, dist]) => {
+          .filter(([_nodeId, dist]) => {
             // КРИТИЧЕСКИ ВАЖНО: Проверяем, что dist определено и является числом
             if (dist === undefined || typeof dist !== 'number' || isNaN(dist) || !isFinite(dist)) {
               return false;
@@ -595,7 +588,6 @@ export class PathFinder {
         // Используем комбинацию current и targetStopId для уникальности, но БЕЗ создания новой строки
         // Вместо этого используем Set с объектами или проверяем через current и targetStopId отдельно
         // Для простоты используем Set с парами [current, targetStopId]
-        const edgeKeyPair = [current, targetStopId] as [string, string];
         const edgeKeyString = current + '|' + targetStopId; // Простая конкатенация, не template literal
         
         if (visited.has(edgeKeyString)) continue;

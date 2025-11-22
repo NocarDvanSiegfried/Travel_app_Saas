@@ -1,4 +1,4 @@
-import type { Pool, PoolClient } from 'pg';
+import type { Pool } from 'pg';
 import type { IStopRepository } from '../../domain/repositories/IStopRepository';
 import { RealStop, VirtualStop } from '../../domain/entities';
 
@@ -19,7 +19,7 @@ export class PostgresStopRepository implements IStopRepository {
 
   async findRealStopById(id: string): Promise<RealStop | undefined> {
     const result = await this.pool.query(
-      'SELECT * FROM stops WHERE id = $1',
+      'SELECT id, name, latitude, longitude, city_id, is_airport, is_railway_station, metadata, created_at, updated_at FROM stops WHERE id = $1',
       [id]
     );
 
@@ -29,23 +29,99 @@ export class PostgresStopRepository implements IStopRepository {
   }
 
   async getAllRealStops(): Promise<RealStop[]> {
-    const result = await this.pool.query('SELECT * FROM stops ORDER BY name');
+    const result = await this.pool.query('SELECT id, name, latitude, longitude, city_id, is_airport, is_railway_station, metadata, created_at, updated_at FROM stops ORDER BY name');
     return result.rows.map(row => this.mapRowToRealStop(row));
   }
 
   async getRealStopsByCity(cityId: string): Promise<RealStop[]> {
     const result = await this.pool.query(
-      'SELECT * FROM stops WHERE city_id = $1 ORDER BY name',
+      'SELECT id, name, latitude, longitude, city_id, is_airport, is_railway_station, metadata, created_at, updated_at FROM stops WHERE city_id = $1 ORDER BY name',
       [cityId]
     );
     return result.rows.map(row => this.mapRowToRealStop(row));
+  }
+
+  /**
+   * Get stops by city name using full-text search at database level
+   * Uses PostgreSQL GIN index for fast search
+   * 
+   * @param cityName - City name to search for
+   * @returns Array of stops matching the city name
+   */
+  async getRealStopsByCityName(cityName: string): Promise<RealStop[]> {
+    // Normalize city name for search (remove common prefixes)
+    const normalizedCity = cityName.trim().toLowerCase();
+    
+    // Use full-text search with GIN index
+    // Search for city name in stop names using to_tsvector
+    const query = `
+      SELECT id, name, latitude, longitude, city_id, is_airport, is_railway_station, metadata, created_at, updated_at
+      FROM stops
+      WHERE 
+        to_tsvector('russian', name) @@ to_tsquery('russian', $1)
+        OR name ILIKE $2
+        OR city_id ILIKE $3
+      ORDER BY 
+        CASE 
+          WHEN city_id ILIKE $3 THEN 1
+          WHEN name ILIKE $2 THEN 2
+          ELSE 3
+        END,
+        name
+      LIMIT 100
+    `;
+    
+    // Create search patterns
+    const tsQuery = normalizedCity.split(/\s+/).join(' & '); // Full-text search query
+    const ilikePattern = `%${normalizedCity}%`; // ILIKE pattern for partial match
+    const cityIdPattern = `%${normalizedCity}%`; // City ID pattern
+    
+    const result = await this.pool.query(query, [tsQuery, ilikePattern, cityIdPattern]);
+    return result.rows.map(row => this.mapRowToRealStop(row));
+  }
+
+  /**
+   * Get virtual stops by city name using full-text search at database level
+   * 
+   * @param cityName - City name to search for
+   * @returns Array of virtual stops matching the city name
+   */
+  async getVirtualStopsByCityName(cityName: string): Promise<VirtualStop[]> {
+    // Normalize city name for search
+    const normalizedCity = cityName.trim().toLowerCase();
+    
+    // Use full-text search
+    const query = `
+      SELECT id, name, latitude, longitude, city_id, grid_type, grid_position, real_stops_nearby, created_at
+      FROM virtual_stops
+      WHERE 
+        to_tsvector('russian', name) @@ to_tsquery('russian', $1)
+        OR name ILIKE $2
+        OR city_id ILIKE $3
+      ORDER BY 
+        CASE 
+          WHEN city_id ILIKE $3 THEN 1
+          WHEN name ILIKE $2 THEN 2
+          ELSE 3
+        END,
+        name
+      LIMIT 100
+    `;
+    
+    // Create search patterns
+    const tsQuery = normalizedCity.split(/\s+/).join(' & ');
+    const ilikePattern = `%${normalizedCity}%`;
+    const cityIdPattern = `%${normalizedCity}%`;
+    
+    const result = await this.pool.query(query, [tsQuery, ilikePattern, cityIdPattern]);
+    return result.rows.map(row => this.mapRowToVirtualStop(row));
   }
 
   async getRealStopsByType(
     isAirport?: boolean,
     isRailwayStation?: boolean
   ): Promise<RealStop[]> {
-    let query = 'SELECT * FROM stops WHERE 1=1';
+    let query = 'SELECT id, name, latitude, longitude, city_id, is_airport, is_railway_station, metadata, created_at, updated_at FROM stops WHERE 1=1';
     const params: unknown[] = [];
 
     if (isAirport !== undefined) {
@@ -172,7 +248,7 @@ export class PostgresStopRepository implements IStopRepository {
     // Using PostGIS point distance calculation
     // Formula: distance in km = distance in degrees * 111.32 (approximate)
     const query = `
-      SELECT *,
+      SELECT id, name, latitude, longitude, city_id, is_airport, is_railway_station, metadata, created_at, updated_at,
         (
           6371 * acos(
             cos(radians($1)) * cos(radians(latitude)) *
@@ -201,7 +277,7 @@ export class PostgresStopRepository implements IStopRepository {
 
   async findVirtualStopById(id: string): Promise<VirtualStop | undefined> {
     const result = await this.pool.query(
-      'SELECT * FROM virtual_stops WHERE id = $1',
+      'SELECT id, name, latitude, longitude, city_id, grid_type, grid_position, real_stops_nearby, created_at FROM virtual_stops WHERE id = $1',
       [id]
     );
 
@@ -211,13 +287,13 @@ export class PostgresStopRepository implements IStopRepository {
   }
 
   async getAllVirtualStops(): Promise<VirtualStop[]> {
-    const result = await this.pool.query('SELECT * FROM virtual_stops ORDER BY name');
+    const result = await this.pool.query('SELECT id, name, latitude, longitude, city_id, grid_type, grid_position, real_stops_nearby, created_at FROM virtual_stops ORDER BY name');
     return result.rows.map(row => this.mapRowToVirtualStop(row));
   }
 
   async getVirtualStopsByCity(cityId: string): Promise<VirtualStop[]> {
     const result = await this.pool.query(
-      'SELECT * FROM virtual_stops WHERE city_id = $1 ORDER BY name',
+      'SELECT id, name, latitude, longitude, city_id, grid_type, grid_position, real_stops_nearby, created_at FROM virtual_stops WHERE city_id = $1 ORDER BY name',
       [cityId]
     );
     return result.rows.map(row => this.mapRowToVirtualStop(row));
@@ -345,7 +421,7 @@ export class PostgresStopRepository implements IStopRepository {
     radiusKm: number
   ): Promise<VirtualStop[]> {
     const query = `
-      SELECT *,
+      SELECT id, name, latitude, longitude, city_id, grid_type, grid_position, real_stops_nearby, created_at,
         (
           6371 * acos(
             cos(radians($1)) * cos(radians(latitude)) *

@@ -14,7 +14,6 @@ import {
   TariffsService,
   SeatOccupancyService,
 } from '../../infrastructure/api/odata-client';
-import { ODataClient } from '../../infrastructure/api/odata-client';
 import { ITransportDataset, IRoute } from '../../domain/entities/TransportDataset';
 import { normalizeCityName, generateVirtualStopId } from '../../shared/utils/city-normalizer';
 
@@ -33,7 +32,7 @@ export class RouteGraphBuilder {
    * @param dataset - Датасет транспортных данных
    * @param date - Дата опциональна, используется только для логирования (граф строится из всех рейсов)
    */
-  async buildFromDataset(dataset: ITransportDataset, date?: string): Promise<RouteGraph> {
+  async buildFromDataset(dataset: ITransportDataset, _date?: string): Promise<RouteGraph> {
     // ВАЖНО: Создаём новый граф из датасета
     // Этот метод используется только для первоначального построения графа
     // Для обновления существующего графа используйте graph.updateFromDataset()
@@ -280,13 +279,13 @@ export class RouteGraphBuilder {
       let bidirectionalCount = 0;
       let unidirectionalCount = 0;
       
-      for (const [pairKey, pair] of routePairs.entries()) {
+      for (const [_pairKey, pair] of routePairs.entries()) {
         if (pair.forward && pair.backward) {
           bidirectionalCount++;
           const forwardFromNode = graph.getNode(pair.forward.stops[0]);
           const forwardToNode = graph.getNode(pair.forward.stops[pair.forward.stops.length - 1]);
-          const backwardFromNode = graph.getNode(pair.backward.stops[0]);
-          const backwardToNode = graph.getNode(pair.backward.stops[pair.backward.stops.length - 1]);
+          const _backwardFromNode = graph.getNode(pair.backward.stops[0]);
+          const _backwardToNode = graph.getNode(pair.backward.stops[pair.backward.stops.length - 1]);
           
           const forwardEdges = graph.getEdgesFrom(pair.forward.stops[0]);
           const backwardEdges = graph.getEdgesFrom(pair.backward.stops[0]);
@@ -440,8 +439,8 @@ export class RouteGraphBuilder {
       Статус?: string;
       Маршрут_Key?: string;
     }>,
-    fromStopId: string,
-    toStopId: string
+    _fromStopId: string,
+    _toStopId: string
   ): Promise<IAvailableFlight[]> {
     const availableFlights: IAvailableFlight[] = [];
 

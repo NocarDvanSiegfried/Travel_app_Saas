@@ -13,6 +13,7 @@ import { setupIntegrationTests, teardownIntegrationTests, cleanTestDatabase, cle
 import { createTestRealStop, createTestRoute, createTestFlight } from '../helpers/test-data';
 import type { Pool } from 'pg';
 import type { RedisClientType } from 'redis';
+import type { GraphNeighbor } from '../../../domain/repositories/IGraphRepository';
 
 describe('OptimizedBuildRouteUseCase Integration', () => {
   let useCase: OptimizedBuildRouteUseCase;
@@ -104,22 +105,35 @@ describe('OptimizedBuildRouteUseCase Integration', () => {
       await flightRepository.saveFlight(flight);
 
       // Setup: Build graph
+      const version = 'graph-v1.0.0';
       const nodes = ['stop-1', 'stop-2'];
-      const edges = {
-        'stop-1': [
-          {
-            neighborId: 'stop-2',
-            weight: 360,
-            distance: 4900,
-            transportType: 'PLANE',
-            routeId: 'route-1',
-          },
+      const edgesMap = new Map<string, GraphNeighbor[]>([
+        [
+          'stop-1',
+          [
+            {
+              neighborId: 'stop-2',
+              weight: 360,
+              metadata: {
+                distance: 4900,
+                transportType: 'PLANE',
+                routeId: 'route-1',
+              },
+            },
+          ],
         ],
-        'stop-2': [],
+        ['stop-2', []],
+      ]);
+      const metadata = {
+        version,
+        nodes: nodes.length,
+        edges: 1,
+        buildTimestamp: Date.now(),
+        datasetVersion: 'dataset-v1.0.0',
       };
 
-      await graphRepository.saveGraph(nodes, edges);
-      await graphRepository.setGraphVersion('graph-v1.0.0');
+      await graphRepository.saveGraph(version, nodes, edgesMap, metadata);
+      await graphRepository.setGraphVersion(version);
 
       // Execute: Search route
       const request = {
@@ -156,8 +170,18 @@ describe('OptimizedBuildRouteUseCase Integration', () => {
 
     it('should return error when no stops found for city', async () => {
       // Setup: Build empty graph
-      await graphRepository.saveGraph([], {});
-      await graphRepository.setGraphVersion('graph-v1.0.0');
+      const version = 'graph-v1.0.0';
+      const emptyNodes: string[] = [];
+      const emptyEdges = new Map<string, GraphNeighbor[]>();
+      const metadata = {
+        version,
+        nodes: 0,
+        edges: 0,
+        buildTimestamp: Date.now(),
+        datasetVersion: 'dataset-v1.0.0',
+      };
+      await graphRepository.saveGraph(version, emptyNodes, emptyEdges, metadata);
+      await graphRepository.setGraphVersion(version);
 
       const request = {
         fromCity: 'nonexistent',
@@ -189,22 +213,35 @@ describe('OptimizedBuildRouteUseCase Integration', () => {
       await stopRepository.saveRealStop(stop1);
       await stopRepository.saveRealStop(stop2);
 
+      const version = 'graph-v1.0.0';
       const nodes = ['stop-1', 'stop-2'];
-      const edges = {
-        'stop-1': [
-          {
-            neighborId: 'stop-2',
-            weight: 360,
-            distance: 4900,
-            transportType: 'PLANE',
-            routeId: 'route-1',
-          },
+      const edgesMap = new Map<string, GraphNeighbor[]>([
+        [
+          'stop-1',
+          [
+            {
+              neighborId: 'stop-2',
+              weight: 360,
+              metadata: {
+                distance: 4900,
+                transportType: 'PLANE',
+                routeId: 'route-1',
+              },
+            },
+          ],
         ],
-        'stop-2': [],
+        ['stop-2', []],
+      ]);
+      const metadata = {
+        version,
+        nodes: nodes.length,
+        edges: 1,
+        buildTimestamp: Date.now(),
+        datasetVersion: 'dataset-v1.0.0',
       };
 
-      await graphRepository.saveGraph(nodes, edges);
-      await graphRepository.setGraphVersion('graph-v1.0.0');
+      await graphRepository.saveGraph(version, nodes, edgesMap, metadata);
+      await graphRepository.setGraphVersion(version);
 
       const request = {
         fromCity: 'якутск',

@@ -20,7 +20,7 @@ export class PostgresFlightRepository implements IFlightRepository {
 
   async findById(id: string): Promise<Flight | undefined> {
     const result = await this.pool.query(
-      'SELECT * FROM flights WHERE id = $1',
+      'SELECT id, route_id, from_stop_id, to_stop_id, departure_time, arrival_time, days_of_week, price_rub, is_virtual, transport_type, metadata, created_at FROM flights WHERE id = $1',
       [id]
     );
 
@@ -31,8 +31,8 @@ export class PostgresFlightRepository implements IFlightRepository {
 
   async getAllFlights(includeVirtual: boolean = true): Promise<Flight[]> {
     const query = includeVirtual
-      ? 'SELECT * FROM flights ORDER BY departure_time'
-      : 'SELECT * FROM flights WHERE is_virtual = FALSE ORDER BY departure_time';
+      ? 'SELECT id, route_id, from_stop_id, to_stop_id, departure_time, arrival_time, days_of_week, price_rub, is_virtual, transport_type, metadata, created_at FROM flights ORDER BY departure_time'
+      : 'SELECT id, route_id, from_stop_id, to_stop_id, departure_time, arrival_time, days_of_week, price_rub, is_virtual, transport_type, metadata, created_at FROM flights WHERE is_virtual = FALSE ORDER BY departure_time';
 
     const result = await this.pool.query(query);
     return result.rows.map(row => this.mapRowToFlight(row));
@@ -40,14 +40,14 @@ export class PostgresFlightRepository implements IFlightRepository {
 
   async getVirtualFlights(): Promise<Flight[]> {
     const result = await this.pool.query(
-      'SELECT * FROM flights WHERE is_virtual = TRUE ORDER BY departure_time'
+      'SELECT id, route_id, from_stop_id, to_stop_id, departure_time, arrival_time, days_of_week, price_rub, is_virtual, transport_type, metadata, created_at FROM flights WHERE is_virtual = TRUE ORDER BY departure_time'
     );
     return result.rows.map(row => this.mapRowToFlight(row));
   }
 
   async getRealFlights(): Promise<Flight[]> {
     const result = await this.pool.query(
-      'SELECT * FROM flights WHERE is_virtual = FALSE ORDER BY departure_time'
+      'SELECT id, route_id, from_stop_id, to_stop_id, departure_time, arrival_time, days_of_week, price_rub, is_virtual, transport_type, metadata, created_at FROM flights WHERE is_virtual = FALSE ORDER BY departure_time'
     );
     return result.rows.map(row => this.mapRowToFlight(row));
   }
@@ -58,7 +58,7 @@ export class PostgresFlightRepository implements IFlightRepository {
 
   async getFlightsByRoute(routeId: string): Promise<Flight[]> {
     const result = await this.pool.query(
-      'SELECT * FROM flights WHERE route_id = $1 ORDER BY departure_time',
+      'SELECT id, route_id, from_stop_id, to_stop_id, departure_time, arrival_time, days_of_week, price_rub, is_virtual, transport_type, metadata, created_at FROM flights WHERE route_id = $1 ORDER BY departure_time',
       [routeId]
     );
     return result.rows.map(row => this.mapRowToFlight(row));
@@ -68,13 +68,13 @@ export class PostgresFlightRepository implements IFlightRepository {
     if (date) {
       const dayOfWeek = this.getDayOfWeek(date);
       const result = await this.pool.query(
-        'SELECT * FROM flights WHERE from_stop_id = $1 AND $2 = ANY(days_of_week) ORDER BY departure_time',
+        'SELECT id, route_id, from_stop_id, to_stop_id, departure_time, arrival_time, days_of_week, price_rub, is_virtual, transport_type, metadata, created_at FROM flights WHERE from_stop_id = $1 AND $2 = ANY(days_of_week) ORDER BY departure_time',
         [stopId, dayOfWeek]
       );
       return result.rows.map(row => this.mapRowToFlight(row));
     } else {
       const result = await this.pool.query(
-        'SELECT * FROM flights WHERE from_stop_id = $1 ORDER BY departure_time',
+        'SELECT id, route_id, from_stop_id, to_stop_id, departure_time, arrival_time, days_of_week, price_rub, is_virtual, transport_type, metadata, created_at FROM flights WHERE from_stop_id = $1 ORDER BY departure_time',
         [stopId]
       );
       return result.rows.map(row => this.mapRowToFlight(row));
@@ -85,13 +85,13 @@ export class PostgresFlightRepository implements IFlightRepository {
     if (date) {
       const dayOfWeek = this.getDayOfWeek(date);
       const result = await this.pool.query(
-        'SELECT * FROM flights WHERE to_stop_id = $1 AND $2 = ANY(days_of_week) ORDER BY arrival_time',
+        'SELECT id, route_id, from_stop_id, to_stop_id, departure_time, arrival_time, days_of_week, price_rub, is_virtual, transport_type, metadata, created_at FROM flights WHERE to_stop_id = $1 AND $2 = ANY(days_of_week) ORDER BY arrival_time',
         [stopId, dayOfWeek]
       );
       return result.rows.map(row => this.mapRowToFlight(row));
     } else {
       const result = await this.pool.query(
-        'SELECT * FROM flights WHERE to_stop_id = $1 ORDER BY arrival_time',
+        'SELECT id, route_id, from_stop_id, to_stop_id, departure_time, arrival_time, days_of_week, price_rub, is_virtual, transport_type, metadata, created_at FROM flights WHERE to_stop_id = $1 ORDER BY arrival_time',
         [stopId]
       );
       return result.rows.map(row => this.mapRowToFlight(row));
@@ -106,13 +106,13 @@ export class PostgresFlightRepository implements IFlightRepository {
     if (date) {
       const dayOfWeek = this.getDayOfWeek(date);
       const result = await this.pool.query(
-        'SELECT * FROM flights WHERE from_stop_id = $1 AND to_stop_id = $2 AND $3 = ANY(days_of_week) ORDER BY departure_time',
+        'SELECT id, route_id, from_stop_id, to_stop_id, departure_time, arrival_time, days_of_week, price_rub, is_virtual, transport_type, metadata, created_at FROM flights WHERE from_stop_id = $1 AND to_stop_id = $2 AND $3 = ANY(days_of_week) ORDER BY departure_time',
         [fromStopId, toStopId, dayOfWeek]
       );
       return result.rows.map(row => this.mapRowToFlight(row));
     } else {
       const result = await this.pool.query(
-        'SELECT * FROM flights WHERE from_stop_id = $1 AND to_stop_id = $2 ORDER BY departure_time',
+        'SELECT id, route_id, from_stop_id, to_stop_id, departure_time, arrival_time, days_of_week, price_rub, is_virtual, transport_type, metadata, created_at FROM flights WHERE from_stop_id = $1 AND to_stop_id = $2 ORDER BY departure_time',
         [fromStopId, toStopId]
       );
       return result.rows.map(row => this.mapRowToFlight(row));
@@ -121,7 +121,7 @@ export class PostgresFlightRepository implements IFlightRepository {
 
   async getFlightsByTransportType(transportType: string): Promise<Flight[]> {
     const result = await this.pool.query(
-      'SELECT * FROM flights WHERE transport_type = $1 ORDER BY departure_time',
+      'SELECT id, route_id, from_stop_id, to_stop_id, departure_time, arrival_time, days_of_week, price_rub, is_virtual, transport_type, metadata, created_at FROM flights WHERE transport_type = $1 ORDER BY departure_time',
       [transportType]
     );
     return result.rows.map(row => this.mapRowToFlight(row));
@@ -129,7 +129,7 @@ export class PostgresFlightRepository implements IFlightRepository {
 
   async getFlightsByDayOfWeek(dayOfWeek: number): Promise<Flight[]> {
     const result = await this.pool.query(
-      'SELECT * FROM flights WHERE $1 = ANY(days_of_week) ORDER BY departure_time',
+      'SELECT id, route_id, from_stop_id, to_stop_id, departure_time, arrival_time, days_of_week, price_rub, is_virtual, transport_type, metadata, created_at FROM flights WHERE $1 = ANY(days_of_week) ORDER BY departure_time',
       [dayOfWeek]
     );
     return result.rows.map(row => this.mapRowToFlight(row));
@@ -138,7 +138,7 @@ export class PostgresFlightRepository implements IFlightRepository {
   async getFlightsByDate(date: Date): Promise<Flight[]> {
     const dayOfWeek = this.getDayOfWeek(date);
     const result = await this.pool.query(
-      'SELECT * FROM flights WHERE $1 = ANY(days_of_week) ORDER BY departure_time',
+      'SELECT id, route_id, from_stop_id, to_stop_id, departure_time, arrival_time, days_of_week, price_rub, is_virtual, transport_type, metadata, created_at FROM flights WHERE $1 = ANY(days_of_week) ORDER BY departure_time',
       [dayOfWeek]
     );
     return result.rows.map(row => this.mapRowToFlight(row));

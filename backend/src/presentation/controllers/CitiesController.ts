@@ -9,7 +9,7 @@
 
 import { Request, Response } from 'express';
 import { getLogger } from '../../shared/logger/Logger';
-import type { RealStop, VirtualStop } from '../../domain/entities';
+import { parsePaginationParams, createPaginatedResponse } from '../../shared/utils/pagination';
 
 const logger = getLogger('CitiesController');
 
@@ -43,12 +43,75 @@ function extractCityName(stopName: string): string | null {
 }
 
 /**
- * Получить список доступных городов для построения маршрутов
- * 
- * Использует новую архитектуру Phase 2:
- * - Получает города из PostgreSQL через PostgresStopRepository
- * - Извлекает уникальные города из реальных и виртуальных остановок
- * - Использует cityId из RealStop, если доступен
+ * @swagger
+ * /cities:
+ *   get:
+ *     summary: Получить список доступных городов
+ *     description: Возвращает список городов, доступных для построения маршрутов. Поддерживает пагинацию.
+ *     tags: [Cities]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: Номер страницы (начиная с 1)
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 10
+ *         description: Количество элементов на странице
+ *     responses:
+ *       200:
+ *         description: Список городов успешно получен
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/PaginatedResponse'
+ *                 - type: object
+ *                   properties:
+ *                     mode:
+ *                       type: string
+ *                       example: database
+ *                     quality:
+ *                       type: number
+ *                       example: 100
+ *                     source:
+ *                       type: string
+ *                       example: PostgreSQL
+ *                     loadedAt:
+ *                       type: string
+ *                       format: date-time
+ *                     statistics:
+ *                       type: object
+ *                       properties:
+ *                         realStopsCount:
+ *                           type: integer
+ *                         virtualStopsCount:
+ *                           type: integer
+ *                         totalStopsCount:
+ *                           type: integer
+ *             example:
+ *               data: ["Москва", "Санкт-Петербург", "Казань"]
+ *               pagination:
+ *                 totalItems: 50
+ *                 totalPages: 5
+ *                 currentPage: 1
+ *                 itemsPerPage: 10
+ *                 hasNextPage: true
+ *                 hasPreviousPage: false
+ *               mode: database
+ *               quality: 100
+ *               source: PostgreSQL
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
  */
 export async function getCities(req: Request, res: Response): Promise<void> {
   try {
@@ -99,15 +162,26 @@ export async function getCities(req: Request, res: Response): Promise<void> {
 
     const cities = Array.from(citiesSet).sort();
 
+    // Apply pagination
+    const { page, limit } = parsePaginationParams(req.query);
+    const total = cities.length;
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+    const paginatedCities = cities.slice(startIndex, endIndex);
+
     logger.info('Cities loaded from database', {
       module: 'CitiesController',
       count: cities.length,
       realStopsCount: realStops.length,
       virtualStopsCount: virtualStops.length,
+      page,
+      limit,
     });
 
+    const response = createPaginatedResponse(paginatedCities, total, page, limit);
+
     res.json({
-      cities,
+      ...response,
       mode: 'database',
       quality: 100,
       source: 'PostgreSQL',

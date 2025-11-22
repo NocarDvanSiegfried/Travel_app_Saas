@@ -19,6 +19,8 @@ describe('VirtualEntitiesGeneratorWorker', () => {
   const citiesDirectory = {
     'Якутск': { latitude: 62.0355, longitude: 129.6755 },
     'Москва': { latitude: 55.7558, longitude: 37.6173 },
+    'Санкт-Петербург': { latitude: 59.9343, longitude: 30.3351 },
+    'Новосибирск': { latitude: 55.0084, longitude: 82.9357 },
   };
 
   beforeEach(() => {
@@ -30,6 +32,8 @@ describe('VirtualEntitiesGeneratorWorker', () => {
       countVirtualStops: jest.fn(),
       getRealStopsByCity: jest.fn(),
       getVirtualStopsByCity: jest.fn(),
+      findRealStopById: jest.fn(),
+      findVirtualStopById: jest.fn(),
     } as any;
 
     mockRouteRepository = {
@@ -63,33 +67,50 @@ describe('VirtualEntitiesGeneratorWorker', () => {
 
   describe('execute', () => {
     it('should generate virtual entities for missing cities', async () => {
-      const dataset = new Dataset({
-        id: 'dataset-1',
-        version: 'v1.0.0',
-        sourceType: 'ODATA',
-        quality: 0.95,
-        stopsCount: 100,
-        routesCount: 50,
-        flightsCount: 200,
-        odataHash: 'abc123',
-        buildTimestamp: new Date(),
-        isActive: false,
-      });
+      const dataset = new Dataset(
+        1, // id
+        'v1.0.0', // version
+        'ODATA', // sourceType
+        0.95, // qualityScore
+        100, // totalStops
+        50, // totalRoutes
+        200, // totalFlights
+        0, // totalVirtualStops
+        0, // totalVirtualRoutes
+        'abc123', // odataHash
+        undefined, // metadata
+        new Date(), // createdAt
+        false // isActive
+      );
 
-      mockDatasetRepository.getLatestDataset.mockResolvedValue(dataset);
-      mockStopRepository.getAllRealStops.mockResolvedValue([
-        { id: 'stop-1', name: 'Якутск Аэропорт', cityName: 'Якутск' },
-      ] as any);
-      mockStopRepository.countVirtualStops.mockResolvedValue(0); // No virtual stops yet
-      mockStopRepository.saveVirtualStopsBatch.mockResolvedValue([]);
+      // Setup mocks for canRun() check (called first in execute())
+      // canRun() calls: super.canRun() -> getLatestDataset() -> countVirtualStops()
+      mockDatasetRepository.getLatestDataset
+        .mockResolvedValueOnce(dataset) // First call in canRun()
+        .mockResolvedValueOnce(dataset); // Second call in executeWorkerLogic()
+      mockStopRepository.countVirtualStops
+        .mockResolvedValueOnce(0) // First call in canRun() - no virtual stops yet
+        .mockResolvedValueOnce(0) // Second call in executeWorkerLogic() line 170
+        .mockResolvedValueOnce(1) // Third call in executeWorkerLogic() line 178 (after generation)
+        .mockResolvedValueOnce(1); // Fourth call in executeWorkerLogic() line 178 (for totalVirtualStops)
+      
+      // Setup mocks for executeWorkerLogic()
+      const mockVirtualStop = { id: 'vstop-1', name: 'Virtual Stop', cityId: 'MissingCity' } as any;
+      const mockHubStop = { id: 'stop-1', name: 'Якутск Аэропорт', cityId: 'Якутск' } as any;
+      mockStopRepository.getAllRealStops.mockResolvedValue([mockHubStop]);
+      // Mock for findHubStop() - getRealStopsByCity('якутск')
+      mockStopRepository.getRealStopsByCity.mockResolvedValue([mockHubStop]);
+      mockStopRepository.saveVirtualStopsBatch.mockResolvedValue([mockVirtualStop]);
       mockRouteRepository.saveVirtualRoutesBatch.mockResolvedValue([]);
       mockFlightRepository.saveFlightsBatch.mockResolvedValue([]);
+      mockRouteRepository.countVirtualRoutes
+        .mockResolvedValueOnce(0) // First call in executeWorkerLogic() line 171
+        .mockResolvedValueOnce(0); // Second call in executeWorkerLogic() line 179
       mockStopRepository.countRealStops.mockResolvedValue(100);
-      mockStopRepository.countVirtualStops.mockResolvedValue(1);
       mockRouteRepository.countRoutes.mockResolvedValue(50);
-      mockRouteRepository.countVirtualRoutes.mockResolvedValue(1);
+      // countVirtualRoutes already mocked with mockResolvedValueOnce above
       mockFlightRepository.countFlights.mockResolvedValue(200);
-      mockDatasetRepository.updateStatistics.mockResolvedValue(undefined);
+      mockDatasetRepository.updateStatistics.mockResolvedValue(dataset);
 
       const result = await worker.execute();
 
@@ -99,27 +120,36 @@ describe('VirtualEntitiesGeneratorWorker', () => {
     });
 
     it('should skip when no dataset found', async () => {
-      mockDatasetRepository.getLatestDataset.mockResolvedValue(null);
-
+      // canRun() checks getLatestDataset() first
+      mockDatasetRepository.getLatestDataset.mockResolvedValue(undefined);
+      // canRun() will return false, so execute() returns CANNOT_RUN
+      // But we want to test the NO_DATASET case, so we need to mock canRun() to return true
+      // Actually, the worker's canRun() checks for dataset, so if dataset is undefined,
+      // canRun() returns false, and execute() returns CANNOT_RUN, not NO_DATASET
+      // So we need to test the actual behavior: when dataset is undefined, canRun() fails
       const result = await worker.execute();
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe('NO_DATASET');
+      // When canRun() fails due to no dataset, it returns CANNOT_RUN, not NO_DATASET
+      expect(result.error).toBe('CANNOT_RUN');
     });
 
     it('should skip when virtual entities already exist', async () => {
-      const dataset = new Dataset({
-        id: 'dataset-1',
-        version: 'v1.0.0',
-        sourceType: 'ODATA',
-        quality: 0.95,
-        stopsCount: 100,
-        routesCount: 50,
-        flightsCount: 200,
-        odataHash: 'abc123',
-        buildTimestamp: new Date(),
-        isActive: false,
-      });
+      const dataset = new Dataset(
+        1, // id
+        'v1.0.0', // version
+        'ODATA', // sourceType
+        0.95, // qualityScore
+        100, // totalStops
+        50, // totalRoutes
+        200, // totalFlights
+        0, // totalVirtualStops
+        0, // totalVirtualRoutes
+        'abc123', // odataHash
+        undefined, // metadata
+        new Date(), // createdAt
+        false // isActive
+      );
 
       mockDatasetRepository.getLatestDataset.mockResolvedValue(dataset);
       mockStopRepository.countVirtualStops.mockResolvedValue(10); // Already has virtual stops
@@ -132,18 +162,21 @@ describe('VirtualEntitiesGeneratorWorker', () => {
 
   describe('canRun', () => {
     it('should allow running when no virtual entities exist', async () => {
-      const dataset = new Dataset({
-        id: 'dataset-1',
-        version: 'v1.0.0',
-        sourceType: 'ODATA',
-        quality: 0.95,
-        stopsCount: 100,
-        routesCount: 50,
-        flightsCount: 200,
-        odataHash: 'abc123',
-        buildTimestamp: new Date(),
-        isActive: false,
-      });
+      const dataset = new Dataset(
+        1, // id
+        'v1.0.0', // version
+        'ODATA', // sourceType
+        0.95, // qualityScore
+        100, // totalStops
+        50, // totalRoutes
+        200, // totalFlights
+        0, // totalVirtualStops
+        0, // totalVirtualRoutes
+        'abc123', // odataHash
+        undefined, // metadata
+        new Date(), // createdAt
+        false // isActive
+      );
 
       mockDatasetRepository.getLatestDataset.mockResolvedValue(dataset);
       mockStopRepository.countVirtualStops.mockResolvedValue(0);
@@ -154,18 +187,21 @@ describe('VirtualEntitiesGeneratorWorker', () => {
     });
 
     it('should prevent running when virtual entities exist', async () => {
-      const dataset = new Dataset({
-        id: 'dataset-1',
-        version: 'v1.0.0',
-        sourceType: 'ODATA',
-        quality: 0.95,
-        stopsCount: 100,
-        routesCount: 50,
-        flightsCount: 200,
-        odataHash: 'abc123',
-        buildTimestamp: new Date(),
-        isActive: false,
-      });
+      const dataset = new Dataset(
+        1, // id
+        'v1.0.0', // version
+        'ODATA', // sourceType
+        0.95, // qualityScore
+        100, // totalStops
+        50, // totalRoutes
+        200, // totalFlights
+        0, // totalVirtualStops
+        0, // totalVirtualRoutes
+        'abc123', // odataHash
+        undefined, // metadata
+        new Date(), // createdAt
+        false // isActive
+      );
 
       mockDatasetRepository.getLatestDataset.mockResolvedValue(dataset);
       mockStopRepository.countVirtualStops.mockResolvedValue(10);

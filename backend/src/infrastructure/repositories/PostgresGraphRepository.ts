@@ -124,7 +124,10 @@ export class PostgresGraphRepository implements IGraphRepository {
     if (!targetVersion) return;
 
     const pattern = `${this.REDIS_PREFIX}${targetVersion}:*`;
-    const keys = await this.redis.keys(pattern);
+    
+    // Use SCAN instead of KEYS to avoid blocking Redis
+    const { scanKeys } = await import('../cache/redis-scan');
+    const keys = await scanKeys(this.redis, pattern);
 
     if (keys.length > 0) {
       await this.redis.del(keys);
@@ -142,7 +145,7 @@ export class PostgresGraphRepository implements IGraphRepository {
 
   async findMetadataById(id: number): Promise<Graph | undefined> {
     const result = await this.pool.query(
-      'SELECT * FROM graphs WHERE id = $1',
+      'SELECT id, version, dataset_version, total_nodes, total_edges, build_duration_ms, redis_key, minio_backup_path, metadata, created_at, is_active FROM graphs WHERE id = $1',
       [id]
     );
 
@@ -153,7 +156,7 @@ export class PostgresGraphRepository implements IGraphRepository {
 
   async findMetadataByVersion(version: string): Promise<Graph | undefined> {
     const result = await this.pool.query(
-      'SELECT * FROM graphs WHERE version = $1',
+      'SELECT id, version, dataset_version, total_nodes, total_edges, build_duration_ms, redis_key, minio_backup_path, metadata, created_at, is_active FROM graphs WHERE version = $1',
       [version]
     );
 
@@ -164,7 +167,7 @@ export class PostgresGraphRepository implements IGraphRepository {
 
   async getActiveGraphMetadata(): Promise<Graph | undefined> {
     const result = await this.pool.query(
-      'SELECT * FROM graphs WHERE is_active = TRUE LIMIT 1'
+      'SELECT id, version, dataset_version, total_nodes, total_edges, build_duration_ms, redis_key, minio_backup_path, metadata, created_at, is_active FROM graphs WHERE is_active = TRUE LIMIT 1'
     );
 
     if (result.rows.length === 0) return undefined;
@@ -174,7 +177,7 @@ export class PostgresGraphRepository implements IGraphRepository {
 
   async getLatestGraphMetadata(): Promise<Graph | undefined> {
     const result = await this.pool.query(
-      'SELECT * FROM graphs ORDER BY created_at DESC LIMIT 1'
+      'SELECT id, version, dataset_version, total_nodes, total_edges, build_duration_ms, redis_key, minio_backup_path, metadata, created_at, is_active FROM graphs ORDER BY created_at DESC LIMIT 1'
     );
 
     if (result.rows.length === 0) return undefined;
@@ -184,8 +187,8 @@ export class PostgresGraphRepository implements IGraphRepository {
 
   async getAllGraphMetadata(limit?: number): Promise<Graph[]> {
     const query = limit
-      ? 'SELECT * FROM graphs ORDER BY created_at DESC LIMIT $1'
-      : 'SELECT * FROM graphs ORDER BY created_at DESC';
+      ? 'SELECT id, version, dataset_version, total_nodes, total_edges, build_duration_ms, redis_key, minio_backup_path, metadata, created_at, is_active FROM graphs ORDER BY created_at DESC LIMIT $1'
+      : 'SELECT id, version, dataset_version, total_nodes, total_edges, build_duration_ms, redis_key, minio_backup_path, metadata, created_at, is_active FROM graphs ORDER BY created_at DESC';
 
     const result = limit
       ? await this.pool.query(query, [limit])
@@ -196,7 +199,7 @@ export class PostgresGraphRepository implements IGraphRepository {
 
   async getGraphMetadataByDatasetVersion(datasetVersion: string): Promise<Graph[]> {
     const result = await this.pool.query(
-      'SELECT * FROM graphs WHERE dataset_version = $1 ORDER BY created_at DESC',
+      'SELECT id, version, dataset_version, total_nodes, total_edges, build_duration_ms, redis_key, minio_backup_path, metadata, created_at, is_active FROM graphs WHERE dataset_version = $1 ORDER BY created_at DESC',
       [datasetVersion]
     );
     return result.rows.map(row => this.mapRowToGraph(row));
@@ -410,13 +413,19 @@ export class PostgresGraphRepository implements IGraphRepository {
         : row.metadata as Record<string, unknown>;
     }
 
+    // Parse numeric fields, handling both number and string types
+    const id = typeof row.id === 'number' ? row.id : parseInt(String(row.id || '0'), 10);
+    const totalNodes = typeof row.total_nodes === 'number' ? row.total_nodes : parseInt(String(row.total_nodes || '0'), 10);
+    const totalEdges = typeof row.total_edges === 'number' ? row.total_edges : parseInt(String(row.total_edges || '0'), 10);
+    const buildDurationMs = typeof row.build_duration_ms === 'number' ? row.build_duration_ms : parseInt(String(row.build_duration_ms || '0'), 10);
+
     return new Graph(
-      parseInt(row.id as string, 10),
+      id,
       row.version as string,
       row.dataset_version as string,
-      parseInt(row.total_nodes as string, 10),
-      parseInt(row.total_edges as string, 10),
-      parseInt(row.build_duration_ms as string, 10),
+      totalNodes,
+      totalEdges,
+      buildDurationMs,
       row.redis_key as string,
       row.minio_backup_path as string,
       metadata,

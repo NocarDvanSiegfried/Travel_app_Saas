@@ -43,6 +43,23 @@ export function createMockRedisClient(): Partial<RedisClientType> {
     getValue: (key: string) => {
       return storage.get(key) || null;
     },
+    // Redis Set operations
+    sIsMember: jest.fn().mockImplementation(async (key: string, member: string) => {
+      // For unit tests, we'll return false by default
+      // Tests can override this with mockResolvedValue
+      return false;
+    }),
+    sMembers: jest.fn().mockImplementation(async (key: string) => {
+      return [];
+    }),
+    sAdd: jest.fn().mockImplementation(async (key: string, ...members: string[]) => {
+      return members.length;
+    }),
+    multi: jest.fn().mockImplementation(() => ({
+      sAdd: jest.fn().mockReturnThis(),
+      set: jest.fn().mockReturnThis(),
+      exec: jest.fn().mockResolvedValue([]),
+    })),
   } as any;
 }
 

@@ -20,7 +20,7 @@ export class PostgresRouteRepository implements IRouteRepository {
 
   async findRouteById(id: string): Promise<Route | undefined> {
     const result = await this.pool.query(
-      'SELECT * FROM routes WHERE id = $1',
+      'SELECT id, route_number, transport_type, from_stop_id, to_stop_id, stops_sequence, duration_minutes, distance_km, operator, metadata, created_at, updated_at FROM routes WHERE id = $1',
       [id]
     );
 
@@ -31,14 +31,14 @@ export class PostgresRouteRepository implements IRouteRepository {
 
   async getAllRoutes(): Promise<Route[]> {
     const result = await this.pool.query(
-      'SELECT * FROM routes ORDER BY route_number, from_stop_id'
+      'SELECT id, route_number, transport_type, from_stop_id, to_stop_id, stops_sequence, duration_minutes, distance_km, operator, metadata, created_at, updated_at FROM routes ORDER BY route_number, from_stop_id'
     );
     return result.rows.map(row => this.mapRowToRoute(row));
   }
 
   async getRoutesByTransportType(transportType: string): Promise<Route[]> {
     const result = await this.pool.query(
-      'SELECT * FROM routes WHERE transport_type = $1 ORDER BY route_number',
+      'SELECT id, route_number, transport_type, from_stop_id, to_stop_id, stops_sequence, duration_minutes, distance_km, operator, metadata, created_at, updated_at FROM routes WHERE transport_type = $1 ORDER BY route_number',
       [transportType]
     );
     return result.rows.map(row => this.mapRowToRoute(row));
@@ -46,7 +46,7 @@ export class PostgresRouteRepository implements IRouteRepository {
 
   async getRoutesFromStop(stopId: string): Promise<Route[]> {
     const result = await this.pool.query(
-      'SELECT * FROM routes WHERE from_stop_id = $1 ORDER BY route_number',
+      'SELECT id, route_number, transport_type, from_stop_id, to_stop_id, stops_sequence, duration_minutes, distance_km, operator, metadata, created_at, updated_at FROM routes WHERE from_stop_id = $1 ORDER BY route_number',
       [stopId]
     );
     return result.rows.map(row => this.mapRowToRoute(row));
@@ -54,7 +54,7 @@ export class PostgresRouteRepository implements IRouteRepository {
 
   async getRoutesToStop(stopId: string): Promise<Route[]> {
     const result = await this.pool.query(
-      'SELECT * FROM routes WHERE to_stop_id = $1 ORDER BY route_number',
+      'SELECT id, route_number, transport_type, from_stop_id, to_stop_id, stops_sequence, duration_minutes, distance_km, operator, metadata, created_at, updated_at FROM routes WHERE to_stop_id = $1 ORDER BY route_number',
       [stopId]
     );
     return result.rows.map(row => this.mapRowToRoute(row));
@@ -62,7 +62,7 @@ export class PostgresRouteRepository implements IRouteRepository {
 
   async findDirectRoutes(fromStopId: string, toStopId: string): Promise<Route[]> {
     const result = await this.pool.query(
-      'SELECT * FROM routes WHERE from_stop_id = $1 AND to_stop_id = $2 ORDER BY duration_minutes',
+      'SELECT id, route_number, transport_type, from_stop_id, to_stop_id, stops_sequence, duration_minutes, distance_km, operator, metadata, created_at, updated_at FROM routes WHERE from_stop_id = $1 AND to_stop_id = $2 ORDER BY duration_minutes',
       [fromStopId, toStopId]
     );
     return result.rows.map(row => this.mapRowToRoute(row));
@@ -184,7 +184,7 @@ export class PostgresRouteRepository implements IRouteRepository {
 
   async findVirtualRouteById(id: string): Promise<VirtualRoute | undefined> {
     const result = await this.pool.query(
-      'SELECT * FROM virtual_routes WHERE id = $1',
+      'SELECT id, route_type, from_stop_id, to_stop_id, distance_km, duration_minutes, transport_mode, metadata, created_at FROM virtual_routes WHERE id = $1',
       [id]
     );
 
@@ -195,14 +195,14 @@ export class PostgresRouteRepository implements IRouteRepository {
 
   async getAllVirtualRoutes(): Promise<VirtualRoute[]> {
     const result = await this.pool.query(
-      'SELECT * FROM virtual_routes ORDER BY route_type, from_stop_id'
+      'SELECT id, route_type, from_stop_id, to_stop_id, distance_km, duration_minutes, transport_mode, metadata, created_at FROM virtual_routes ORDER BY route_type, from_stop_id'
     );
     return result.rows.map(row => this.mapRowToVirtualRoute(row));
   }
 
   async getVirtualRoutesByType(routeType: string): Promise<VirtualRoute[]> {
     const result = await this.pool.query(
-      'SELECT * FROM virtual_routes WHERE route_type = $1 ORDER BY from_stop_id',
+      'SELECT id, route_type, from_stop_id, to_stop_id, distance_km, duration_minutes, transport_mode, metadata, created_at FROM virtual_routes WHERE route_type = $1 ORDER BY from_stop_id',
       [routeType]
     );
     return result.rows.map(row => this.mapRowToVirtualRoute(row));
@@ -210,7 +210,7 @@ export class PostgresRouteRepository implements IRouteRepository {
 
   async getVirtualRoutesFromStop(stopId: string): Promise<VirtualRoute[]> {
     const result = await this.pool.query(
-      'SELECT * FROM virtual_routes WHERE from_stop_id = $1 ORDER BY distance_km',
+      'SELECT id, route_type, from_stop_id, to_stop_id, distance_km, duration_minutes, transport_mode, metadata, created_at FROM virtual_routes WHERE from_stop_id = $1 ORDER BY distance_km',
       [stopId]
     );
     return result.rows.map(row => this.mapRowToVirtualRoute(row));
@@ -218,7 +218,7 @@ export class PostgresRouteRepository implements IRouteRepository {
 
   async getVirtualRoutesToStop(stopId: string): Promise<VirtualRoute[]> {
     const result = await this.pool.query(
-      'SELECT * FROM virtual_routes WHERE to_stop_id = $1 ORDER BY distance_km',
+      'SELECT id, route_type, from_stop_id, to_stop_id, distance_km, duration_minutes, transport_mode, metadata, created_at FROM virtual_routes WHERE to_stop_id = $1 ORDER BY distance_km',
       [stopId]
     );
     return result.rows.map(row => this.mapRowToVirtualRoute(row));
@@ -229,7 +229,7 @@ export class PostgresRouteRepository implements IRouteRepository {
     toStopId: string
   ): Promise<VirtualRoute[]> {
     const result = await this.pool.query(
-      'SELECT * FROM virtual_routes WHERE from_stop_id = $1 AND to_stop_id = $2 ORDER BY duration_minutes',
+      'SELECT id, route_type, from_stop_id, to_stop_id, distance_km, duration_minutes, transport_mode, metadata, created_at FROM virtual_routes WHERE from_stop_id = $1 AND to_stop_id = $2 ORDER BY duration_minutes',
       [fromStopId, toStopId]
     );
     return result.rows.map(row => this.mapRowToVirtualRoute(row));

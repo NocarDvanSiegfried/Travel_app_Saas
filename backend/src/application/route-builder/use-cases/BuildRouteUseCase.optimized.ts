@@ -9,7 +9,7 @@
  * @module application/route-builder/use-cases
  */
 
-import type { IGraphRepository, GraphNeighbor } from '../../../domain/repositories/IGraphRepository';
+import type { IGraphRepository } from '../../../domain/repositories/IGraphRepository';
 import type { IFlightRepository } from '../../../domain/repositories/IFlightRepository';
 import type { IStopRepository } from '../../../domain/repositories/IStopRepository';
 import type { IRouteRepository } from '../../../domain/repositories/IRouteRepository';
@@ -200,37 +200,25 @@ export class OptimizedBuildRouteUseCase {
   }
 
   /**
-   * Find stops for a city (readonly)
+   * Find stops for a city using database-level filtering
+   * 
+   * Uses full-text search at database level instead of loading all stops into memory.
+   * This significantly improves performance and reduces memory usage.
    * 
    * @private
    */
   private async findStopsForCity(cityName: string): Promise<Array<{ id: string; name: string }>> {
-    // Normalize city name
-    const normalizedCity = this.normalizeCity(cityName);
+    // Use database-level filtering with full-text search
+    const realStops = await this.stopRepository.getRealStopsByCityName(cityName);
 
-    // Get all real stops (cached in memory, fast)
-    const realStops = await this.stopRepository.getAllRealStops();
-
-    // Filter stops by city name
-    const matches = realStops.filter(stop => {
-      const stopCityName = this.extractCityFromStopName(stop.name);
-      const normalizedStopCity = this.normalizeCity(stopCityName);
-      return normalizedStopCity === normalizedCity;
-    });
-
-    // If no real stops found, try virtual stops
-    if (matches.length === 0) {
-      const virtualStops = await this.stopRepository.getAllVirtualStops();
-      const virtualMatches = virtualStops.filter(stop => {
-        const stopCityName = this.extractCityFromStopName(stop.name);
-        const normalizedStopCity = this.normalizeCity(stopCityName);
-        return normalizedStopCity === normalizedCity;
-      });
-
-      return virtualMatches.map(stop => ({ id: stop.id, name: stop.name }));
+    // If real stops found, return them
+    if (realStops.length > 0) {
+      return realStops.map(stop => ({ id: stop.id, name: stop.name }));
     }
 
-    return matches.map(stop => ({ id: stop.id, name: stop.name }));
+    // If no real stops found, try virtual stops
+    const virtualStops = await this.stopRepository.getVirtualStopsByCityName(cityName);
+    return virtualStops.map(stop => ({ id: stop.id, name: stop.name }));
   }
 
   /**
@@ -243,7 +231,7 @@ export class OptimizedBuildRouteUseCase {
   private async findShortestPath(
     startNodeId: string,
     endNodeId: string,
-    graphVersion: string
+    _graphVersion: string
   ): Promise<string[] | null> {
     // Check if nodes exist in graph
     const startExists = await this.graphRepository.hasNode(startNodeId);
@@ -343,54 +331,75 @@ export class OptimizedBuildRouteUseCase {
     let totalDuration = 0;
     let totalPrice = 0;
 
-    // Build segments for each edge in path
+    // Build segments for each edge in path using parallel requests
+    const segmentPromises: Promise<RouteSegment | null>[] = [];
+
     for (let i = 0; i < path.length - 1; i++) {
       const fromStopId = path[i];
       const toStopId = path[i + 1];
 
-      // Get edge weight (duration) from Redis
-      const weight = await this.graphRepository.getEdgeWeight(fromStopId, toStopId);
+      // Create promise for parallel execution
+      const segmentPromise = (async (): Promise<RouteSegment | null> => {
+        try {
+          // Execute all queries in parallel for this segment
+          const [weight, metadata, flights] = await Promise.all([
+            this.graphRepository.getEdgeWeight(fromStopId, toStopId),
+            this.graphRepository.getEdgeMetadata(fromStopId, toStopId),
+            this.flightRepository.getFlightsBetweenStops(fromStopId, toStopId, date),
+          ]);
 
-      if (!weight) {
-        continue; // Skip invalid edge
+          if (!weight) {
+            return null; // Skip invalid edge
+          }
+
+          const flight = flights.length > 0 ? flights[0] : null;
+
+          return {
+            fromStopId,
+            toStopId,
+            distance: metadata?.distance || 0,
+            duration: weight,
+            transportType: metadata?.transportType || 'BUS',
+            routeId: metadata?.routeId,
+            price: flight?.priceRub,
+            departureTime: flight?.departureTime,
+            arrivalTime: flight?.arrivalTime,
+          };
+        } catch (error) {
+          // Log error but continue processing other segments
+          console.error(`Error building segment ${fromStopId} -> ${toStopId}:`, error);
+          return null;
+        }
+      })();
+
+      segmentPromises.push(segmentPromise);
+    }
+
+    // Wait for all segments to be processed in parallel
+    const segmentResults = await Promise.all(segmentPromises);
+
+    // Process results and calculate totals
+    for (const segment of segmentResults) {
+      if (!segment) {
+        continue; // Skip invalid segments
       }
 
-      // Get edge metadata (distance, transport type, route ID)
-      const metadata = await this.graphRepository.getEdgeMetadata(fromStopId, toStopId);
-
-      // Get flight schedule for this segment (if available)
-      const flights = await this.flightRepository.getFlightsBetweenStops(
-        fromStopId,
-        toStopId,
-        date
-      );
-
-      const flight = flights.length > 0 ? flights[0] : null;
-
-      const segment: RouteSegment = {
-        fromStopId,
-        toStopId,
-        distance: metadata?.distance || 0,
-        duration: weight,
-        transportType: metadata?.transportType || 'BUS',
-        routeId: metadata?.routeId,
-        price: flight?.priceRub,
-        departureTime: flight?.departureTime,
-        arrivalTime: flight?.arrivalTime,
-      };
-
       segments.push(segment);
-
       totalDistance += segment.distance;
       totalDuration += segment.duration;
       totalPrice += segment.price || 0;
     }
 
-    // Get city names for first and last stops
-    const fromStop = await this.stopRepository.findRealStopById(path[0]) ||
-      await this.stopRepository.findVirtualStopById(path[0]);
-    const toStop = await this.stopRepository.findRealStopById(path[path.length - 1]) ||
-      await this.stopRepository.findVirtualStopById(path[path.length - 1]);
+    // Get city names for first and last stops in parallel
+    const [fromStopReal, fromStopVirtual, toStopReal, toStopVirtual] = await Promise.all([
+      this.stopRepository.findRealStopById(path[0]),
+      this.stopRepository.findVirtualStopById(path[0]),
+      this.stopRepository.findRealStopById(path[path.length - 1]),
+      this.stopRepository.findVirtualStopById(path[path.length - 1]),
+    ]);
+
+    const fromStop = fromStopReal || fromStopVirtual;
+    const toStop = toStopReal || toStopVirtual;
 
     return {
       segments,
@@ -444,7 +453,7 @@ export class OptimizedBuildRouteUseCase {
       .trim();
 
     // Extract first word (city name)
-    const parts = cleaned.split(/[\s,\(\)]/);
+    const parts = cleaned.split(/[\s,()]/);
     return parts[0] || stopName;
   }
 }

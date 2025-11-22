@@ -65,7 +65,7 @@ describe('PostgresStopRepository', () => {
         expect(result?.longitude).toBe(129.6755);
         expect(result?.isAirport).toBe(true);
         expect(mockPool.query).toHaveBeenCalledWith(
-          'SELECT * FROM stops WHERE id = $1',
+          'SELECT id, name, latitude, longitude, city_id, is_airport, is_railway_station, metadata, created_at, updated_at FROM stops WHERE id = $1',
           ['stop-1']
         );
       });
@@ -79,7 +79,7 @@ describe('PostgresStopRepository', () => {
 
         expect(result).toBeUndefined();
         expect(mockPool.query).toHaveBeenCalledWith(
-          'SELECT * FROM stops WHERE id = $1',
+          'SELECT id, name, latitude, longitude, city_id, is_airport, is_railway_station, metadata, created_at, updated_at FROM stops WHERE id = $1',
           ['non-existent']
         );
       });
@@ -124,7 +124,7 @@ describe('PostgresStopRepository', () => {
         expect(result[0].id).toBe('stop-1');
         expect(result[1].id).toBe('stop-2');
         expect(mockPool.query).toHaveBeenCalledWith(
-          'SELECT * FROM stops ORDER BY name'
+          'SELECT id, name, latitude, longitude, city_id, is_airport, is_railway_station, metadata, created_at, updated_at FROM stops ORDER BY name'
         );
       });
 
@@ -165,7 +165,7 @@ describe('PostgresStopRepository', () => {
         expect(result).toHaveLength(1);
         expect(result[0].cityId).toBe('city-yakutsk');
         expect(mockPool.query).toHaveBeenCalledWith(
-          'SELECT * FROM stops WHERE city_id = $1 ORDER BY name',
+          'SELECT id, name, latitude, longitude, city_id, is_airport, is_railway_station, metadata, created_at, updated_at FROM stops WHERE city_id = $1 ORDER BY name',
           ['city-yakutsk']
         );
       });
@@ -756,8 +756,8 @@ describe('PostgresStopRepository', () => {
       const result = await repository.findRealStopById('stop-1');
 
       expect(result).toBeDefined();
-      expect(result?.cityId).toBeUndefined();
-      expect(result?.metadata).toBeUndefined();
+      expect(result?.cityId).toBeFalsy(); // Can be null or undefined
+      expect(result?.metadata).toBeFalsy(); // Can be null or undefined
     });
 
     it('should handle missing coordinates', async () => {

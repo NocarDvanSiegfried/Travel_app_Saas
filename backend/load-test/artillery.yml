@@ -1,0 +1,87 @@
+config:
+  target: 'http://localhost:5000'
+  phases:
+    # Warm-up phase
+    - duration: 60
+      arrivalRate: 1
+      name: "Warm up"
+    # Ramp-up phase
+    - duration: 120
+      arrivalRate: 1
+      rampTo: 10
+      name: "Ramp up load"
+    # Sustained load phase
+    - duration: 300
+      arrivalRate: 10
+      name: "Sustained load"
+    # Spike test
+    - duration: 60
+      arrivalRate: 50
+      name: "Spike test"
+    # Cool down
+    - duration: 60
+      arrivalRate: 5
+      name: "Cool down"
+  processor: './processor.js'
+  defaults:
+    headers:
+      Content-Type: 'application/json'
+  plugins:
+    expect: {}
+    metrics-by-endpoint:
+      stripQueryString: true
+
+scenarios:
+  - name: "Health Check"
+    weight: 10
+    flow:
+      - get:
+          url: "/health"
+          expect:
+            - statusCode: [200, 503]
+      - get:
+          url: "/health/live"
+          expect:
+            - statusCode: 200
+      - get:
+          url: "/health/ready"
+          expect:
+            - statusCode: [200, 503]
+
+  - name: "Cities API"
+    weight: 20
+    flow:
+      - get:
+          url: "/api/v1/cities?page=1&limit=10"
+          expect:
+            - statusCode: 200
+            - contentType: json
+            - hasProperty: data
+            - hasProperty: pagination
+
+  - name: "Route Search"
+    weight: 50
+    flow:
+      - get:
+          url: "/api/v1/routes/search?from={{ $randomCity }}&to={{ $randomCity }}&date={{ $randomDate }}"
+          expect:
+            - statusCode: [200, 400, 404, 429, 503]
+            - contentType: json
+
+  - name: "Route Build"
+    weight: 15
+    flow:
+      - get:
+          url: "/api/v1/routes/build?from={{ $randomCity }}&to={{ $randomCity }}&date={{ $randomDate }}"
+          expect:
+            - statusCode: [200, 400, 404, 429, 503]
+            - contentType: json
+
+  - name: "Metrics"
+    weight: 5
+    flow:
+      - get:
+          url: "/api/v1/metrics"
+          expect:
+            - statusCode: 200
+

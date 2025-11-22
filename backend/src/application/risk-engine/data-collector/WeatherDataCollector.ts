@@ -10,7 +10,7 @@ export class WeatherDataCollector {
    * Пока возвращает заглушку
    */
   async collectWeatherData(
-    route: {
+    _route: {
       fromCity: string;
       toCity: string;
       date: string;
@@ -30,8 +30,8 @@ export class WeatherDataCollector {
    * Вычислить риск погоды для сегмента
    */
   calculateWeatherRisk(
-    city: string,
-    date: string
+    _city: string,
+    _date: string
   ): { riskLevel: number; conditions?: string[] } {
     return {
       riskLevel: 0.2,
