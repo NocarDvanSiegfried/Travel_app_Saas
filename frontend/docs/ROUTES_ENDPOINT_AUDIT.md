@@ -334,3 +334,6 @@ const response = await fetchApi<unknown>(`/routes/search?${params.toString()}`)
 
 **Рекомендация:** Проверить фактический запрос в Network tab браузера и логи backend для точного определения, куда уходит запрос.
 
+
+
+

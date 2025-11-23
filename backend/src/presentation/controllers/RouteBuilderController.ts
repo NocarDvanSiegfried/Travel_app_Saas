@@ -114,7 +114,8 @@ export async function getRouteDetails(req: Request, res: Response): Promise<void
     // routeId уже валидирован через middleware
     const _routeId = req.query.routeId;
 
-    // TODO: Реализовать получение деталей маршрута по ID
+    // Note: Route details endpoint is not yet implemented. Future enhancement: return detailed route
+    // information including segments, stops, schedules, and pricing breakdown.
     res.status(501).json({
       error: {
         code: 'NOT_IMPLEMENTED',

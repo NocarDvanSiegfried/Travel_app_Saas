@@ -322,25 +322,36 @@
   },
   {
     "id": "route-030",
-    "name": "Якутск - Ленск (Авиа)",
-    "routeNumber": "ЯКУ-ЛЕН",
+    "name": "Новосибирск - Якутск (Авиа)",
+    "routeNumber": "NSK-YAK",
     "transportType": "PLANE",
     "stops": [
-      "stop-011",
-      "stop-014"
+      "stop-030",
+      "stop-001"
     ],
-    "baseFare": 9975
+    "baseFare": 15000
   },
   {
     "id": "route-031",
-    "name": "Якутск - Вилюйск (Автобус)",
-    "routeNumber": "131",
-    "transportType": "BUS",
+    "name": "Красноярск - Якутск (Авиа)",
+    "routeNumber": "KJA-YAK",
+    "transportType": "PLANE",
     "stops": [
-      "stop-011",
-      "stop-016"
+      "stop-031",
+      "stop-001"
     ],
-    "baseFare": 1575
+    "baseFare": 12000
+  },
+  {
+    "id": "route-032",
+    "name": "Хабаровск - Якутск (Авиа)",
+    "routeNumber": "KHV-YAK",
+    "transportType": "PLANE",
+    "stops": [
+      "stop-032",
+      "stop-001"
+    ],
+    "baseFare": 18000
   },
   {
     "id": "route-033",
@@ -410,25 +421,53 @@
   },
   {
     "id": "route-040",
-    "name": "Якутск - Среднеколымск (Авиа)",
-    "routeNumber": "ЯКУ-СРЕ",
-    "transportType": "PLANE",
+    "name": "Якутск - Нижний Бестях (Паром)",
+    "routeNumber": "FERRY-01",
+    "transportType": "FERRY",
     "stops": [
-      "stop-011",
-      "stop-025"
+      "stop-028",
+      "stop-027"
     ],
-    "baseFare": 15975
+    "baseFare": 500,
+    "metadata": {
+      "ferrySchedule": {
+        "summer": {
+          "start": "06:00",
+          "end": "23:00",
+          "frequency": 30
+        },
+        "winter": {
+          "start": "07:00",
+          "end": "22:00",
+          "frequency": 45
+        }
+      }
+    }
   },
   {
     "id": "route-041",
-    "name": "Якутск - Чокурдах (Авиа)",
-    "routeNumber": "ЯКУ-ЧОК",
-    "transportType": "PLANE",
+    "name": "Нижний Бестях - Якутск (Паром)",
+    "routeNumber": "FERRY-02",
+    "transportType": "FERRY",
     "stops": [
-      "stop-011",
-      "stop-026"
+      "stop-027",
+      "stop-028"
     ],
-    "baseFare": 15550
+    "baseFare": 500,
+    "metadata": {
+      "ferrySchedule": {
+        "summer": {
+          "start": "06:00",
+          "end": "23:00",
+          "frequency": 30
+        },
+        "winter": {
+          "start": "07:00",
+          "end": "22:00",
+          "frequency": 45
+        }
+      }
+    }
   },
   {
     "id": "route-042",

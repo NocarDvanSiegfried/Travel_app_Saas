@@ -26,6 +26,9 @@ import type { IDatasetRepository } from '../../domain/repositories/IDatasetRepos
 import type { IGraphRepository, GraphNode, GraphNeighbor } from '../../domain/repositories/IGraphRepository';
 import { Graph } from '../../domain/entities/Graph';
 import type { TransportType } from '../../domain/entities/Route';
+import { validateGraphStructure, validateTransferEdges, validateFerryEdges } from '../../shared/validators/graph-validator';
+import { getAllFederalCities } from '../../shared/utils/unified-cities-loader';
+import { normalizeCityName } from '../../shared/utils/city-normalizer';
 
 /**
  * Graph edge data
@@ -144,6 +147,7 @@ export class GraphBuilderWorker extends BaseBackgroundWorker {
             transportType: String(route.transportType), // Convert TransportType to string
             durationMinutes: route.durationMinutes,
             distanceKm: route.distanceKm,
+            metadata: 'metadata' in route ? route.metadata : undefined,
           };
         } else {
           // It's a VirtualRoute (has routeType and transportMode)
@@ -156,6 +160,7 @@ export class GraphBuilderWorker extends BaseBackgroundWorker {
             transportType: 'SHUTTLE', // Default for virtual routes
             durationMinutes: route.durationMinutes,
             distanceKm: route.distanceKm,
+            metadata: 'metadata' in route ? route.metadata : undefined,
           };
         }
       });
@@ -166,6 +171,9 @@ export class GraphBuilderWorker extends BaseBackgroundWorker {
         latitude: stop.latitude,
         longitude: stop.longitude,
         cityId: stop.cityId,
+        isAirport: 'isAirport' in stop ? stop.isAirport : false,
+        isRailwayStation: 'isRailwayStation' in stop ? stop.isRailwayStation : false,
+        metadata: 'metadata' in stop ? stop.metadata : undefined,
       }));
 
       // Convert flights to compatible format
@@ -183,10 +191,117 @@ export class GraphBuilderWorker extends BaseBackgroundWorker {
 
       this.log('INFO', `Built graph: ${nodes.length} nodes, ${edges.length} edges`);
 
-      // Validate graph
-      const validation = this.validateGraph(nodes, edges);
-      if (!validation.valid) {
-        throw new Error(`Graph validation failed: ${validation.errors.join(', ')}`);
+      // ====================================================================
+      // Step 4.1: Validate Graph Structure
+      // ====================================================================
+      this.log('INFO', 'Step 4.1: Validating graph structure...');
+      
+      const graphValidation = validateGraphStructure(nodes, edges);
+      if (!graphValidation.isValid) {
+        this.log('ERROR', `Graph structure validation failed: ${graphValidation.errors.join('; ')}`);
+        throw new Error(`Graph structure validation failed: ${graphValidation.errors.join('; ')}`);
+      }
+      
+      if (graphValidation.warnings.length > 0) {
+        this.log('WARN', `Graph structure validation warnings: ${graphValidation.warnings.join('; ')}`);
+      }
+      
+      this.log('INFO', `Graph structure validation passed. Stats: ${JSON.stringify(graphValidation.stats)}`);
+
+      // ====================================================================
+      // Step 4.2: Validate Transfer Edges
+      // ====================================================================
+      this.log('INFO', 'Step 4.2: Validating transfer edges...');
+      
+      const transferValidation = validateTransferEdges(edges, nodes);
+      if (!transferValidation.isValid) {
+        this.log('ERROR', `Transfer edges validation failed: ${transferValidation.errors.join('; ')}`);
+        throw new Error(`Transfer edges validation failed: ${transferValidation.errors.join('; ')}`);
+      }
+      
+      this.log('INFO', 'Transfer edges validation passed');
+
+      // ====================================================================
+      // Step 4.3: Validate Ferry Edges
+      // ====================================================================
+      this.log('INFO', 'Step 4.3: Validating ferry edges...');
+      
+      const ferryValidation = validateFerryEdges(edges, nodes);
+      if (!ferryValidation.isValid) {
+        this.log('ERROR', `Ferry edges validation failed: ${ferryValidation.errors.join('; ')}`);
+        throw new Error(`Ferry edges validation failed: ${ferryValidation.errors.join('; ')}`);
+      }
+      
+      this.log('INFO', 'Ferry edges validation passed');
+
+      // ====================================================================
+      // Step 4.4: Log Federal Cities Statistics
+      // ====================================================================
+      this.log('INFO', 'Step 4.4: Logging federal cities statistics...');
+      
+      try {
+        const federalCities = getAllFederalCities();
+        const hubCityName = 'якутск';
+        
+        for (const federalCity of federalCities) {
+          const normalizedFederalCityName = normalizeCityName(federalCity.normalizedName || federalCity.name);
+          
+          // Count nodes for this federal city
+          const federalCityNodes = nodes.filter(n => 
+            n.cityId && normalizeCityName(n.cityId) === normalizedFederalCityName
+          );
+          
+          // Count edges connecting federal city to Yakutia
+          const federalCityEdges = edges.filter(e => {
+            const fromNode = nodes.find(n => n.id === e.fromStopId);
+            const toNode = nodes.find(n => n.id === e.toStopId);
+            
+            if (!fromNode || !toNode) return false;
+            
+            const fromCityId = fromNode.cityId ? normalizeCityName(fromNode.cityId) : undefined;
+            const toCityId = toNode.cityId ? normalizeCityName(toNode.cityId) : undefined;
+            
+            const isFromFederal = fromCityId === normalizedFederalCityName;
+            const isToFederal = toCityId === normalizedFederalCityName;
+            const isFromYakutia = fromCityId === normalizeCityName(hubCityName);
+            const isToYakutia = toCityId === normalizeCityName(hubCityName);
+            
+            // Edge connects federal city to Yakutia or vice versa
+            return (isFromFederal && isToYakutia) || (isFromYakutia && isToFederal);
+          });
+          
+          // Check connectivity to hub (Yakutsk)
+          const hubNodes = nodes.filter(n => 
+            n.cityId && normalizeCityName(n.cityId) === normalizeCityName(hubCityName)
+          );
+          
+          let isConnectedToHub = false;
+          if (hubNodes.length > 0 && federalCityNodes.length > 0) {
+            // Simple check: if there are edges between federal city and hub
+            const connectivityEdges = edges.filter(e => {
+              const fromNode = nodes.find(n => n.id === e.fromStopId);
+              const toNode = nodes.find(n => n.id === e.toStopId);
+              
+              if (!fromNode || !toNode) return false;
+              
+              const fromCityId = fromNode.cityId ? normalizeCityName(fromNode.cityId) : undefined;
+              const toCityId = toNode.cityId ? normalizeCityName(toNode.cityId) : undefined;
+              
+              const isFromFederal = fromCityId === normalizedFederalCityName;
+              const isToFederal = toCityId === normalizedFederalCityName;
+              const isFromHub = fromCityId === normalizeCityName(hubCityName);
+              const isToHub = toCityId === normalizeCityName(hubCityName);
+              
+              return (isFromFederal && isToHub) || (isFromHub && isToFederal);
+            });
+            
+            isConnectedToHub = connectivityEdges.length > 0;
+          }
+          
+          this.log('INFO', `Federal city "${federalCity.name}": nodes=${federalCityNodes.length}, edges_to_yakutia=${federalCityEdges.length}, connected_to_hub=${isConnectedToHub}`);
+        }
+      } catch (error) {
+        this.log('WARN', `Failed to log federal cities statistics: ${error instanceof Error ? error.message : String(error)}`);
       }
 
       // ====================================================================
@@ -248,7 +363,7 @@ export class GraphBuilderWorker extends BaseBackgroundWorker {
         success: true,
         workerId: this.workerId,
         executionTimeMs: Date.now() - startTime,
-        message: `Graph built successfully: ${nodes.length} nodes, ${edges.length} edges`,
+        message: `Graph built successfully: ${nodes.length} nodes, ${edges.length} edges. Validation: graph=${graphValidation.isValid}, transfers=${transferValidation.isValid}, ferry=${ferryValidation.isValid}`,
         dataProcessed: {
           added: nodes.length + edges.length,
           updated: 0,
@@ -265,8 +380,8 @@ export class GraphBuilderWorker extends BaseBackgroundWorker {
    * Build graph structure from data
    */
   private buildGraphStructure(
-    stops: Array<{ id: string; latitude: number; longitude: number; cityId?: string }>,
-    routes: Array<{ id: string; fromStopId: string; toStopId: string; stopsSequence: Array<{ stopId: string }>; transportType: string; durationMinutes?: number; distanceKm?: number }>,
+    stops: Array<{ id: string; latitude: number; longitude: number; cityId?: string; isAirport?: boolean; isRailwayStation?: boolean; metadata?: Record<string, unknown> }>,
+    routes: Array<{ id: string; fromStopId: string; toStopId: string; stopsSequence: Array<{ stopId: string }>; transportType: string; durationMinutes?: number; distanceKm?: number; metadata?: Record<string, unknown> }>,
     flights: Array<{ id: string; routeId?: string; fromStopId: string; toStopId: string; departureTime: string; arrivalTime: string; isVirtual?: boolean }>
   ): { nodes: GraphNode[]; edges: GraphEdge[] } {
     // Build nodes from stops
@@ -277,6 +392,18 @@ export class GraphBuilderWorker extends BaseBackgroundWorker {
       isVirtual: !stop.cityId, // Virtual stops might not have cityId
       cityId: stop.cityId,
     }));
+
+    // Build stop lookup map for transfer calculation
+    const stopMap = new Map<string, { id: string; cityId?: string; isAirport?: boolean; isRailwayStation?: boolean; metadata?: Record<string, unknown> }>();
+    for (const stop of stops) {
+      stopMap.set(stop.id, {
+        id: stop.id,
+        cityId: stop.cityId,
+        isAirport: stop.isAirport,
+        isRailwayStation: stop.isRailwayStation,
+        metadata: stop.metadata,
+      });
+    }
 
     // Build edges from flights
     const edgesMap = new Map<string, GraphEdge>();
@@ -313,12 +440,18 @@ export class GraphBuilderWorker extends BaseBackgroundWorker {
         }
 
         // Find route info
-          const route = routes.find(r => r.id === flight.routeId);
+        const route = routes.find(r => r.id === flight.routeId);
+
+        // Calculate weight for ferry routes with seasonality
+        let finalWeight = weight;
+        if (route?.transportType === 'FERRY' && route.metadata?.ferrySchedule) {
+          finalWeight = this.calculateFerryWeight(route.durationMinutes || 20, route.metadata.ferrySchedule as { summer?: { frequency: string }; winter?: { frequency: string } });
+        }
 
         edgesMap.set(edgeKey, {
           fromStopId: flight.fromStopId,
           toStopId: flight.toStopId,
-          weight,
+          weight: finalWeight,
           distance: route?.distanceKm,
           transportType: route?.transportType as TransportType | undefined,
           routeId: flight.routeId,
@@ -337,7 +470,12 @@ export class GraphBuilderWorker extends BaseBackgroundWorker {
           
           if (!edgesMap.has(edgeKey)) {
             // Use route duration or estimate
-            const weight = route.durationMinutes || 60; // Default 1 hour
+            let weight = route.durationMinutes || 60; // Default 1 hour
+            
+            // Calculate weight for ferry routes with seasonality
+            if (route.transportType === 'FERRY' && route.metadata?.ferrySchedule) {
+              weight = this.calculateFerryWeight(route.durationMinutes || 20, route.metadata.ferrySchedule as { summer?: { frequency: string }; winter?: { frequency: string } });
+            }
             
             edgesMap.set(edgeKey, {
               fromStopId,
@@ -352,50 +490,189 @@ export class GraphBuilderWorker extends BaseBackgroundWorker {
       }
     }
 
+    // ====================================================================
+    // Step 5: Add Transfer Edges Between Stops in Same City
+    // ====================================================================
+    this.log('INFO', 'Step 5: Adding transfer edges between stops in same city...');
+    
+    // Group stops by cityId
+    const stopsByCity = new Map<string, string[]>();
+    for (const stop of stops) {
+      if (stop.cityId) {
+        if (!stopsByCity.has(stop.cityId)) {
+          stopsByCity.set(stop.cityId, []);
+        }
+        stopsByCity.get(stop.cityId)!.push(stop.id);
+      }
+    }
+
+    // Create transfer edges between stops in the same city
+    let transferEdgesCount = 0;
+    for (const [cityId, cityStopIds] of stopsByCity.entries()) {
+      if (cityStopIds.length < 2) {
+        continue; // Need at least 2 stops to create transfers
+      }
+
+      // Create bidirectional transfer edges between all stops in the city
+      for (let i = 0; i < cityStopIds.length; i++) {
+        for (let j = i + 1; j < cityStopIds.length; j++) {
+          const stop1Id = cityStopIds[i];
+          const stop2Id = cityStopIds[j];
+          
+          const stop1 = stopMap.get(stop1Id);
+          const stop2 = stopMap.get(stop2Id);
+          
+          if (!stop1 || !stop2) {
+            continue;
+          }
+
+          // Calculate transfer weight
+          const transferWeight = this.calculateTransferWeight(stop1, stop2);
+          
+          // Create bidirectional edges
+          const edgeKey1 = `${stop1Id}-${stop2Id}-TRANSFER`;
+          const edgeKey2 = `${stop2Id}-${stop1Id}-TRANSFER`;
+          
+          if (!edgesMap.has(edgeKey1)) {
+            edgesMap.set(edgeKey1, {
+              fromStopId: stop1Id,
+              toStopId: stop2Id,
+              weight: transferWeight,
+              transportType: 'TRANSFER',
+            });
+            transferEdgesCount++;
+          }
+          
+          if (!edgesMap.has(edgeKey2)) {
+            edgesMap.set(edgeKey2, {
+              fromStopId: stop2Id,
+              toStopId: stop1Id,
+              weight: transferWeight,
+              transportType: 'TRANSFER',
+            });
+            transferEdgesCount++;
+          }
+        }
+      }
+    }
+
+    this.log('INFO', `Added ${transferEdgesCount} transfer edges between stops in same cities`);
+
     const edges = Array.from(edgesMap.values());
 
     return { nodes, edges };
   }
 
   /**
-   * Validate graph structure
+   * Calculate transfer weight between two stops
+   * 
+   * @param stop1 - First stop
+   * @param stop2 - Second stop
+   * @returns Transfer weight in minutes
    */
-  private validateGraph(
-    nodes: GraphNode[],
-    edges: GraphEdge[]
-  ): { valid: boolean; errors: string[] } {
-    const errors: string[] = [];
+  private calculateTransferWeight(
+    stop1: { id: string; cityId?: string; isAirport?: boolean; isRailwayStation?: boolean; metadata?: Record<string, unknown> },
+    stop2: { id: string; cityId?: string; isAirport?: boolean; isRailwayStation?: boolean; metadata?: Record<string, unknown> }
+  ): number {
+    // Determine stop types
+    const stop1Type = this.getStopType(stop1);
+    const stop2Type = this.getStopType(stop2);
 
-    // Check nodes
-    if (nodes.length === 0) {
-      errors.push('Graph has no nodes');
+    // Air → Ground: 90 minutes (time to get from airport to city center)
+    if (stop1Type === 'airport' && stop2Type === 'ground') {
+      return 90;
     }
 
-    // Check edges
-    if (edges.length === 0) {
-      errors.push('Graph has no edges');
+    // Ground → Air: 120 minutes (more time needed for check-in, security)
+    if (stop1Type === 'ground' && stop2Type === 'airport') {
+      return 120;
     }
 
-    // Check edge weights
-    const invalidWeights = edges.filter(e => !e.weight || e.weight <= 0 || !isFinite(e.weight));
-    if (invalidWeights.length > 0) {
-      errors.push(`${invalidWeights.length} edges have invalid weights`);
+    // Air → Ferry: 90 minutes (airport to ferry terminal)
+    if (stop1Type === 'airport' && stop2Type === 'ferry_terminal') {
+      return 90;
     }
 
-    // Check edge references
-    const nodeIds = new Set(nodes.map(n => n.id));
-    const invalidEdges = edges.filter(
-      e => !nodeIds.has(e.fromStopId) || !nodeIds.has(e.toStopId)
-    );
-    if (invalidEdges.length > 0) {
-      errors.push(`${invalidEdges.length} edges reference non-existent nodes`);
+    // Ferry → Ground: 30 minutes (ferry terminal to city center)
+    if (stop1Type === 'ferry_terminal' && stop2Type === 'ground') {
+      return 30;
     }
 
-    return {
-      valid: errors.length === 0,
-      errors,
-    };
+    // Ground → Ground: 60 minutes (typical city transfer)
+    if (stop1Type === 'ground' && stop2Type === 'ground') {
+      return 60;
+    }
+
+    // Ground → Ferry: 30 minutes (city center to ferry terminal)
+    if (stop1Type === 'ground' && stop2Type === 'ferry_terminal') {
+      return 30;
+    }
+
+    // Ferry → Air: 90 minutes (ferry terminal to airport)
+    if (stop1Type === 'ferry_terminal' && stop2Type === 'airport') {
+      return 90;
+    }
+
+    // Default: 60 minutes
+    return 60;
   }
+
+  /**
+   * Get stop type (airport, ground, ferry_terminal)
+   * 
+   * @param stop - Stop to analyze
+   * @returns Stop type
+   */
+  private getStopType(stop: { id: string; cityId?: string; isAirport?: boolean; isRailwayStation?: boolean; metadata?: Record<string, unknown> }): 'airport' | 'ground' | 'ferry_terminal' {
+    // Check if it's a ferry terminal
+    if (stop.metadata?.type === 'ferry_terminal' || 
+        stop.id.toLowerCase().includes('паром') || 
+        stop.id.toLowerCase().includes('ferry') ||
+        stop.id.toLowerCase().includes('переправа') ||
+        stop.id.toLowerCase().includes('пристань')) {
+      return 'ferry_terminal';
+    }
+
+    // Check if it's an airport
+    if (stop.isAirport || 
+        stop.id.toLowerCase().includes('аэропорт') || 
+        stop.id.toLowerCase().includes('airport')) {
+      return 'airport';
+    }
+
+    // Default to ground
+    return 'ground';
+  }
+
+  /**
+   * Calculate ferry weight with seasonality
+   * 
+   * @param baseDuration - Base ferry duration in minutes (typically 20)
+   * @param ferrySchedule - Ferry schedule metadata
+   * @returns Total weight including waiting time
+   */
+  private calculateFerryWeight(
+    baseDuration: number,
+    ferrySchedule: { summer?: { frequency: string }; winter?: { frequency: string } }
+  ): number {
+    const currentDate = new Date();
+    const currentMonth = currentDate.getMonth() + 1; // 1-12
+    const isSummer = currentMonth >= 4 && currentMonth <= 9; // April-September
+
+    // Determine waiting time based on season
+    let waitTime: number;
+    if (isSummer) {
+      // Summer: frequent schedule, 15-20 minutes waiting
+      waitTime = 17.5; // Average of 15-20
+    } else {
+      // Winter: rare schedule, 30-45 minutes waiting
+      waitTime = 37.5; // Average of 30-45
+    }
+
+    // Total weight = base duration + waiting time
+    return baseDuration + waitTime;
+  }
+
 
   /**
    * Save graph to Redis

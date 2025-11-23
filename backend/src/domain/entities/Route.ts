@@ -3,7 +3,7 @@ import type { BaseEntity } from './BaseEntity';
 /**
  * Transport types for routes
  */
-export type TransportType = 'BUS' | 'TRAIN' | 'PLANE' | 'WATER';
+export type TransportType = 'BUS' | 'TRAIN' | 'PLANE' | 'WATER' | 'FERRY';
 
 /**
  * Stop in route sequence with timing
@@ -76,7 +76,7 @@ export class Route implements BaseEntity {
       throw new Error('Route: stopsSequence must have at least 2 stops');
     }
 
-    const validTransportTypes: TransportType[] = ['BUS', 'TRAIN', 'PLANE', 'WATER'];
+    const validTransportTypes: TransportType[] = ['BUS', 'TRAIN', 'PLANE', 'WATER', 'FERRY'];
     if (!validTransportTypes.includes(this.transportType)) {
       throw new Error(`Route: invalid transportType ${this.transportType}`);
     }

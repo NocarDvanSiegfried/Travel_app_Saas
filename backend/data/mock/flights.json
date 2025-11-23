@@ -2418,5 +2418,195 @@
     "toStopId": "stop-026",
     "price": 1474,
     "availableSeats": 24
+  },
+  {
+    "id": "flight-243",
+    "routeId": "route-030",
+    "departureTime": "2025-11-19T08:00:00.000Z",
+    "arrivalTime": "2025-11-19T12:00:00.000Z",
+    "fromStopId": "stop-030",
+    "toStopId": "stop-001",
+    "price": 15000,
+    "availableSeats": 150
+  },
+  {
+    "id": "flight-244",
+    "routeId": "route-030",
+    "departureTime": "2025-11-19T14:00:00.000Z",
+    "arrivalTime": "2025-11-19T18:00:00.000Z",
+    "fromStopId": "stop-030",
+    "toStopId": "stop-001",
+    "price": 15000,
+    "availableSeats": 140
+  },
+  {
+    "id": "flight-245",
+    "routeId": "route-030",
+    "departureTime": "2025-11-19T20:00:00.000Z",
+    "arrivalTime": "2025-11-20T00:00:00.000Z",
+    "fromStopId": "stop-030",
+    "toStopId": "stop-001",
+    "price": 15000,
+    "availableSeats": 130
+  },
+  {
+    "id": "flight-246",
+    "routeId": "route-031",
+    "departureTime": "2025-11-19T08:00:00.000Z",
+    "arrivalTime": "2025-11-19T11:00:00.000Z",
+    "fromStopId": "stop-031",
+    "toStopId": "stop-001",
+    "price": 12000,
+    "availableSeats": 120
+  },
+  {
+    "id": "flight-247",
+    "routeId": "route-031",
+    "departureTime": "2025-11-19T14:00:00.000Z",
+    "arrivalTime": "2025-11-19T17:00:00.000Z",
+    "fromStopId": "stop-031",
+    "toStopId": "stop-001",
+    "price": 12000,
+    "availableSeats": 110
+  },
+  {
+    "id": "flight-248",
+    "routeId": "route-031",
+    "departureTime": "2025-11-19T20:00:00.000Z",
+    "arrivalTime": "2025-11-19T23:00:00.000Z",
+    "fromStopId": "stop-031",
+    "toStopId": "stop-001",
+    "price": 12000,
+    "availableSeats": 100
+  },
+  {
+    "id": "flight-249",
+    "routeId": "route-032",
+    "departureTime": "2025-11-19T08:00:00.000Z",
+    "arrivalTime": "2025-11-19T13:00:00.000Z",
+    "fromStopId": "stop-032",
+    "toStopId": "stop-001",
+    "price": 18000,
+    "availableSeats": 140
+  },
+  {
+    "id": "flight-250",
+    "routeId": "route-032",
+    "departureTime": "2025-11-19T14:00:00.000Z",
+    "arrivalTime": "2025-11-19T19:00:00.000Z",
+    "fromStopId": "stop-032",
+    "toStopId": "stop-001",
+    "price": 18000,
+    "availableSeats": 130
+  },
+  {
+    "id": "flight-251",
+    "routeId": "route-032",
+    "departureTime": "2025-11-19T20:00:00.000Z",
+    "arrivalTime": "2025-11-20T01:00:00.000Z",
+    "fromStopId": "stop-032",
+    "toStopId": "stop-001",
+    "price": 18000,
+    "availableSeats": 120
+  },
+  {
+    "id": "flight-252",
+    "routeId": "route-040",
+    "departureTime": "2025-11-19T06:00:00.000Z",
+    "arrivalTime": "2025-11-19T06:20:00.000Z",
+    "fromStopId": "stop-028",
+    "toStopId": "stop-027",
+    "price": 500,
+    "availableSeats": 200
+  },
+  {
+    "id": "flight-253",
+    "routeId": "route-040",
+    "departureTime": "2025-11-19T06:30:00.000Z",
+    "arrivalTime": "2025-11-19T06:50:00.000Z",
+    "fromStopId": "stop-028",
+    "toStopId": "stop-027",
+    "price": 500,
+    "availableSeats": 200
+  },
+  {
+    "id": "flight-254",
+    "routeId": "route-040",
+    "departureTime": "2025-11-19T07:00:00.000Z",
+    "arrivalTime": "2025-11-19T07:20:00.000Z",
+    "fromStopId": "stop-028",
+    "toStopId": "stop-027",
+    "price": 500,
+    "availableSeats": 200
+  },
+  {
+    "id": "flight-255",
+    "routeId": "route-040",
+    "departureTime": "2025-11-19T07:30:00.000Z",
+    "arrivalTime": "2025-11-19T07:50:00.000Z",
+    "fromStopId": "stop-028",
+    "toStopId": "stop-027",
+    "price": 500,
+    "availableSeats": 200
+  },
+  {
+    "id": "flight-256",
+    "routeId": "route-040",
+    "departureTime": "2025-11-19T08:00:00.000Z",
+    "arrivalTime": "2025-11-19T08:20:00.000Z",
+    "fromStopId": "stop-028",
+    "toStopId": "stop-027",
+    "price": 500,
+    "availableSeats": 200
+  },
+  {
+    "id": "flight-257",
+    "routeId": "route-041",
+    "departureTime": "2025-11-19T06:15:00.000Z",
+    "arrivalTime": "2025-11-19T06:35:00.000Z",
+    "fromStopId": "stop-027",
+    "toStopId": "stop-028",
+    "price": 500,
+    "availableSeats": 200
+  },
+  {
+    "id": "flight-258",
+    "routeId": "route-041",
+    "departureTime": "2025-11-19T06:45:00.000Z",
+    "arrivalTime": "2025-11-19T07:05:00.000Z",
+    "fromStopId": "stop-027",
+    "toStopId": "stop-028",
+    "price": 500,
+    "availableSeats": 200
+  },
+  {
+    "id": "flight-259",
+    "routeId": "route-041",
+    "departureTime": "2025-11-19T07:15:00.000Z",
+    "arrivalTime": "2025-11-19T07:35:00.000Z",
+    "fromStopId": "stop-027",
+    "toStopId": "stop-028",
+    "price": 500,
+    "availableSeats": 200
+  },
+  {
+    "id": "flight-260",
+    "routeId": "route-041",
+    "departureTime": "2025-11-19T07:45:00.000Z",
+    "arrivalTime": "2025-11-19T08:05:00.000Z",
+    "fromStopId": "stop-027",
+    "toStopId": "stop-028",
+    "price": 500,
+    "availableSeats": 200
+  },
+  {
+    "id": "flight-261",
+    "routeId": "route-041",
+    "departureTime": "2025-11-19T08:15:00.000Z",
+    "arrivalTime": "2025-11-19T08:35:00.000Z",
+    "fromStopId": "stop-027",
+    "toStopId": "stop-028",
+    "price": 500,
+    "availableSeats": 200
   }
 ]

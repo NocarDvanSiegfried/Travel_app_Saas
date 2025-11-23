@@ -141,9 +141,17 @@ services:
       target: development
     container_name: travel-app-frontend
     environment:
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:5000}
-      NEXT_PUBLIC_API_VERSION: ${NEXT_PUBLIC_API_VERSION:-v1}
-      NODE_ENV: ${NODE_ENV:-development}
+      # Явно заданные переменные окружения для корректной работы Next.js в Docker
+      # CSR (браузер) использует NEXT_PUBLIC_API_URL для запросов к backend
+      NEXT_PUBLIC_API_URL: http://localhost:5000
+      # Версия API для клиентских запросов
+      NEXT_PUBLIC_API_VERSION: v1
+      # SSR (сервер) использует API_URL для внутренних запросов внутри Docker-сети
+      API_URL: http://travel-app-backend:5000
+      # Режим работы Next.js
+      NODE_ENV: development
+      # Примечание: .env.local не применяется внутри Docker-контейнера,
+      # все переменные должны быть явно заданы в этой секции environment
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
     volumes:

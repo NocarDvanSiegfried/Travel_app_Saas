@@ -16,13 +16,6 @@ describe('VirtualEntitiesGeneratorWorker', () => {
   let mockFlightRepository: jest.Mocked<IFlightRepository>;
   let mockDatasetRepository: jest.Mocked<IDatasetRepository>;
 
-  const citiesDirectory = {
-    'Якутск': { latitude: 62.0355, longitude: 129.6755 },
-    'Москва': { latitude: 55.7558, longitude: 37.6173 },
-    'Санкт-Петербург': { latitude: 59.9343, longitude: 30.3351 },
-    'Новосибирск': { latitude: 55.0084, longitude: 82.9357 },
-  };
-
   beforeEach(() => {
     mockStopRepository = {
       getAllRealStops: jest.fn(),
@@ -58,8 +51,7 @@ describe('VirtualEntitiesGeneratorWorker', () => {
       mockStopRepository,
       mockRouteRepository,
       mockFlightRepository,
-      mockDatasetRepository,
-      citiesDirectory
+      mockDatasetRepository
     );
   });
 

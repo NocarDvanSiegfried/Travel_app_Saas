@@ -1,0 +1,57 @@
+{
+  "version": "1.0.0",
+  "description": "Справочник аэропортов и их городов для нормализации названий остановок",
+  "airports": [
+    {
+      "name": "Туймаада",
+      "city": "Якутск",
+      "aliases": ["Туймада", "Yakutsk Airport", "YKS", "туймаада", "туймада"],
+      "normalizedName": "туймаада"
+    },
+    {
+      "name": "Шереметьево",
+      "city": "Москва",
+      "aliases": ["SVO", "Sheremetyevo", "шереметьево"],
+      "normalizedName": "шереметьево"
+    },
+    {
+      "name": "Домодедово",
+      "city": "Москва",
+      "aliases": ["DME", "Domodedovo", "домодедово"],
+      "normalizedName": "домодедово"
+    },
+    {
+      "name": "Внуково",
+      "city": "Москва",
+      "aliases": ["VKO", "Vnukovo", "внуково"],
+      "normalizedName": "внуково"
+    },
+    {
+      "name": "Пулково",
+      "city": "Санкт-Петербург",
+      "aliases": ["LED", "Pulkovo", "пулково"],
+      "normalizedName": "пулково"
+    },
+    {
+      "name": "Толмачёво",
+      "city": "Новосибирск",
+      "aliases": ["OVB", "Tolmachevo", "толмачёво", "толмачево"],
+      "normalizedName": "толмачёво"
+    },
+    {
+      "name": "Емельяново",
+      "city": "Красноярск",
+      "aliases": ["KJA", "Yemelyanovo", "емельяново"],
+      "normalizedName": "емельяново"
+    },
+    {
+      "name": "Кольцово",
+      "city": "Екатеринбург",
+      "aliases": ["SVX", "Koltsovo", "кольцово"],
+      "normalizedName": "кольцово"
+    }
+  ]
+}
+
+
+

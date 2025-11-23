@@ -97,14 +97,35 @@ export class WorkerOrchestrator {
       console.log('[WorkerOrchestrator] ✅ OData Sync Worker completed');
 
       // ====================================================================
-      // Step 2: Virtual Entities Generator Worker
+      // Step 2: Air Route Generator Worker
+      // ====================================================================
+      const airRouteGeneratorWorker = this.workers.get('air-route-generator-worker');
+      if (!airRouteGeneratorWorker) {
+        throw new Error('Air Route Generator Worker not registered');
+      }
+
+      console.log('[WorkerOrchestrator] Step 2: Executing Air Route Generator Worker...');
+      const airRouteResult = await airRouteGeneratorWorker.execute();
+      workerResults.push(airRouteResult);
+
+      if (!airRouteResult.success) {
+        console.error('[WorkerOrchestrator] ❌ Air Route Generator Worker failed:', airRouteResult.error);
+        
+        // Continue anyway - air routes are optional
+        console.warn('[WorkerOrchestrator] ⚠️ Continuing without air routes');
+      } else {
+        console.log('[WorkerOrchestrator] ✅ Air Route Generator Worker completed');
+      }
+
+      // ====================================================================
+      // Step 3: Virtual Entities Generator Worker
       // ====================================================================
       const virtualEntitiesWorker = this.workers.get('virtual-entities-generator');
       if (!virtualEntitiesWorker) {
         throw new Error('Virtual Entities Generator Worker not registered');
       }
 
-      console.log('[WorkerOrchestrator] Step 2: Executing Virtual Entities Generator Worker...');
+      console.log('[WorkerOrchestrator] Step 3: Executing Virtual Entities Generator Worker...');
       const virtualEntitiesResult = await virtualEntitiesWorker.execute();
       workerResults.push(virtualEntitiesResult);
 
@@ -118,14 +139,14 @@ export class WorkerOrchestrator {
       }
 
       // ====================================================================
-      // Step 3: Graph Builder Worker
+      // Step 4: Graph Builder Worker
       // ====================================================================
       const graphBuilderWorker = this.workers.get('graph-builder');
       if (!graphBuilderWorker) {
         throw new Error('Graph Builder Worker not registered');
       }
 
-      console.log('[WorkerOrchestrator] Step 3: Executing Graph Builder Worker...');
+      console.log('[WorkerOrchestrator] Step 4: Executing Graph Builder Worker...');
       const graphBuilderResult = await graphBuilderWorker.execute();
       workerResults.push(graphBuilderResult);
 
@@ -135,7 +156,7 @@ export class WorkerOrchestrator {
         return {
           success: false,
           totalExecutionTimeMs: Date.now() - startTime,
-          workersExecuted: 3,
+          workersExecuted: 4,
           workerResults,
           error: `Graph Builder Worker failed: ${graphBuilderResult.error}`,
         };

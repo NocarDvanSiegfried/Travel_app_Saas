@@ -855,10 +855,11 @@ export class RouteGraphBuilder {
     // Сначала проверяем явно указанный тип
     if (route.transportType) {
       const type = route.transportType.toLowerCase();
-      if (type === 'airplane' || type === 'авиа') return TransportType.AIRPLANE;
+      if (type === 'airplane' || type === 'plane' || type === 'авиа') return TransportType.AIRPLANE;
       if (type === 'bus' || type === 'автобус') return TransportType.BUS;
       if (type === 'train' || type === 'поезд') return TransportType.TRAIN;
-      if (type === 'ferry' || type === 'паром') return TransportType.FERRY;
+      if (type === 'ferry' || type === 'паром' || type === 'паромная переправа') return TransportType.FERRY;
+      if (type === 'water') return TransportType.FERRY; // WATER маппится в FERRY
       if (type === 'taxi' || type === 'такси') return TransportType.TAXI;
     }
 

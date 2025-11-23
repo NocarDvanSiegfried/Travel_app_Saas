@@ -9,6 +9,7 @@ export type GraphNode = {
   longitude?: number;
   isVirtual?: boolean;
   cityId?: string;
+  metadata?: Record<string, unknown>;
 };
 
 /**

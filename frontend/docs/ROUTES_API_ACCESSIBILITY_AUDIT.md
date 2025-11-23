@@ -694,3 +694,6 @@ const finalAlternatives = apiError ? [] : alternatives
 3. Убрать ожидание несуществующих полей (`dataMode`, `dataQuality`)
 4. Добавить обработку ошибок парсинга
 
+
+
+

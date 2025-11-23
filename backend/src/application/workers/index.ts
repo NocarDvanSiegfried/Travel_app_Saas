@@ -16,6 +16,7 @@ export { WorkerStatus } from './base/IBackgroundWorker';
 // Workers
 export { ODataSyncWorker } from './ODataSyncWorker';
 export type { IODataClient, IMinioClient } from './ODataSyncWorker';
+export { AirRouteGeneratorWorker } from './AirRouteGeneratorWorker';
 export { VirtualEntitiesGeneratorWorker } from './VirtualEntitiesGeneratorWorker';
 export { GraphBuilderWorker } from './GraphBuilderWorker';
 

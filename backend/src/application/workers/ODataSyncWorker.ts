@@ -24,7 +24,11 @@ import { RealStop } from '../../domain/entities/RealStop';
 import { Route, type RouteStop, type TransportType } from '../../domain/entities/Route';
 import { Flight } from '../../domain/entities/Flight';
 import { Dataset } from '../../domain/entities/Dataset';
-import { extractCityFromStopName } from '../../shared/utils/city-normalizer';
+import { extractCityFromStopName, normalizeCityName } from '../../shared/utils/city-normalizer';
+import { getCityByAirportName } from '../../shared/utils/airports-loader';
+import { getMainCityBySuburb } from '../../shared/utils/suburbs-loader';
+import { validateStopData } from '../../shared/validators/stop-validator';
+import { isCityInUnifiedReference } from '../../shared/utils/unified-cities-loader';
 
 /**
  * OData API response structure
@@ -255,33 +259,101 @@ export class ODataSyncWorker extends BaseBackgroundWorker {
     flights: Flight[];
   } {
     // Parse stops - handle both OData format and mock format
-    const stops = response.stops.map((stopData: any) => {
-      // Handle mock format: { id, name, coordinates: { latitude, longitude }, type }
-      const latitude = stopData.coordinates?.latitude ?? stopData.latitude;
-      const longitude = stopData.coordinates?.longitude ?? stopData.longitude;
-      
-      // Extract city name from stop name if not provided
-      // Use unified utility for consistent city extraction across the system
-      let cityName = stopData.cityName;
-      if (!cityName && stopData.name) {
-        cityName = extractCityFromStopName(stopData.name, stopData.address);
+    // Statistics for validation logging
+    let validStopsCount = 0;
+    let invalidStopsCount = 0;
+    const validationErrors: string[] = [];
+
+    const stops = response.stops
+      .map((stopData: any) => {
+        // Handle mock format: { id, name, coordinates: { latitude, longitude }, type }
+        const latitude = stopData.coordinates?.latitude ?? stopData.latitude;
+        const longitude = stopData.coordinates?.longitude ?? stopData.longitude;
+        
+        // Extract city name from stop name if not provided
+        // Use unified utility for consistent city extraction across the system
+        let cityName = stopData.cityName;
+        if (!cityName && stopData.name) {
+          cityName = extractCityFromStopName(stopData.name, stopData.address);
+        }
+
+        // Step 1: Check if cityName is a suburb - replace with main city
+        if (cityName) {
+          const mainCity = getMainCityBySuburb(cityName);
+          if (mainCity) {
+            cityName = mainCity;
+          }
+        }
+
+        // Step 2: Check if cityName is an airport - replace with city
+        if (cityName) {
+          const cityFromAirport = getCityByAirportName(cityName);
+          if (cityFromAirport) {
+            cityName = cityFromAirport;
+          }
+        }
+
+        // Step 3: Normalize cityName
+        const normalizedCityName = cityName ? normalizeCityName(cityName) : '';
+
+        // Step 4: Validate stop data
+        const stopDataForValidation = {
+          name: stopData.name,
+          latitude,
+          longitude,
+          cityId: normalizedCityName,
+        };
+
+        const validationResult = validateStopData(stopDataForValidation);
+        if (!validationResult.isValid) {
+          invalidStopsCount++;
+          const errorMsg = `Stop "${stopData.name}" (ID: ${stopData.id}): ${validationResult.errors.join('; ')}`;
+          validationErrors.push(errorMsg);
+          this.log('WARN', errorMsg);
+          return null; // Skip invalid stop
+        }
+
+        // Step 5: Check if normalized cityName is in unified reference (Yakutia + Federal cities)
+        if (normalizedCityName && !isCityInUnifiedReference(normalizedCityName)) {
+          invalidStopsCount++;
+          const errorMsg = `Stop "${stopData.name}" (ID: ${stopData.id}): City "${cityName}" (normalized: "${normalizedCityName}") is not in unified reference`;
+          validationErrors.push(errorMsg);
+          this.log('WARN', errorMsg);
+          return null; // Skip stop with city not in reference
+        }
+
+        // Determine if airport or railway station
+        const isAirport = stopData.type === 'airport' || stopData.name?.toLowerCase().includes('аэропорт');
+        const isRailwayStation = stopData.type === 'railway' || stopData.name?.toLowerCase().includes('вокзал');
+
+        validStopsCount++;
+        return new RealStop(
+          stopData.id,
+          stopData.name,
+          latitude,
+          longitude,
+          normalizedCityName, // cityId - use normalized name
+          isAirport,
+          isRailwayStation,
+          stopData.address ? { address: stopData.address } : undefined
+        );
+      })
+      .filter((stop): stop is RealStop => stop !== null); // Remove null entries
+
+    // Log validation statistics
+    this.log('INFO', `Stop validation statistics: ${validStopsCount} valid, ${invalidStopsCount} invalid`);
+    if (validationErrors.length > 0) {
+      this.log('WARN', `Validation errors (${validationErrors.length}):`);
+      validationErrors.forEach((error, index) => {
+        if (index < 10) {
+          // Log first 10 errors to avoid spam
+          this.log('WARN', `  ${index + 1}. ${error}`);
+        }
+      });
+      if (validationErrors.length > 10) {
+        this.log('WARN', `  ... and ${validationErrors.length - 10} more errors`);
       }
-
-      // Determine if airport or railway station
-      const isAirport = stopData.type === 'airport' || stopData.name?.toLowerCase().includes('аэропорт');
-      const isRailwayStation = stopData.type === 'railway' || stopData.name?.toLowerCase().includes('вокзал');
-
-      return new RealStop(
-        stopData.id,
-        stopData.name,
-        latitude,
-        longitude,
-        cityName, // cityId
-        isAirport,
-        isRailwayStation,
-        stopData.address ? { address: stopData.address } : undefined
-      );
-    });
+    }
 
     // Parse routes - handle both OData format and mock format
     const routes = response.routes
@@ -404,12 +476,15 @@ export class ODataSyncWorker extends BaseBackgroundWorker {
     if (normalized === 'TRAIN' || normalized === 'ПОЕЗД') {
       return 'TRAIN';
     }
-    if (normalized === 'WATER' || normalized === 'FERRY' || normalized === 'ПАРОМ') {
+    if (normalized === 'FERRY' || normalized === 'ПАРОМ' || normalized === 'ПАРОМНАЯ ПЕРЕПРАВА') {
+      return 'FERRY';
+    }
+    if (normalized === 'WATER') {
       return 'WATER';
     }
 
     // If already a valid domain type, return as is
-    if (normalized === 'PLANE' || normalized === 'BUS' || normalized === 'TRAIN' || normalized === 'WATER') {
+    if (normalized === 'PLANE' || normalized === 'BUS' || normalized === 'TRAIN' || normalized === 'WATER' || normalized === 'FERRY') {
       return normalized as TransportType;
     }
 

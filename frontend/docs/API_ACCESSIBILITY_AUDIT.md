@@ -469,3 +469,6 @@ return validatedResponse.cities || [];  // ❌ Ищет поле "cities", но 
 3. Добавить логирование для отладки
 4. Исправить SSR в Docker (если используется SSR для запросов к API)
 
+
+
+

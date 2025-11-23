@@ -1,0 +1,119 @@
+{
+  "description": "Справочник федеральных городов Российской Федерации для системы мультимодального поиска маршрутов",
+  "version": "1.0.0",
+  "cities": [
+    {
+      "name": "Москва",
+      "normalizedName": "москва",
+      "latitude": 55.7558,
+      "longitude": 37.6173,
+      "region": "Московская область",
+      "isKeyCity": true,
+      "isFederalCity": true,
+      "airports": ["Шереметьево", "Домодедово", "Внуково"],
+      "description": "Столица Российской Федерации"
+    },
+    {
+      "name": "Санкт-Петербург",
+      "normalizedName": "санкт-петербург",
+      "latitude": 59.9343,
+      "longitude": 30.3351,
+      "region": "Ленинградская область",
+      "isKeyCity": true,
+      "isFederalCity": true,
+      "airports": ["Пулково"],
+      "description": "Второй по численности город России"
+    },
+    {
+      "name": "Новосибирск",
+      "normalizedName": "новосибирск",
+      "latitude": 55.0084,
+      "longitude": 82.9357,
+      "region": "Новосибирская область",
+      "isKeyCity": true,
+      "isFederalCity": true,
+      "airports": ["Толмачёво"],
+      "description": "Третий по численности город России"
+    },
+    {
+      "name": "Красноярск",
+      "normalizedName": "красноярск",
+      "latitude": 56.0184,
+      "longitude": 92.8672,
+      "region": "Красноярский край",
+      "isKeyCity": true,
+      "isFederalCity": true,
+      "airports": ["Емельяново"],
+      "description": "Крупнейший экономический и культурный центр Восточной Сибири"
+    },
+    {
+      "name": "Иркутск",
+      "normalizedName": "иркутск",
+      "latitude": 52.2864,
+      "longitude": 104.2807,
+      "region": "Иркутская область",
+      "isKeyCity": true,
+      "isFederalCity": true,
+      "airports": ["Иркутск"],
+      "description": "Крупный административный, промышленный и культурный центр"
+    },
+    {
+      "name": "Хабаровск",
+      "normalizedName": "хабаровск",
+      "latitude": 48.4802,
+      "longitude": 135.0719,
+      "region": "Хабаровский край",
+      "isKeyCity": true,
+      "isFederalCity": true,
+      "airports": ["Хабаровск"],
+      "description": "Крупнейший город Дальнего Востока"
+    },
+    {
+      "name": "Владивосток",
+      "normalizedName": "владивосток",
+      "latitude": 43.1155,
+      "longitude": 131.8855,
+      "region": "Приморский край",
+      "isKeyCity": true,
+      "isFederalCity": true,
+      "airports": ["Владивосток"],
+      "description": "Крупнейший портовый город Дальнего Востока"
+    },
+    {
+      "name": "Екатеринбург",
+      "normalizedName": "екатеринбург",
+      "latitude": 56.8431,
+      "longitude": 60.6454,
+      "region": "Свердловская область",
+      "isKeyCity": true,
+      "isFederalCity": true,
+      "airports": ["Кольцово"],
+      "description": "Четвертый по численности город России"
+    },
+    {
+      "name": "Казань",
+      "normalizedName": "казань",
+      "latitude": 55.8304,
+      "longitude": 49.0661,
+      "region": "Республика Татарстан",
+      "isKeyCity": true,
+      "isFederalCity": true,
+      "airports": ["Казань"],
+      "description": "Столица Республики Татарстан"
+    },
+    {
+      "name": "Нижний Новгород",
+      "normalizedName": "нижний новгород",
+      "latitude": 56.2965,
+      "longitude": 43.9361,
+      "region": "Нижегородская область",
+      "isKeyCity": true,
+      "isFederalCity": true,
+      "airports": ["Стригино"],
+      "description": "Пятый по численности город России"
+    }
+  ]
+}
+
+
+

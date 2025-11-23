@@ -25,22 +25,12 @@ import { VirtualStop } from '../../domain/entities/VirtualStop';
 import { VirtualRoute } from '../../domain/entities/VirtualRoute';
 import { Flight } from '../../domain/entities/Flight';
 import {
-  getAllYakutiaCities,
-  getYakutiaCity,
-  isYakutiaCity,
-  type YakutiaCity,
-} from '../../shared/utils/yakutia-cities-loader';
+  getAllFederalCities,
+  getAllYakutiaCitiesUnified,
+  isCityInUnifiedReference,
+  type UnifiedCity,
+} from '../../shared/utils/unified-cities-loader';
 import { normalizeCityName } from '../../shared/utils/city-normalizer';
-
-/**
- * City coordinates from directory
- */
-type CityCoordinates = {
-  [cityName: string]: {
-    latitude: number;
-    longitude: number;
-  };
-};
 
 /**
  * Virtual Entities Generator Worker
@@ -56,8 +46,7 @@ export class VirtualEntitiesGeneratorWorker extends BaseBackgroundWorker {
     private readonly stopRepository: IStopRepository,
     private readonly routeRepository: IRouteRepository,
     private readonly flightRepository: IFlightRepository,
-    private readonly datasetRepository: IDatasetRepository,
-    private readonly citiesDirectory: CityCoordinates
+    private readonly datasetRepository: IDatasetRepository
   ) {
     super('virtual-entities-generator', 'Virtual Entities Generator Worker', '1.0.0');
   }
@@ -120,16 +109,25 @@ export class VirtualEntitiesGeneratorWorker extends BaseBackgroundWorker {
       // ====================================================================
       this.log('INFO', 'Step 2: Finding cities without real stops...');
       
+      // Load all cities from unified reference
+      const yakutiaCities = getAllYakutiaCitiesUnified();
+      const federalCities = getAllFederalCities();
+      const allCities = [...yakutiaCities, ...federalCities];
+      
       const realStops = await this.stopRepository.getAllRealStops();
       const citiesWithStops = new Set(
         realStops
           .filter(stop => stop.cityId)
-          .map(stop => this.normalizeCity(stop.cityId!))
+          .map(stop => normalizeCityName(stop.cityId!))
       );
 
-      const missingCities = Object.keys(this.citiesDirectory).filter(
-        cityName => !citiesWithStops.has(this.normalizeCity(cityName))
-      );
+      // Filter cities: must be in unified reference, must be key city, must not have real stops
+      const missingCities = allCities
+        .filter(city => 
+          city.isKeyCity && 
+          !citiesWithStops.has(normalizeCityName(city.name))
+        )
+        .map(city => city.name);
 
       this.log('INFO', `Found ${missingCities.length} cities without real stops: ${missingCities.slice(0, 5).join(', ')}${missingCities.length > 5 ? '...' : ''}`);
 
@@ -153,8 +151,8 @@ export class VirtualEntitiesGeneratorWorker extends BaseBackgroundWorker {
       // Step 4a: Generate hub-based routes for newly created virtual stops
       const hubBasedRoutes = await this.generateVirtualRoutes(virtualStops);
       
-      // Step 4b: Ensure connectivity for all Yakutia cities
-      const connectivityRoutes = await this.ensureYakutiaCitiesConnectivity();
+      // Step 4b: Ensure connectivity for all cities
+      const connectivityRoutes = await this.ensureCitiesConnectivity();
       
       // Combine all virtual routes
       const allVirtualRoutes = [...hubBasedRoutes, ...connectivityRoutes];
@@ -220,21 +218,38 @@ export class VirtualEntitiesGeneratorWorker extends BaseBackgroundWorker {
    * Generate virtual stops for cities
    */
   private generateVirtualStops(cityNames: string[]): VirtualStop[] {
-    return cityNames.map(cityName => {
-      const coordinates = this.citiesDirectory[cityName];
-      
-      return new VirtualStop(
-        `virtual-stop-${this.generateStableId(cityName)}`,
-        `г. ${cityName}`,
-        coordinates.latitude,
-        coordinates.longitude,
-        'MAIN_GRID', // gridType
-        cityName, // cityId
-        undefined, // gridPosition
-        [], // realStopsNearby
-        new Date() // createdAt
-      );
-    });
+    // Load cities from unified reference to get coordinates
+    const yakutiaCities = getAllYakutiaCitiesUnified();
+    const federalCities = getAllFederalCities();
+    const allCities = [...yakutiaCities, ...federalCities];
+    const citiesMap = new Map<string, UnifiedCity>();
+    for (const city of allCities) {
+      citiesMap.set(city.name, city);
+    }
+    
+    return cityNames
+      .filter(cityName => {
+        // Only generate if city is in unified reference
+        return isCityInUnifiedReference(cityName);
+      })
+      .map(cityName => {
+        const city = citiesMap.get(cityName);
+        if (!city) {
+          throw new Error(`City "${cityName}" not found in unified reference`);
+        }
+        
+        return new VirtualStop(
+          `virtual-stop-${this.generateStableId(cityName)}`,
+          `г. ${cityName}`,
+          city.latitude,
+          city.longitude,
+          'MAIN_GRID', // gridType
+          normalizeCityName(cityName), // cityId - use normalized name
+          undefined, // gridPosition
+          [], // realStopsNearby
+          new Date() // createdAt
+        );
+      });
   }
 
   /**
@@ -410,7 +425,7 @@ export class VirtualEntitiesGeneratorWorker extends BaseBackgroundWorker {
    * Find hub stop (Yakutsk)
    */
   private async findHubStop(): Promise<{ id: string; name: string; latitude?: number; longitude?: number; cityName?: string } | null> {
-    const normalizedHub = this.normalizeCity(this.hubCityName);
+    const normalizedHub = normalizeCityName(this.hubCityName);
     
     // Try real stops first
     const realStops = await this.stopRepository.getRealStopsByCity(normalizedHub);
@@ -474,13 +489,6 @@ export class VirtualEntitiesGeneratorWorker extends BaseBackgroundWorker {
   }
 
   /**
-   * Normalize city name
-   */
-  private normalizeCity(cityName: string): string {
-    return cityName.toLowerCase().trim().replace(/[^а-яa-z0-9]/g, '');
-  }
-
-  /**
    * Generate stable ID from city name or stop IDs
    */
   private generateStableId(...parts: string[]): string {
@@ -489,23 +497,29 @@ export class VirtualEntitiesGeneratorWorker extends BaseBackgroundWorker {
   }
 
   /**
-   * Ensure connectivity for all Yakutia cities
+   * Ensure connectivity for all cities
    * 
-   * For each pair of Yakutia cities that have stops but no route,
+   * For each pair of cities that have stops but no route,
    * creates a virtual route to ensure connectivity.
+   * 
+   * Logic:
+   * - Federal city → Yakutia city: hub-based routes via Yakutsk (PLANE + BUS)
+   * - Federal city → Federal city: direct virtual routes (PLANE)
+   * - Yakutia city → Yakutia city: direct virtual routes (BUS)
    * 
    * @returns Array of virtual routes for connectivity
    */
-  private async ensureYakutiaCitiesConnectivity(): Promise<VirtualRoute[]> {
+  private async ensureCitiesConnectivity(): Promise<VirtualRoute[]> {
     const routes: VirtualRoute[] = [];
-    const yakutiaCities = getAllYakutiaCities();
+    const yakutiaCities = getAllYakutiaCitiesUnified();
+    const federalCities = getAllFederalCities();
 
-    if (yakutiaCities.length === 0) {
-      this.log('WARN', 'No Yakutia cities found in reference - skipping connectivity check');
+    if (yakutiaCities.length === 0 && federalCities.length === 0) {
+      this.log('WARN', 'No cities found in unified reference - skipping connectivity check');
       return routes;
     }
 
-    this.log('INFO', `Ensuring connectivity for ${yakutiaCities.length} Yakutia cities...`);
+    this.log('INFO', `Ensuring connectivity for ${yakutiaCities.length} Yakutia cities and ${federalCities.length} federal cities...`);
 
     // Get all stops (real + virtual) grouped by city
     const allRealStops = await this.stopRepository.getAllRealStops();
@@ -513,14 +527,26 @@ export class VirtualEntitiesGeneratorWorker extends BaseBackgroundWorker {
     const allStops = [...allRealStops, ...allVirtualStops];
 
     // Group stops by normalized city name
-    const stopsByCity = new Map<string, Array<{ id: string; name: string; latitude?: number; longitude?: number }>>();
+    const stopsByCity = new Map<string, Array<{ id: string; name: string; latitude?: number; longitude?: number; cityType: 'yakutia' | 'federal' }>>();
+    
+    // Create map of city names to types
+    const cityTypeMap = new Map<string, 'yakutia' | 'federal'>();
+    for (const city of yakutiaCities) {
+      cityTypeMap.set(normalizeCityName(city.name), 'yakutia');
+    }
+    for (const city of federalCities) {
+      cityTypeMap.set(normalizeCityName(city.name), 'federal');
+    }
     
     for (const stop of allStops) {
       const cityName = stop.cityId || this.extractCityFromStopName(stop.name);
       if (!cityName) continue;
 
       const normalizedCity = normalizeCityName(cityName);
-      if (!isYakutiaCity(normalizedCity)) continue; // Only process Yakutia cities
+      if (!isCityInUnifiedReference(normalizedCity)) continue; // Only process cities in unified reference
+
+      const cityType = cityTypeMap.get(normalizedCity);
+      if (!cityType) continue;
 
       if (!stopsByCity.has(normalizedCity)) {
         stopsByCity.set(normalizedCity, []);
@@ -530,10 +556,16 @@ export class VirtualEntitiesGeneratorWorker extends BaseBackgroundWorker {
         name: stop.name,
         latitude: stop.latitude,
         longitude: stop.longitude,
+        cityType,
       });
     }
 
-    this.log('INFO', `Found stops for ${stopsByCity.size} Yakutia cities`);
+    this.log('INFO', `Found stops for ${stopsByCity.size} cities`);
+
+    // Find hub stop (Yakutsk)
+    const hubCityNormalized = normalizeCityName(this.hubCityName);
+    const hubStops = stopsByCity.get(hubCityNormalized);
+    const hubStop = hubStops ? this.selectMainStop(hubStops) : null;
 
     // For each pair of cities, check if route exists
     const cityNames = Array.from(stopsByCity.keys());
@@ -554,6 +586,9 @@ export class VirtualEntitiesGeneratorWorker extends BaseBackgroundWorker {
 
         if (!city1MainStop || !city2MainStop) continue;
 
+        const city1Type = city1Stops[0]?.cityType || 'yakutia';
+        const city2Type = city2Stops[0]?.cityType || 'yakutia';
+
         // Check if route already exists (real or virtual)
         const existingRoute = await this.checkRouteExists(
           city1MainStop.id,
@@ -565,51 +600,228 @@ export class VirtualEntitiesGeneratorWorker extends BaseBackgroundWorker {
           continue; // Route already exists, skip
         }
 
-        // Create virtual route in both directions
-        const distance = this.calculateDistance(city1MainStop, city2MainStop);
-        const duration = this.estimateDuration(city1MainStop, city2MainStop);
-
-        // Route city1 → city2
-        routes.push(
-          new VirtualRoute(
-            `virtual-route-connectivity-${this.generateStableId(city1Name, city2Name)}`,
-            'VIRTUAL_TO_VIRTUAL',
-            city1MainStop.id,
-            city2MainStop.id,
-            distance,
-            duration,
-            'SHUTTLE',
-            {
-              name: `${city1Name} → ${city2Name}`,
-              generationMethod: 'yakutia-connectivity',
-              sourceCity: city1Name,
-              targetCity: city2Name,
-            },
-            new Date()
-          )
-        );
-
-        // Route city2 → city1
-        routes.push(
-          new VirtualRoute(
-            `virtual-route-connectivity-${this.generateStableId(city2Name, city1Name)}`,
-            'VIRTUAL_TO_VIRTUAL',
-            city2MainStop.id,
-            city1MainStop.id,
-            distance,
-            duration,
-            'SHUTTLE',
-            {
-              name: `${city2Name} → ${city1Name}`,
-              generationMethod: 'yakutia-connectivity',
-              sourceCity: city2Name,
-              targetCity: city1Name,
-            },
-            new Date()
-          )
-        );
-
-        routesCreated += 2;
+        // Logic for different city pair types
+        if (city1Type === 'federal' && city2Type === 'yakutia') {
+          // Federal city → Yakutia city: hub-based via Yakutsk
+          if (hubStop && city2Name === hubCityNormalized) {
+            // Direct: federal city → Yakutsk (PLANE)
+            const distance = this.calculateDistance(city1MainStop, hubStop);
+            routes.push(
+              new VirtualRoute(
+                `virtual-route-connectivity-${this.generateStableId(city1Name, city2Name)}`,
+                'VIRTUAL_TO_VIRTUAL',
+                city1MainStop.id,
+                hubStop.id,
+                distance,
+                240, // 4 hours for plane
+                'SHUTTLE', // transportMode (PLANE info in metadata)
+                {
+                  name: `${city1Name} → ${city2Name}`,
+                  generationMethod: 'federal-to-yakutia-hub',
+                  sourceCity: city1Name,
+                  targetCity: city2Name,
+                  transportType: 'PLANE', // Actual transport type in metadata
+                },
+                new Date()
+              )
+            );
+            routes.push(
+              new VirtualRoute(
+                `virtual-route-connectivity-${this.generateStableId(city2Name, city1Name)}`,
+                'VIRTUAL_TO_VIRTUAL',
+                hubStop.id,
+                city1MainStop.id,
+                distance,
+                240,
+                'SHUTTLE', // transportMode (PLANE info in metadata)
+                {
+                  name: `${city2Name} → ${city1Name}`,
+                  generationMethod: 'federal-to-yakutia-hub',
+                  sourceCity: city2Name,
+                  targetCity: city1Name,
+                  transportType: 'PLANE', // Actual transport type in metadata
+                },
+                new Date()
+              )
+            );
+            routesCreated += 2;
+          } else if (hubStop) {
+            // Two-step: federal city → Yakutsk (PLANE) + Yakutsk → Yakutia city (BUS)
+            const distance1 = this.calculateDistance(city1MainStop, hubStop);
+            const distance2 = this.calculateDistance(hubStop, city2MainStop);
+            
+            // Route 1: federal city → Yakutsk
+            routes.push(
+              new VirtualRoute(
+                `virtual-route-connectivity-${this.generateStableId(city1Name, hubCityNormalized)}`,
+                'VIRTUAL_TO_VIRTUAL',
+                city1MainStop.id,
+                hubStop.id,
+                distance1,
+                240, // 4 hours for plane
+                'SHUTTLE', // transportMode (PLANE info in metadata)
+                {
+                  name: `${city1Name} → ${this.hubCityName}`,
+                  generationMethod: 'federal-to-yakutia-hub',
+                  sourceCity: city1Name,
+                  targetCity: this.hubCityName,
+                  transportType: 'PLANE', // Actual transport type in metadata
+                },
+                new Date()
+              )
+            );
+            
+            // Route 2: Yakutsk → Yakutia city
+            routes.push(
+              new VirtualRoute(
+                `virtual-route-connectivity-${this.generateStableId(hubCityNormalized, city2Name)}`,
+                'VIRTUAL_TO_VIRTUAL',
+                hubStop.id,
+                city2MainStop.id,
+                distance2,
+                180, // 3 hours for bus
+                'SHUTTLE', // transportMode (BUS info in metadata)
+                {
+                  name: `${this.hubCityName} → ${city2Name}`,
+                  generationMethod: 'federal-to-yakutia-hub',
+                  sourceCity: this.hubCityName,
+                  targetCity: city2Name,
+                  transportType: 'BUS', // Actual transport type in metadata
+                },
+                new Date()
+              )
+            );
+            
+            // Reverse routes
+            routes.push(
+              new VirtualRoute(
+                `virtual-route-connectivity-${this.generateStableId(hubCityNormalized, city1Name)}`,
+                'VIRTUAL_TO_VIRTUAL',
+                hubStop.id,
+                city1MainStop.id,
+                distance1,
+                240,
+                'SHUTTLE', // transportMode (PLANE info in metadata)
+                {
+                  name: `${this.hubCityName} → ${city1Name}`,
+                  generationMethod: 'federal-to-yakutia-hub',
+                  sourceCity: this.hubCityName,
+                  targetCity: city1Name,
+                  transportType: 'PLANE', // Actual transport type in metadata
+                },
+                new Date()
+              )
+            );
+            
+            routes.push(
+              new VirtualRoute(
+                `virtual-route-connectivity-${this.generateStableId(city2Name, hubCityNormalized)}`,
+                'VIRTUAL_TO_VIRTUAL',
+                city2MainStop.id,
+                hubStop.id,
+                distance2,
+                180,
+                'SHUTTLE', // transportMode (BUS info in metadata)
+                {
+                  name: `${city2Name} → ${this.hubCityName}`,
+                  generationMethod: 'federal-to-yakutia-hub',
+                  sourceCity: city2Name,
+                  targetCity: this.hubCityName,
+                  transportType: 'BUS', // Actual transport type in metadata
+                },
+                new Date()
+              )
+            );
+            
+            routesCreated += 4;
+          }
+        } else if (city1Type === 'federal' && city2Type === 'federal') {
+          // Federal city → Federal city: direct virtual route (PLANE)
+          const distance = this.calculateDistance(city1MainStop, city2MainStop);
+          routes.push(
+            new VirtualRoute(
+              `virtual-route-connectivity-${this.generateStableId(city1Name, city2Name)}`,
+              'VIRTUAL_TO_VIRTUAL',
+              city1MainStop.id,
+              city2MainStop.id,
+              distance,
+              180, // 3 hours for plane
+              'SHUTTLE', // transportMode (PLANE info in metadata)
+              {
+                name: `${city1Name} → ${city2Name}`,
+                generationMethod: 'federal-to-federal',
+                sourceCity: city1Name,
+                targetCity: city2Name,
+                transportType: 'PLANE', // Actual transport type in metadata
+              },
+              new Date()
+            )
+          );
+          routes.push(
+            new VirtualRoute(
+              `virtual-route-connectivity-${this.generateStableId(city2Name, city1Name)}`,
+              'VIRTUAL_TO_VIRTUAL',
+              city2MainStop.id,
+              city1MainStop.id,
+              distance,
+              180,
+              'SHUTTLE', // transportMode (PLANE info in metadata)
+              {
+                name: `${city2Name} → ${city1Name}`,
+                generationMethod: 'federal-to-federal',
+                sourceCity: city2Name,
+                targetCity: city1Name,
+                transportType: 'PLANE', // Actual transport type in metadata
+              },
+              new Date()
+            )
+          );
+          routesCreated += 2;
+        } else {
+          // Yakutia city → Yakutia city: direct virtual route (BUS) - existing logic
+          const distance = this.calculateDistance(city1MainStop, city2MainStop);
+          const duration = this.estimateDuration(city1MainStop, city2MainStop);
+          
+          routes.push(
+            new VirtualRoute(
+              `virtual-route-connectivity-${this.generateStableId(city1Name, city2Name)}`,
+              'VIRTUAL_TO_VIRTUAL',
+              city1MainStop.id,
+              city2MainStop.id,
+              distance,
+              duration,
+              'SHUTTLE', // transportMode (BUS info in metadata)
+              {
+                name: `${city1Name} → ${city2Name}`,
+                generationMethod: 'yakutia-connectivity',
+                sourceCity: city1Name,
+                targetCity: city2Name,
+                transportType: 'BUS', // Actual transport type in metadata
+              },
+              new Date()
+            )
+          );
+          routes.push(
+            new VirtualRoute(
+              `virtual-route-connectivity-${this.generateStableId(city2Name, city1Name)}`,
+              'VIRTUAL_TO_VIRTUAL',
+              city2MainStop.id,
+              city1MainStop.id,
+              distance,
+              duration,
+              'SHUTTLE', // transportMode (BUS info in metadata)
+              {
+                name: `${city2Name} → ${city1Name}`,
+                generationMethod: 'yakutia-connectivity',
+                sourceCity: city2Name,
+                targetCity: city1Name,
+                transportType: 'BUS', // Actual transport type in metadata
+              },
+              new Date()
+            )
+          );
+          routesCreated += 2;
+        }
       }
     }
 
@@ -652,8 +864,8 @@ export class VirtualEntitiesGeneratorWorker extends BaseBackgroundWorker {
    * @returns Main stop or undefined
    */
   private selectMainStop(
-    stops: Array<{ id: string; name: string; latitude?: number; longitude?: number }>
-  ): { id: string; name: string; latitude?: number; longitude?: number } | undefined {
+    stops: Array<{ id: string; name: string; latitude?: number; longitude?: number; cityType?: 'yakutia' | 'federal' }>
+  ): { id: string; name: string; latitude?: number; longitude?: number; cityType?: 'yakutia' | 'federal' } | undefined {
     if (stops.length === 0) return undefined;
 
     // Prefer airport

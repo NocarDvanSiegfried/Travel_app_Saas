@@ -2,6 +2,12 @@
  * Integration Tests: Health Check API Endpoints
  * 
  * Tests health check endpoints with real Express app and database connections.
+ * 
+ * Requirements: These tests require external infrastructure:
+ * - PostgreSQL database (connection configured in test setup)
+ * - Redis instance (for caching)
+ * 
+ * Tests will be skipped if database/Redis connections fail.
  */
 
 import { createTestApp, createTestAgent, cleanupTestApp } from './api-test-helpers';

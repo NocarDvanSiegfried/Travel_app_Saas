@@ -8,6 +8,8 @@
  * - Нормализация специальных символов
  */
 
+import { getCityByAirportName } from './airports-loader';
+
 /**
  * Нормализовать название города
  * 
@@ -103,7 +105,7 @@ export function isCityInDirectory(
  * Извлечь название города из названия остановки
  * 
  * Единая логика для всех мест системы:
- * - Всегда берется последнее слово из названия остановки
+ * - Приоритетная обработка паттернов аэропортов через справочник
  * - Работает для любых форматов: "Аэропорт Якутск", "Автостанция Центральная Якутск", "Вокзал Санкт-Петербург Московский"
  * 
  * @param stopName - Название остановки (может содержать префиксы типа "Аэропорт", "Автостанция", "Вокзал")
@@ -111,7 +113,9 @@ export function isCityInDirectory(
  * @returns Название города (оригинальное, без нормализации)
  * 
  * @example
- * extractCityFromStopName("Аэропорт Якутск (Туймаада)") => "Туймаада" (последнее слово в скобках)
+ * extractCityFromStopName("Аэропорт Якутск (Туймаада)") => "Якутск" (через справочник аэропортов)
+ * extractCityFromStopName("Аэропорт Москва Шереметьево") => "Москва" (через справочник аэропортов)
+ * extractCityFromStopName("Аэропорт Якутск") => "Якутск" (извлечение из паттерна)
  * extractCityFromStopName("Автостанция Центральная Якутск") => "Якутск" (последнее слово, не прилагательное)
  * extractCityFromStopName("Автостанция Олёкминск") => "Олёкминск" (последнее слово, не тип остановки)
  * extractCityFromStopName("Вокзал Санкт-Петербург Московский") => "Московский" (последнее слово)
@@ -124,7 +128,40 @@ export function extractCityFromStopName(stopName?: string, address?: string): st
     // Remove common prefixes and patterns
     // Examples: "Аэропорт Якутск", "Автостанция Олёкминск", "Вокзал Санкт-Петербург Московский"
     
-    // First, try to extract city from patterns like "г. CityName"
+    // Priority 1.1: Handle pattern "Аэропорт [Город] ([Аэропорт])"
+    // Example: "Аэропорт Якутск (Туймаада)" -> "Якутск" (via airports reference)
+    const airportWithBracketsMatch = stopName.match(/Аэропорт\s+([А-Яа-яЁё\-\s]+)\s*\(([^)]+)\)/i);
+    if (airportWithBracketsMatch) {
+      const airportName = airportWithBracketsMatch[2].trim();
+      const cityFromReference = getCityByAirportName(airportName);
+      if (cityFromReference) {
+        return cityFromReference;
+      }
+      // If airport not found in reference, extract city from part before brackets
+      return airportWithBracketsMatch[1].trim();
+    }
+    
+    // Priority 1.2: Handle pattern "Аэропорт [Город] [Название аэропорта]"
+    // Example: "Аэропорт Москва Шереметьево" -> "Москва" (via airports reference)
+    const airportWithNameMatch = stopName.match(/Аэропорт\s+([А-Яа-яЁё\-\s]+)\s+([А-Яа-яЁё\-\s]+)/i);
+    if (airportWithNameMatch) {
+      const airportName = airportWithNameMatch[2].trim();
+      const cityFromReference = getCityByAirportName(airportName);
+      if (cityFromReference) {
+        return cityFromReference;
+      }
+      // If airport not found in reference, return first word (city)
+      return airportWithNameMatch[1].trim();
+    }
+    
+    // Priority 1.3: Handle pattern "Аэропорт [Город]" (without brackets)
+    // Example: "Аэропорт Якутск" -> "Якутск"
+    const airportSimpleMatch = stopName.match(/Аэропорт\s+([А-Яа-яЁё\-\s]+)/i);
+    if (airportSimpleMatch) {
+      return airportSimpleMatch[1].trim();
+    }
+    
+    // Priority 1.4: Try to extract city from patterns like "г. CityName"
     const cityMatch = stopName.match(/г\.\s*([А-Яа-яЁё\-\s]+)/i);
     if (cityMatch) {
       return cityMatch[1].trim();

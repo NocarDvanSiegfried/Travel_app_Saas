@@ -2,6 +2,12 @@
  * Integration Tests: OptimizedBuildRouteUseCase
  * 
  * Tests route building with real repositories and graph.
+ * 
+ * Requirements: These tests require external infrastructure:
+ * - PostgreSQL database (connection configured in test setup)
+ * - Redis instance (for graph caching)
+ * 
+ * Tests will be skipped if database/Redis connections fail.
  */
 
 import { OptimizedBuildRouteUseCase } from '../../../application/route-builder/use-cases/BuildRouteUseCase.optimized';
@@ -1179,6 +1185,781 @@ describe('OptimizedBuildRouteUseCase Integration', () => {
         expect(result.riskAssessment.riskScore.value).toBeGreaterThanOrEqual(1);
         expect(result.riskAssessment.riskScore.value).toBeLessThanOrEqual(10);
       }
+    }, 30000);
+  });
+
+  describe('Control routes (federal cities and mixed-mode routes)', () => {
+    beforeEach(async () => {
+      await cleanTestDatabase(dbPool);
+      await cleanTestRedis(redisClient);
+    });
+
+    it('should find route Москва → Якутск (PLANE)', async () => {
+      // Create stops
+      const moscowStop = createTestRealStop({
+        id: 'stop-moscow-airport',
+        name: 'Аэропорт Шереметьево',
+        latitude: 55.9736,
+        longitude: 37.4145,
+        cityId: 'москва',
+        isAirport: true,
+      });
+      const yakutskStop = createTestRealStop({
+        id: 'stop-yakutsk-airport',
+        name: 'Аэропорт Якутск (Туймаада)',
+        latitude: 62.0931,
+        longitude: 129.7706,
+        cityId: 'якутск',
+        isAirport: true,
+      });
+
+      await stopRepository.saveRealStop(moscowStop);
+      await stopRepository.saveRealStop(yakutskStop);
+
+      // Create route
+      const route = createTestRoute({
+        id: 'route-moscow-yakutsk',
+        transportType: 'PLANE',
+        fromStopId: 'stop-moscow-airport',
+        toStopId: 'stop-yakutsk-airport',
+        stopsSequence: [
+          { stopId: 'stop-moscow-airport', order: 1 },
+          { stopId: 'stop-yakutsk-airport', order: 2 },
+        ],
+        durationMinutes: 240,
+        distanceKm: 4900,
+      });
+
+      await routeRepository.saveRoute(route);
+
+      // Create flight
+      await flightRepository.saveFlight(createTestFlight({
+        id: 'flight-moscow-yakutsk-1',
+        routeId: 'route-moscow-yakutsk',
+        fromStopId: 'stop-moscow-airport',
+        toStopId: 'stop-yakutsk-airport',
+        departureTime: '08:00',
+        arrivalTime: '12:00',
+        daysOfWeek: [1, 2, 3, 4, 5, 6, 7],
+        priceRub: 15000,
+        transportType: 'PLANE',
+      }));
+
+      // Build graph
+      const version = `graph-v-control-${Date.now()}`;
+      const nodeIds = ['stop-moscow-airport', 'stop-yakutsk-airport'];
+      const edgesMap = new Map<string, GraphNeighbor[]>();
+
+      edgesMap.set('stop-moscow-airport', [
+        {
+          neighborId: 'stop-yakutsk-airport',
+          weight: 240,
+          metadata: {
+            distance: 4900,
+            transportType: 'PLANE',
+            routeId: 'route-moscow-yakutsk',
+          },
+        },
+      ]);
+
+      edgesMap.set('stop-yakutsk-airport', []);
+
+      const metadata = {
+        version,
+        nodes: nodeIds.length,
+        edges: 1,
+        buildTimestamp: Date.now(),
+        datasetVersion: 'dataset-v-control',
+      };
+
+      await graphRepository.saveGraph(version, nodeIds, edgesMap, metadata);
+      await graphRepository.setGraphVersion(version);
+
+      // Execute route search
+      const request = {
+        fromCity: 'Москва',
+        toCity: 'Якутск',
+        date: new Date('2025-11-19'),
+        passengers: 1,
+      };
+
+      const result = await useCase.execute(request);
+
+      expect(result.success).toBe(true);
+      expect(result.routes.length).toBeGreaterThan(0);
+      expect(result.routes[0].segments.some(s => s.transportType === 'airplane')).toBe(true);
+    }, 30000);
+
+    it('should find route Москва → Чурапча (PLANE + BUS)', async () => {
+      // Create stops
+      const moscowStop = createTestRealStop({
+        id: 'stop-moscow-airport',
+        name: 'Аэропорт Шереметьево',
+        latitude: 55.9736,
+        longitude: 37.4145,
+        cityId: 'москва',
+        isAirport: true,
+      });
+      const yakutskAirportStop = createTestRealStop({
+        id: 'stop-yakutsk-airport',
+        name: 'Аэропорт Якутск (Туймаада)',
+        latitude: 62.0931,
+        longitude: 129.7706,
+        cityId: 'якутск',
+        isAirport: true,
+      });
+      const yakutskCenterStop = createTestRealStop({
+        id: 'stop-yakutsk-center',
+        name: 'Автостанция Якутск',
+        latitude: 62.0352,
+        longitude: 129.6756,
+        cityId: 'якутск',
+      });
+      const churapchaStop = createTestRealStop({
+        id: 'stop-churapcha',
+        name: 'Автостанция Чурапча',
+        latitude: 61.9983,
+        longitude: 132.4264,
+        cityId: 'чурапча',
+      });
+
+      await stopRepository.saveRealStop(moscowStop);
+      await stopRepository.saveRealStop(yakutskAirportStop);
+      await stopRepository.saveRealStop(yakutskCenterStop);
+      await stopRepository.saveRealStop(churapchaStop);
+
+      // Create routes
+      const route1 = createTestRoute({
+        id: 'route-moscow-yakutsk',
+        transportType: 'PLANE',
+        fromStopId: 'stop-moscow-airport',
+        toStopId: 'stop-yakutsk-airport',
+        stopsSequence: [
+          { stopId: 'stop-moscow-airport', order: 1 },
+          { stopId: 'stop-yakutsk-airport', order: 2 },
+        ],
+        durationMinutes: 240,
+        distanceKm: 4900,
+      });
+
+      const route2 = createTestRoute({
+        id: 'route-yakutsk-churapcha',
+        transportType: 'BUS',
+        fromStopId: 'stop-yakutsk-center',
+        toStopId: 'stop-churapcha',
+        stopsSequence: [
+          { stopId: 'stop-yakutsk-center', order: 1 },
+          { stopId: 'stop-churapcha', order: 2 },
+        ],
+        durationMinutes: 180,
+        distanceKm: 200,
+      });
+
+      await routeRepository.saveRoute(route1);
+      await routeRepository.saveRoute(route2);
+
+      // Create flights
+      await flightRepository.saveFlight(createTestFlight({
+        id: 'flight-moscow-yakutsk-1',
+        routeId: 'route-moscow-yakutsk',
+        fromStopId: 'stop-moscow-airport',
+        toStopId: 'stop-yakutsk-airport',
+        departureTime: '08:00',
+        arrivalTime: '12:00',
+        daysOfWeek: [1, 2, 3, 4, 5, 6, 7],
+        priceRub: 15000,
+        transportType: 'PLANE',
+      }));
+
+      await flightRepository.saveFlight(createTestFlight({
+        id: 'flight-yakutsk-churapcha-1',
+        routeId: 'route-yakutsk-churapcha',
+        fromStopId: 'stop-yakutsk-center',
+        toStopId: 'stop-churapcha',
+        departureTime: '14:00',
+        arrivalTime: '17:00',
+        daysOfWeek: [1, 2, 3, 4, 5, 6, 7],
+        priceRub: 500,
+        transportType: 'BUS',
+      }));
+
+      // Build graph with transfer edges
+      const version = `graph-v-control-${Date.now()}`;
+      const nodeIds = ['stop-moscow-airport', 'stop-yakutsk-airport', 'stop-yakutsk-center', 'stop-churapcha'];
+      const edgesMap = new Map<string, GraphNeighbor[]>();
+
+      // Moscow → Yakutsk (airport)
+      edgesMap.set('stop-moscow-airport', [
+        {
+          neighborId: 'stop-yakutsk-airport',
+          weight: 240,
+          metadata: {
+            distance: 4900,
+            transportType: 'PLANE',
+            routeId: 'route-moscow-yakutsk',
+          },
+        },
+      ]);
+
+      // Transfer: Yakutsk airport → Yakutsk center
+      edgesMap.set('stop-yakutsk-airport', [
+        {
+          neighborId: 'stop-yakutsk-center',
+          weight: 90, // Transfer weight
+          metadata: {
+            transportType: 'TRANSFER',
+          },
+        },
+      ]);
+
+      // Yakutsk center → Churapcha
+      edgesMap.set('stop-yakutsk-center', [
+        {
+          neighborId: 'stop-churapcha',
+          weight: 180,
+          metadata: {
+            distance: 200,
+            transportType: 'BUS',
+            routeId: 'route-yakutsk-churapcha',
+          },
+        },
+      ]);
+
+      edgesMap.set('stop-churapcha', []);
+
+      const metadata = {
+        version,
+        nodes: nodeIds.length,
+        edges: 3,
+        buildTimestamp: Date.now(),
+        datasetVersion: 'dataset-v-control',
+      };
+
+      await graphRepository.saveGraph(version, nodeIds, edgesMap, metadata);
+      await graphRepository.setGraphVersion(version);
+
+      // Execute route search
+      const request = {
+        fromCity: 'Москва',
+        toCity: 'Чурапча',
+        date: new Date('2025-11-19'),
+        passengers: 1,
+      };
+
+      const result = await useCase.execute(request);
+
+      expect(result.success).toBe(true);
+      expect(result.routes.length).toBeGreaterThan(0);
+      const route = result.routes[0];
+      expect(route.segments.length).toBeGreaterThan(1);
+      expect(route.segments.some(s => s.transportType === 'airplane')).toBe(true);
+      expect(route.segments.some(s => s.transportType === 'bus')).toBe(true);
+    }, 30000);
+
+    it('should find route Москва → Нижний Бестях (PLANE + FERRY)', async () => {
+      // Create stops
+      const moscowStop = createTestRealStop({
+        id: 'stop-moscow-airport',
+        name: 'Аэропорт Шереметьево',
+        latitude: 55.9736,
+        longitude: 37.4145,
+        cityId: 'москва',
+        isAirport: true,
+      });
+      const yakutskAirportStop = createTestRealStop({
+        id: 'stop-yakutsk-airport',
+        name: 'Аэропорт Якутск (Туймаада)',
+        latitude: 62.0931,
+        longitude: 129.7706,
+        cityId: 'якутск',
+        isAirport: true,
+      });
+      const yakutskFerryStop = createTestRealStop({
+        id: 'stop-yakutsk-ferry',
+        name: 'Пристань Якутск',
+        latitude: 62.0352,
+        longitude: 129.6756,
+        cityId: 'якутск',
+        metadata: { type: 'ferry_terminal' },
+      });
+      const nizhnyBestyakhStop = createTestRealStop({
+        id: 'stop-nizhny-bestyakh-ferry',
+        name: 'Паромная переправа Нижний Бестях',
+        latitude: 61.9983,
+        longitude: 132.4264,
+        cityId: 'нижний бестях',
+        metadata: { type: 'ferry_terminal' },
+      });
+
+      await stopRepository.saveRealStop(moscowStop);
+      await stopRepository.saveRealStop(yakutskAirportStop);
+      await stopRepository.saveRealStop(yakutskFerryStop);
+      await stopRepository.saveRealStop(nizhnyBestyakhStop);
+
+      // Create routes
+      const route1 = createTestRoute({
+        id: 'route-moscow-yakutsk',
+        transportType: 'PLANE',
+        fromStopId: 'stop-moscow-airport',
+        toStopId: 'stop-yakutsk-airport',
+        stopsSequence: [
+          { stopId: 'stop-moscow-airport', order: 1 },
+          { stopId: 'stop-yakutsk-airport', order: 2 },
+        ],
+        durationMinutes: 240,
+        distanceKm: 4900,
+      });
+
+      const route2 = createTestRoute({
+        id: 'route-yakutsk-nizhny-bestyakh',
+        transportType: 'FERRY',
+        fromStopId: 'stop-yakutsk-ferry',
+        toStopId: 'stop-nizhny-bestyakh-ferry',
+        stopsSequence: [
+          { stopId: 'stop-yakutsk-ferry', order: 1 },
+          { stopId: 'stop-nizhny-bestyakh-ferry', order: 2 },
+        ],
+        durationMinutes: 20,
+        distanceKm: 15,
+        metadata: {
+          ferrySchedule: {
+            summer: { frequency: 'every_30_min' },
+            winter: { frequency: 'every_60_min' },
+          },
+        },
+      });
+
+      await routeRepository.saveRoute(route1);
+      await routeRepository.saveRoute(route2);
+
+      // Create flights
+      await flightRepository.saveFlight(createTestFlight({
+        id: 'flight-moscow-yakutsk-1',
+        routeId: 'route-moscow-yakutsk',
+        fromStopId: 'stop-moscow-airport',
+        toStopId: 'stop-yakutsk-airport',
+        departureTime: '08:00',
+        arrivalTime: '12:00',
+        daysOfWeek: [1, 2, 3, 4, 5, 6, 7],
+        priceRub: 15000,
+        transportType: 'PLANE',
+      }));
+
+      await flightRepository.saveFlight(createTestFlight({
+        id: 'flight-yakutsk-nizhny-bestyakh-1',
+        routeId: 'route-yakutsk-nizhny-bestyakh',
+        fromStopId: 'stop-yakutsk-ferry',
+        toStopId: 'stop-nizhny-bestyakh-ferry',
+        departureTime: '13:00',
+        arrivalTime: '13:20',
+        daysOfWeek: [1, 2, 3, 4, 5, 6, 7],
+        priceRub: 500,
+        transportType: 'FERRY',
+      }));
+
+      // Build graph with transfer and ferry edges
+      const version = `graph-v-control-${Date.now()}`;
+      const nodeIds = ['stop-moscow-airport', 'stop-yakutsk-airport', 'stop-yakutsk-ferry', 'stop-nizhny-bestyakh-ferry'];
+      const edgesMap = new Map<string, GraphNeighbor[]>();
+
+      // Moscow → Yakutsk (airport)
+      edgesMap.set('stop-moscow-airport', [
+        {
+          neighborId: 'stop-yakutsk-airport',
+          weight: 240,
+          metadata: {
+            distance: 4900,
+            transportType: 'PLANE',
+            routeId: 'route-moscow-yakutsk',
+          },
+        },
+      ]);
+
+      // Transfer: Yakutsk airport → Yakutsk ferry
+      edgesMap.set('stop-yakutsk-airport', [
+        {
+          neighborId: 'stop-yakutsk-ferry',
+          weight: 90, // Transfer weight
+          metadata: {
+            transportType: 'TRANSFER',
+          },
+        },
+      ]);
+
+      // Yakutsk ferry → Nizhny Bestyakh ferry
+      edgesMap.set('stop-yakutsk-ferry', [
+        {
+          neighborId: 'stop-nizhny-bestyakh-ferry',
+          weight: 35, // Ferry weight (20 min + 15 min waiting)
+          metadata: {
+            distance: 15,
+            transportType: 'FERRY',
+            routeId: 'route-yakutsk-nizhny-bestyakh',
+          },
+        },
+      ]);
+
+      edgesMap.set('stop-nizhny-bestyakh-ferry', []);
+
+      const metadata = {
+        version,
+        nodes: nodeIds.length,
+        edges: 3,
+        buildTimestamp: Date.now(),
+        datasetVersion: 'dataset-v-control',
+      };
+
+      await graphRepository.saveGraph(version, nodeIds, edgesMap, metadata);
+      await graphRepository.setGraphVersion(version);
+
+      // Execute route search
+      const request = {
+        fromCity: 'Москва',
+        toCity: 'Нижний Бестях',
+        date: new Date('2025-11-19'),
+        passengers: 1,
+      };
+
+      const result = await useCase.execute(request);
+
+      expect(result.success).toBe(true);
+      expect(result.routes.length).toBeGreaterThan(0);
+      const route = result.routes[0];
+      expect(route.segments.length).toBeGreaterThan(1);
+      expect(route.segments.some(s => s.transportType === 'airplane')).toBe(true);
+      expect(route.segments.some(s => s.transportType === 'ferry')).toBe(true);
+    }, 30000);
+
+    it('should find route Новосибирск → Якутск → Олёкминск (PLANE + BUS)', async () => {
+      // Create stops
+      const novosibirskStop = createTestRealStop({
+        id: 'stop-novosibirsk-airport',
+        name: 'Аэропорт Толмачёво',
+        latitude: 55.0126,
+        longitude: 82.6507,
+        cityId: 'новосибирск',
+        isAirport: true,
+      });
+      const yakutskAirportStop = createTestRealStop({
+        id: 'stop-yakutsk-airport',
+        name: 'Аэропорт Якутск (Туймаада)',
+        latitude: 62.0931,
+        longitude: 129.7706,
+        cityId: 'якутск',
+        isAirport: true,
+      });
+      const yakutskCenterStop = createTestRealStop({
+        id: 'stop-yakutsk-center',
+        name: 'Автостанция Якутск',
+        latitude: 62.0352,
+        longitude: 129.6756,
+        cityId: 'якутск',
+      });
+      const olekminskStop = createTestRealStop({
+        id: 'stop-olekminsk',
+        name: 'Автостанция Олёкминск',
+        latitude: 60.3744,
+        longitude: 120.4203,
+        cityId: 'олёкминск',
+      });
+
+      await stopRepository.saveRealStop(novosibirskStop);
+      await stopRepository.saveRealStop(yakutskAirportStop);
+      await stopRepository.saveRealStop(yakutskCenterStop);
+      await stopRepository.saveRealStop(olekminskStop);
+
+      // Create routes
+      const route1 = createTestRoute({
+        id: 'route-novosibirsk-yakutsk',
+        transportType: 'PLANE',
+        fromStopId: 'stop-novosibirsk-airport',
+        toStopId: 'stop-yakutsk-airport',
+        stopsSequence: [
+          { stopId: 'stop-novosibirsk-airport', order: 1 },
+          { stopId: 'stop-yakutsk-airport', order: 2 },
+        ],
+        durationMinutes: 240,
+        distanceKm: 2000,
+      });
+
+      const route2 = createTestRoute({
+        id: 'route-yakutsk-olekminsk',
+        transportType: 'BUS',
+        fromStopId: 'stop-yakutsk-center',
+        toStopId: 'stop-olekminsk',
+        stopsSequence: [
+          { stopId: 'stop-yakutsk-center', order: 1 },
+          { stopId: 'stop-olekminsk', order: 2 },
+        ],
+        durationMinutes: 180,
+        distanceKm: 200,
+      });
+
+      await routeRepository.saveRoute(route1);
+      await routeRepository.saveRoute(route2);
+
+      // Create flights
+      await flightRepository.saveFlight(createTestFlight({
+        id: 'flight-novosibirsk-yakutsk-1',
+        routeId: 'route-novosibirsk-yakutsk',
+        fromStopId: 'stop-novosibirsk-airport',
+        toStopId: 'stop-yakutsk-airport',
+        departureTime: '08:00',
+        arrivalTime: '12:00',
+        daysOfWeek: [1, 2, 3, 4, 5, 6, 7],
+        priceRub: 12000,
+        transportType: 'PLANE',
+      }));
+
+      await flightRepository.saveFlight(createTestFlight({
+        id: 'flight-yakutsk-olekminsk-1',
+        routeId: 'route-yakutsk-olekminsk',
+        fromStopId: 'stop-yakutsk-center',
+        toStopId: 'stop-olekminsk',
+        departureTime: '14:00',
+        arrivalTime: '17:00',
+        daysOfWeek: [1, 2, 3, 4, 5, 6, 7],
+        priceRub: 500,
+        transportType: 'BUS',
+      }));
+
+      // Build graph with transfer edges
+      const version = `graph-v-control-${Date.now()}`;
+      const nodeIds = ['stop-novosibirsk-airport', 'stop-yakutsk-airport', 'stop-yakutsk-center', 'stop-olekminsk'];
+      const edgesMap = new Map<string, GraphNeighbor[]>();
+
+      // Novosibirsk → Yakutsk (airport)
+      edgesMap.set('stop-novosibirsk-airport', [
+        {
+          neighborId: 'stop-yakutsk-airport',
+          weight: 240,
+          metadata: {
+            distance: 2000,
+            transportType: 'PLANE',
+            routeId: 'route-novosibirsk-yakutsk',
+          },
+        },
+      ]);
+
+      // Transfer: Yakutsk airport → Yakutsk center
+      edgesMap.set('stop-yakutsk-airport', [
+        {
+          neighborId: 'stop-yakutsk-center',
+          weight: 90, // Transfer weight
+          metadata: {
+            transportType: 'TRANSFER',
+          },
+        },
+      ]);
+
+      // Yakutsk center → Olekminisk
+      edgesMap.set('stop-yakutsk-center', [
+        {
+          neighborId: 'stop-olekminsk',
+          weight: 180,
+          metadata: {
+            distance: 200,
+            transportType: 'BUS',
+            routeId: 'route-yakutsk-olekminsk',
+          },
+        },
+      ]);
+
+      edgesMap.set('stop-olekminsk', []);
+
+      const metadata = {
+        version,
+        nodes: nodeIds.length,
+        edges: 3,
+        buildTimestamp: Date.now(),
+        datasetVersion: 'dataset-v-control',
+      };
+
+      await graphRepository.saveGraph(version, nodeIds, edgesMap, metadata);
+      await graphRepository.setGraphVersion(version);
+
+      // Execute route search
+      const request = {
+        fromCity: 'Новосибирск',
+        toCity: 'Олёкминск',
+        date: new Date('2025-11-19'),
+        passengers: 1,
+      };
+
+      const result = await useCase.execute(request);
+
+      expect(result.success).toBe(true);
+      expect(result.routes.length).toBeGreaterThan(0);
+      const route = result.routes[0];
+      expect(route.segments.length).toBeGreaterThan(1);
+      expect(route.segments.some(s => s.transportType === 'airplane')).toBe(true);
+      expect(route.segments.some(s => s.transportType === 'bus')).toBe(true);
+    }, 30000);
+
+    it('should find route Красноярск → Якутск → Мирный (PLANE + BUS)', async () => {
+      // Create stops
+      const krasnoyarskStop = createTestRealStop({
+        id: 'stop-krasnoyarsk-airport',
+        name: 'Аэропорт Емельяново',
+        latitude: 56.1729,
+        longitude: 92.4933,
+        cityId: 'красноярск',
+        isAirport: true,
+      });
+      const yakutskAirportStop = createTestRealStop({
+        id: 'stop-yakutsk-airport',
+        name: 'Аэропорт Якутск (Туймаада)',
+        latitude: 62.0931,
+        longitude: 129.7706,
+        cityId: 'якутск',
+        isAirport: true,
+      });
+      const yakutskCenterStop = createTestRealStop({
+        id: 'stop-yakutsk-center',
+        name: 'Автостанция Якутск',
+        latitude: 62.0352,
+        longitude: 129.6756,
+        cityId: 'якутск',
+      });
+      const mirnyStop = createTestRealStop({
+        id: 'stop-mirny',
+        name: 'Автостанция Мирный',
+        latitude: 62.5353,
+        longitude: 113.9614,
+        cityId: 'мирный',
+      });
+
+      await stopRepository.saveRealStop(krasnoyarskStop);
+      await stopRepository.saveRealStop(yakutskAirportStop);
+      await stopRepository.saveRealStop(yakutskCenterStop);
+      await stopRepository.saveRealStop(mirnyStop);
+
+      // Create routes
+      const route1 = createTestRoute({
+        id: 'route-krasnoyarsk-yakutsk',
+        transportType: 'PLANE',
+        fromStopId: 'stop-krasnoyarsk-airport',
+        toStopId: 'stop-yakutsk-airport',
+        stopsSequence: [
+          { stopId: 'stop-krasnoyarsk-airport', order: 1 },
+          { stopId: 'stop-yakutsk-airport', order: 2 },
+        ],
+        durationMinutes: 240,
+        distanceKm: 2000,
+      });
+
+      const route2 = createTestRoute({
+        id: 'route-yakutsk-mirny',
+        transportType: 'BUS',
+        fromStopId: 'stop-yakutsk-center',
+        toStopId: 'stop-mirny',
+        stopsSequence: [
+          { stopId: 'stop-yakutsk-center', order: 1 },
+          { stopId: 'stop-mirny', order: 2 },
+        ],
+        durationMinutes: 180,
+        distanceKm: 200,
+      });
+
+      await routeRepository.saveRoute(route1);
+      await routeRepository.saveRoute(route2);
+
+      // Create flights
+      await flightRepository.saveFlight(createTestFlight({
+        id: 'flight-krasnoyarsk-yakutsk-1',
+        routeId: 'route-krasnoyarsk-yakutsk',
+        fromStopId: 'stop-krasnoyarsk-airport',
+        toStopId: 'stop-yakutsk-airport',
+        departureTime: '08:00',
+        arrivalTime: '12:00',
+        daysOfWeek: [1, 2, 3, 4, 5, 6, 7],
+        priceRub: 12000,
+        transportType: 'PLANE',
+      }));
+
+      await flightRepository.saveFlight(createTestFlight({
+        id: 'flight-yakutsk-mirny-1',
+        routeId: 'route-yakutsk-mirny',
+        fromStopId: 'stop-yakutsk-center',
+        toStopId: 'stop-mirny',
+        departureTime: '14:00',
+        arrivalTime: '17:00',
+        daysOfWeek: [1, 2, 3, 4, 5, 6, 7],
+        priceRub: 500,
+        transportType: 'BUS',
+      }));
+
+      // Build graph with transfer edges
+      const version = `graph-v-control-${Date.now()}`;
+      const nodeIds = ['stop-krasnoyarsk-airport', 'stop-yakutsk-airport', 'stop-yakutsk-center', 'stop-mirny'];
+      const edgesMap = new Map<string, GraphNeighbor[]>();
+
+      // Krasnoyarsk → Yakutsk (airport)
+      edgesMap.set('stop-krasnoyarsk-airport', [
+        {
+          neighborId: 'stop-yakutsk-airport',
+          weight: 240,
+          metadata: {
+            distance: 2000,
+            transportType: 'PLANE',
+            routeId: 'route-krasnoyarsk-yakutsk',
+          },
+        },
+      ]);
+
+      // Transfer: Yakutsk airport → Yakutsk center
+      edgesMap.set('stop-yakutsk-airport', [
+        {
+          neighborId: 'stop-yakutsk-center',
+          weight: 90, // Transfer weight
+          metadata: {
+            transportType: 'TRANSFER',
+          },
+        },
+      ]);
+
+      // Yakutsk center → Mirny
+      edgesMap.set('stop-yakutsk-center', [
+        {
+          neighborId: 'stop-mirny',
+          weight: 180,
+          metadata: {
+            distance: 200,
+            transportType: 'BUS',
+            routeId: 'route-yakutsk-mirny',
+          },
+        },
+      ]);
+
+      edgesMap.set('stop-mirny', []);
+
+      const metadata = {
+        version,
+        nodes: nodeIds.length,
+        edges: 3,
+        buildTimestamp: Date.now(),
+        datasetVersion: 'dataset-v-control',
+      };
+
+      await graphRepository.saveGraph(version, nodeIds, edgesMap, metadata);
+      await graphRepository.setGraphVersion(version);
+
+      // Execute route search
+      const request = {
+        fromCity: 'Красноярск',
+        toCity: 'Мирный',
+        date: new Date('2025-11-19'),
+        passengers: 1,
+      };
+
+      const result = await useCase.execute(request);
+
+      expect(result.success).toBe(true);
+      expect(result.routes.length).toBeGreaterThan(0);
+      const route = result.routes[0];
+      expect(route.segments.length).toBeGreaterThan(1);
+      expect(route.segments.some(s => s.transportType === 'airplane')).toBe(true);
+      expect(route.segments.some(s => s.transportType === 'bus')).toBe(true);
     }, 30000);
   });
 });

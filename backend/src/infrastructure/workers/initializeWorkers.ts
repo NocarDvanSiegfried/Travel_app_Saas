@@ -13,6 +13,7 @@ import path from 'path';
 import {
   getWorkerOrchestrator,
   ODataSyncWorker,
+  AirRouteGeneratorWorker,
   VirtualEntitiesGeneratorWorker,
   GraphBuilderWorker,
 } from '../../application/workers';
@@ -24,7 +25,6 @@ import {
   PostgresDatasetRepository,
   PostgresGraphRepository,
 } from '../repositories';
-import { getYakutiaCitiesDirectory } from '../../shared/utils/yakutia-cities-loader';
 
 /**
  * Simple OData Client Mock
@@ -96,7 +96,8 @@ class SimpleODataClient implements IODataClient {
 /**
  * Simple MinIO Client Mock
  * 
- * TODO: Replace with real MinIO client implementation
+ * Note: This is a mock implementation for development. In production, replace with a real MinIO client
+ * that handles actual file uploads to MinIO storage service.
  */
 class SimpleMinioClient implements IMinioClient {
   async uploadDataset(datasetId: string, data: string): Promise<void> {
@@ -151,18 +152,23 @@ export async function initializeWorkers(
       minioClient
     );
 
-    // Worker 2: Virtual Entities Generator
-    // Load Yakutia cities directory from reference file
-    const yakutiaCitiesDirectory = getYakutiaCitiesDirectory();
+    // Worker 2: Air Route Generator
+    const airRouteGeneratorWorker = new AirRouteGeneratorWorker(
+      stopRepository,
+      routeRepository,
+      flightRepository,
+      datasetRepository
+    );
+
+    // Worker 3: Virtual Entities Generator
     const virtualEntitiesWorker = new VirtualEntitiesGeneratorWorker(
       stopRepository,
       routeRepository,
       flightRepository,
-      datasetRepository,
-      yakutiaCitiesDirectory
+      datasetRepository
     );
 
-    // Worker 3: Graph Builder
+    // Worker 4: Graph Builder
     const graphBuilderWorker = new GraphBuilderWorker(
       stopRepository,
       routeRepository,
@@ -179,6 +185,7 @@ export async function initializeWorkers(
     const orchestrator = getWorkerOrchestrator();
 
     orchestrator.registerWorker('odata-sync-worker', odataSyncWorker);
+    orchestrator.registerWorker('air-route-generator-worker', airRouteGeneratorWorker);
     orchestrator.registerWorker('virtual-entities-generator', virtualEntitiesWorker);
     orchestrator.registerWorker('graph-builder', graphBuilderWorker);
 
