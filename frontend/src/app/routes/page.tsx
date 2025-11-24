@@ -134,7 +134,7 @@ function RoutesContent() {
 
         {/* Ошибка (только для критичных ошибок, не для ROUTES_NOT_FOUND) */}
         {errorMessage && !isLoading && errorCode !== 'ROUTES_NOT_FOUND' && (
-          <div className="card p-lg text-center" role="alert" aria-live="assertive">
+          <div className="card p-lg text-center" role="alert" aria-live="assertive" data-testid="routes-search-error">
             <p className="text-md text-primary">{errorMessage}</p>
           </div>
         )}
@@ -250,6 +250,7 @@ function RoutesContent() {
                             onClick={() => handleSelectRoute(route)}
                             aria-label={`Выбрать маршрут из ${route.fromCity} в ${route.toCity}`}
                             className="btn-primary px-xl py-sm transition-fast"
+                            data-testid={`select-route-${route.routeId}`}
                           >
                             Выбрать маршрут
                           </button>
@@ -380,6 +381,7 @@ function RoutesContent() {
                             onClick={() => handleSelectRoute(route)}
                             aria-label={`Выбрать маршрут из ${route.fromCity} в ${route.toCity}`}
                             className="btn-primary px-xl py-sm transition-fast"
+                            data-testid={`select-route-${route.routeId}`}
                           >
                             Выбрать маршрут
                           </button>

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { check, live, ready } from '../controllers/HealthController';
 import * as RouteBuilderController from '../controllers/RouteBuilderController';
+import * as RouteMapController from '../controllers/RouteMapController';
 import * as RiskController from '../controllers/RiskController';
 import * as DiagnosticsController from '../controllers/DiagnosticsController';
 import * as CitiesController from '../controllers/CitiesController';
@@ -9,7 +10,7 @@ import * as DataReinitController from '../controllers/DataReinitController';
 import { getMetrics } from '../controllers/MetricsController';
 import { routeSearchLimiter, routeRiskLimiter } from '../middleware/rate-limiter';
 import { validateRequest } from '../middleware/validation.middleware';
-import { routeSearchSchema, routeDetailsSchema, routeBuildSchema } from '../validators';
+import { routeSearchSchema, routeDetailsSchema, routeBuildSchema, routeMapDataQuerySchema, routeMapDataBodySchema } from '../validators';
 import { riskAssessmentSchema } from '../validators';
 import { paginationSchema } from '../validators';
 
@@ -48,6 +49,18 @@ router.get(
   RouteBuilderController.buildRoute
 );
 router.get('/routes/graph/diagnostics', RouteBuilderController.getRouteGraphDiagnostics);
+
+// Route map endpoints
+router.get(
+  '/routes/map',
+  validateRequest({ query: routeMapDataQuerySchema }),
+  RouteMapController.getRouteMapData
+);
+router.post(
+  '/routes/map',
+  validateRequest({ body: routeMapDataBodySchema }),
+  RouteMapController.postRouteMapData
+);
 
 // Risk assessment
 router.post(

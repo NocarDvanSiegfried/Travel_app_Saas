@@ -31,3 +31,20 @@ export const routeBuildSchema = z.object({
   passengers: z.coerce.number().int().positive().max(9).optional(),
 });
 
+/**
+ * Schema for route map data query parameters
+ */
+export const routeMapDataQuerySchema = z.object({
+  routeId: z.string().min(1, 'Параметр routeId обязателен'),
+});
+
+/**
+ * Schema for route map data body (accepts either routeId or full route)
+ */
+export const routeMapDataBodySchema = z.object({
+  routeId: z.string().min(1, 'Параметр routeId обязателен').optional(),
+  route: z.any().optional(), // IBuiltRoute - будет валидироваться в Use Case
+}).refine((data) => data.routeId || data.route, {
+  message: 'Необходимо указать либо routeId, либо route',
+});
+

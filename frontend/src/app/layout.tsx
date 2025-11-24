@@ -116,6 +116,13 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
+        {/* Yandex Maps API */}
+        {process.env.NEXT_PUBLIC_YANDEX_MAPS_API_KEY && process.env.NEXT_PUBLIC_YANDEX_MAPS_API_KEY.trim() !== '' && (
+          <script
+            src={`https://api-maps.yandex.ru/2.1/?lang=ru_RU&apikey=${encodeURIComponent(process.env.NEXT_PUBLIC_YANDEX_MAPS_API_KEY)}`}
+            defer
+          />
+        )}
       </head>
       <body className="font-sans min-h-screen flex flex-col">
         <QueryProvider>

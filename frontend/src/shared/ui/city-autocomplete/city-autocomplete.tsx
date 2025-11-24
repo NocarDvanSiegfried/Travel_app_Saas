@@ -284,6 +284,7 @@ export function CityAutocomplete({
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
           className="input"
+          data-testid={`city-autocomplete-${name}`}
           aria-autocomplete="list"
           aria-expanded={isOpen}
           aria-controls={isOpen ? `${id}-listbox` : undefined}

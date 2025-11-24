@@ -6,6 +6,7 @@ import { RouteSchedule } from './route-schedule';
 import { RoutePricing } from './route-pricing';
 import { RouteAlternatives } from './route-alternatives';
 import { RouteRiskAssessment } from './route-risk-assessment';
+import { RouteMapWithAlternatives } from '@/modules/routes/features/route-map/ui';
 import { OccupancyData } from '@/modules/routes/domain/types';
 
 /**
@@ -131,6 +132,8 @@ export function RouteDetailsView({ data }: RouteDetailsViewProps) {
         date={data.date}
         route={primaryRoute.route}
       />
+
+      <RouteMapWithAlternatives primaryRouteId={primaryRoute.route.Ref_Key} height="500px" />
 
       <RouteSegments segments={primaryRoute.segments} />
 

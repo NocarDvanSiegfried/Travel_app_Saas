@@ -121,7 +121,7 @@ export function useRoutesSearch({
         const validationResult = RouteSearchResponseSchema.safeParse(response)
         
         if (!validationResult.success) {
-          const validationError = new Error('Неверный формат ответа от сервера') as Error & { code?: string }
+          const validationError: Error & { code?: string } = new Error('Неверный формат ответа от сервера')
           validationError.code = 'INVALID_ROUTE_RESPONSE'
           throw validationError
         }
@@ -191,11 +191,11 @@ export function useRoutesSearch({
   if (hasValidData) {
     // Проверяем, что data.routes существует, это массив и имеет корректную структуру
     if (!data.routes) {
-      processingError = new Error('Ответ сервера не содержит маршрутов') as Error & { code?: string }
-      processingError.code = 'INVALID_ROUTE_RESPONSE'
+      processingError = new Error('Ответ сервера не содержит маршрутов')
+      ;(processingError as Error & { code?: string }).code = 'INVALID_ROUTE_RESPONSE'
     } else if (!Array.isArray(data.routes)) {
-      processingError = new Error('Маршруты должны быть массивом') as Error & { code?: string }
-      processingError.code = 'INVALID_ROUTE_RESPONSE'
+      processingError = new Error('Маршруты должны быть массивом')
+      ;(processingError as Error & { code?: string }).code = 'INVALID_ROUTE_RESPONSE'
     } else {
       // Проверяем структуру каждого маршрута через Zod
       try {
@@ -211,8 +211,8 @@ export function useRoutesSearch({
           adaptedRoutes = adaptBackendRoutesToFrontend(data.routes, date, Number(passengers) || 1)
         }
       } catch (err) {
-        processingError = new Error('Ошибка при обработке маршрутов') as Error & { code?: string }
-        processingError.code = 'INVALID_ROUTE_RESPONSE'
+        processingError = new Error('Ошибка при обработке маршрутов')
+        ;(processingError as Error & { code?: string }).code = 'INVALID_ROUTE_RESPONSE'
       }
     }
 
@@ -256,7 +256,7 @@ export function useRoutesSearch({
   }
 
   // Определяем код ошибки из перехваченной ошибки, из данных или из ошибки обработки
-  const errorCode = processingError?.code || (error as ApiError)?.code || data?.error?.code
+  const errorCode = (processingError as Error & { code?: string })?.code || (error as ApiError)?.code || data?.error?.code
 
   // Если есть ошибка, возвращаем пустые массивы
   const finalRoutes = apiError ? [] : routes
