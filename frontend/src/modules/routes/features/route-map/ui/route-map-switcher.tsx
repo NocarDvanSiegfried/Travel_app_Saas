@@ -169,7 +169,7 @@ export const RouteMapSwitcher = memo(function RouteMapSwitcher({
             height={height}
             showLegend={showLegend}
             providerType={providerType}
-            key={preserveMapPosition ? 'preserve' : `route-map-${providerType}-${currentRoute.routeId}-${currentRouteIndex}`}
+            key={`route-map-${providerType}-${currentRoute.routeId}-${currentRouteIndex}`}
           />
         ) : (
           <div className="card p-lg" style={{ height }}>

@@ -461,3 +461,4 @@ document.querySelectorAll('link[href*="leaflet"]').length
 - ✅ При ошибках и повторных попытках
 - ✅ При медленном рендеринге
 
+

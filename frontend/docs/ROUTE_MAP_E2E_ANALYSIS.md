@@ -217,3 +217,4 @@ await expect(page.getByTestId('route-map-switcher')).toBeVisible();
 **Отчёт подготовлен:** 2025-01-27  
 **Версия:** 1.0
 
+

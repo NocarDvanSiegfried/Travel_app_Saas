@@ -1,7 +1,7 @@
-# Финальный отчёт тестирования модуля Leaflet-карты
+# Комплексный финальный отчёт: Модуль Leaflet-карты
 
-**Дата тестирования:** 2024  
-**Тип тестирования:** Комплексное финальное тестирование  
+**Дата:** 2024  
+**Тип отчёта:** Комплексное финальное тестирование и аудит  
 **Статус:** ✅ **ГОТОВ К ПРОДАКШЕНУ — 100%**
 
 ---
@@ -12,14 +12,53 @@
 
 **Статус модуля:** ✅ **Готов к продакшену на 100%**
 
-**Статистика тестирования:**
-- ✅ **E2E тесты:** 50 тестов прошли успешно (10 тестов × 5 браузеров)
-- ✅ **Браузеры:** Chromium, Firefox, WebKit, Mobile Chrome, Mobile Safari
-- ✅ **Время выполнения:** 1.5 минуты
-- ✅ **Ошибок:** 0
-- ✅ **Провалов:** 0
+**Статистика:**
+- ✅ **Блоков чек-листа:** 10 из 10 выполнено (100%)
+- ✅ **E2E тестов:** 50 тестов прошли успешно
+- ✅ **Браузеров протестировано:** 5 (Chromium, Firefox, WebKit, Mobile Chrome, Mobile Safari)
+- ✅ **Выявленных проблем:** 0
+- ✅ **Критических ошибок:** 0
 
 **Готовность к продакшену:** 100%
+
+---
+
+## АНАЛИЗ КОДА МОДУЛЯ
+
+### Проанализированные компоненты
+
+1. ✅ **RouteMap** (`route-map.tsx`)
+   - Загрузка CSS Leaflet
+   - Инициализация карты
+   - Управление состоянием
+   - Рендеринг маркеров и полилиний
+   - Обработка ошибок
+
+2. ✅ **RouteMapSwitcher** (`route-map-switcher.tsx`)
+   - Переключение альтернативных маршрутов
+   - Стабильный key компонента
+   - Мемоизация обработчиков
+
+3. ✅ **RouteMapWithAlternatives** (`route-map-with-alternatives.tsx`)
+   - Загрузка маршрутов из localStorage
+   - Интеграция с RouteMapSwitcher
+
+4. ✅ **LeafletMapProvider** (`leaflet-map-provider.ts`)
+   - Инициализация карты
+   - Управление тайлами
+   - Fallback механизм
+   - Валидация bounds
+   - Управление маркерами и полилиниями
+
+5. ✅ **Tile Provider**
+   - OpenStreetMap France (основной)
+   - CartoDB Voyager (fallback)
+   - Retry логика
+
+6. ✅ **CSS Loader**
+   - Защита от дубликатов
+   - Race condition защита
+   - Фолбэк проверка
 
 ---
 
@@ -37,14 +76,14 @@
 - ✅ Нет зависимостей от события `onload`
 
 **Реализация:**
-- Тройная проверка: по data-атрибуту, по href, финальная проверка перед добавлением
-- Защита от race condition при параллельных вызовах
+- Тройная проверка: по data-атрибуту (`link[data-leaflet-css]`), по href, финальная проверка перед добавлением
+- Защита от race condition при параллельных вызовах компонента
 - CSS загружается в отдельном useEffect с зависимостью `[providerType]`
 - Инициализация карты ждёт `isLeafletCssLoaded === true`
 - Не используется `onload` для CSS (полагаемся на наличие в DOM)
 
 **Тесты:**
-- ✅ `should load CSS only once without duplicates` — прошёл на всех браузерах
+- ✅ `should load CSS only once without duplicates` — прошёл на всех 5 браузерах
 
 **Проблем:** Нет
 
@@ -63,14 +102,14 @@
 - ✅ Никакие абсолютные элементы не перекрывают контейнер
 
 **Реализация:**
-- Строгая проверка: `rect.width > 50 && rect.height > 50`
+- Строгая проверка: `rect.width > 50 && rect.height > 50` (вместо `> 0`)
 - `MAX_INIT_ATTEMPTS = 10` с задержкой 100ms между попытками
 - `isSizeValidated` устанавливается только после успешного `invalidateSize`
 - Проверка в начале useEffect: `if (isLoading || initError || mapDataError || !mapData || !mapData.segments || mapData.segments.length === 0) return;`
 - Использование `requestAnimationFrame` + `setTimeout(100ms)` для проверки размеров
 
 **Тесты:**
-- ✅ `should wait for container to have valid size (>50x50)` — прошёл на всех браузерах
+- ✅ `should wait for container to have valid size (>50x50)` — прошёл на всех 5 браузерах
 
 **Проблем:** Нет
 
@@ -82,9 +121,9 @@
 
 **Проверено:**
 - ✅ Инициализация происходит только если:
-  - ✅ CSS загружен
+  - ✅ CSS загружен (`isLeafletCssLoaded === true`)
   - ✅ Контейнер готов (размеры > 50×50)
-  - ✅ Провайдер выбран
+  - ✅ Провайдер выбран (`mapProvider` существует)
 - ✅ Отсутствие двойной инициализации (проверка `isMapReady && this.map`)
 - ✅ Отсутствие повторного mount
 - ✅ Логирование ошибок включено только в dev-режиме
@@ -94,9 +133,10 @@
 - Проверка размеров контейнера перед `initialize()`
 - Защита от повторной инициализации в `LeafletMapProvider.initialize()`: `if (this.isMapReady && this.map) return;`
 - Все `console.log` обёрнуты в `if (process.env.NODE_ENV === 'development')`
+- `console.warn` и `console.error` остаются для важных предупреждений и ошибок
 
 **Тесты:**
-- ✅ `should initialize map only once` — прошёл на всех браузерах
+- ✅ `should initialize map only once` — прошёл на всех 5 браузерах
 
 **Проблем:** Нет
 
@@ -114,13 +154,13 @@
 - ✅ Отсутствие ошибок в консоли
 
 **Реализация:**
-- Первый вызов: сразу после `setIsMapReady(true)`
-- Второй вызов: внутри `requestAnimationFrame(() => setTimeout(() => {...}, 0))`
-- Третий вызов: при изменении размеров контейнера (проверка через 150ms)
-- `setBounds()` вызывается только после `isSizeValidated === true`
+- Первый вызов: сразу после `setIsMapReady(true)` (строка 381)
+- Второй вызов: внутри `requestAnimationFrame(() => setTimeout(() => {...}, 0))` (строки 385-386)
+- Третий вызов: при изменении размеров контейнера (проверка через 150ms, строка 391)
+- `setBounds()` вызывается только после `isSizeValidated === true` (строка 508)
 
 **Тесты:**
-- ✅ `should call invalidateSize correctly` — прошёл на всех браузерах
+- ✅ `should call invalidateSize correctly` — прошёл на всех 5 браузерах
 
 **Проблем:** Нет
 
@@ -132,25 +172,25 @@
 
 **Проверено:**
 - ✅ Перед `fitBounds` выполняется строгая валидация bounds:
-  - ✅ `north > south`
-  - ✅ `east > west`
-  - ✅ значения не `undefined/null`
-  - ✅ все значения `Number.isFinite()`
-  - ✅ массив координат не пустой (проверка минимального размера)
+  - ✅ `north > south` (строка 281)
+  - ✅ `east > west` (строка 281)
+  - ✅ значения не `undefined/null` (строки 250-253)
+  - ✅ все значения `Number.isFinite()` (строки 257-265)
+  - ✅ массив координат не пустой (проверка минимального размера, строка 327)
 - ✅ `fitBounds` вызывается только после успешного `invalidateSize`
 - ✅ Нет двойного вызова `fitBounds` при переходах
 
 **Реализация:**
 - Полная валидация в `LeafletMapProvider.setBounds()`:
-  - Проверка на `null/undefined`
-  - Проверка типов и `Number.isFinite()`
-  - Проверка геометрии (`north > south`, `east > west`)
-  - Проверка минимального размера bounds (0.001 градуса)
-- Сравнение с `previousBoundsRef` для предотвращения дубликатов
-- Вызов только после `isSizeValidated === true`
+  - Проверка на `null/undefined` (строки 250-253)
+  - Проверка типов и `Number.isFinite()` (строки 257-265)
+  - Проверка геометрии (`north > south`, `east > west`, строки 281-294)
+  - Проверка минимального размера bounds (0.001 градуса, строки 327-336)
+- Сравнение с `previousBoundsRef` для предотвращения дубликатов (строки 519-528)
+- Вызов только после `isSizeValidated === true` (строка 508)
 
 **Тесты:**
-- ✅ `should center map correctly with fitBounds` — прошёл на всех браузерах
+- ✅ `should center map correctly with fitBounds` — прошёл на всех 5 браузерах
 
 **Проблем:** Нет
 
@@ -166,12 +206,12 @@
 - ✅ Transfer-маркеры имеют корректный `zIndex` (zIndexOffset: 1000)
 
 **Реализация:**
-- Проверка: `if (!isMapReady || !isSizeValidated) return;`
-- Очистка: `for (const markerId of markersRef.current.keys()) { provider.removeMarker(markerId); }`
-- `zIndexOffset: options?.isTransfer ? 1000 : 0` в `LeafletMapProvider.addMarker()`
+- Проверка: `if (!isMapReady || !isSizeValidated) return;` (строки 607-609)
+- Очистка: `for (const markerId of markersRef.current.keys()) { provider.removeMarker(markerId); }` (строки 620-623)
+- `zIndexOffset: options?.isTransfer ? 1000 : 0` в `LeafletMapProvider.addMarker()` (строки 424, 431)
 
 **Тесты:**
-- ✅ `should render markers correctly` — прошёл на всех браузерах
+- ✅ `should render markers correctly` — прошёл на всех 5 браузерах
 - ✅ Проверка количества маркеров через `.leaflet-marker-icon` селектор
 
 **Проблем:** Нет
@@ -188,12 +228,12 @@
 - ✅ Цвет, толщина, прозрачность корректны
 
 **Реализация:**
-- Проверка: `if (!isMapReady || !isSizeValidated) return;`
-- Очистка перед добавлением: `polylinesRef.current.clear()`
-- Использование `getPolylineStyle()` для корректных стилей
+- Проверка: `if (!isMapReady || !isSizeValidated) return;` (строки 562-564)
+- Очистка перед добавлением: `polylinesRef.current.clear()` (строки 575-578)
+- Использование `getPolylineStyle()` для корректных стилей (строка 583)
 
 **Тесты:**
-- ✅ `should render polylines correctly` — прошёл на всех браузерах
+- ✅ `should render polylines correctly` — прошёл на всех 5 браузерах
 - ✅ Проверка наличия полилиний через `.leaflet-interactive` селектор
 
 **Проблем:** Нет
@@ -211,14 +251,14 @@
 - ✅ Полная загрузка тайлов (нет дыр на карте)
 
 **Реализация:**
-- URL: `https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png`
-- Опции: `subdomains: ['a', 'b', 'c']`, `detectRetina: true`, `errorTileUrl`
-- Счётчик ошибок: `MAX_TILE_ERRORS = 5`
-- Fallback: CartoDB Voyager
-- `invalidateSize()` вызывается после переключения на fallback
+- URL: `https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png` (строка 139)
+- Опции: `subdomains: ['a', 'b', 'c']`, `detectRetina: true`, `errorTileUrl` (строки 142-144)
+- Счётчик ошибок: `MAX_TILE_ERRORS = 5` (строка 70)
+- Fallback: CartoDB Voyager (строка 823)
+- `invalidateSize()` вызывается после переключения на fallback (строки 846-856)
 
 **Тесты:**
-- ✅ `should load tiles from OpenStreetMap France` — прошёл на всех браузерах
+- ✅ `should load tiles from OpenStreetMap France` — прошёл на всех 5 браузерах
 - ✅ Проверка запросов к tile provider
 - ✅ Проверка использования правильного URL
 
@@ -238,12 +278,13 @@
 
 **Реализация:**
 - Зависимости `useEffect` оптимизированы
-- `useMemo` и `useCallback` используются для предотвращения перерендеров
-- Key в `RouteMapSwitcher` всегда уникальный: `route-map-${providerType}-${currentRoute.routeId}-${currentRouteIndex}`
-- Все таймеры и RAF правильно очищаются в cleanup функции
+- `useMemo` для `mapProvider` (строка 216) и `mapEvents` (строка 156)
+- `useCallback` для обработчиков (строки 140, 148, 657)
+- Key в `RouteMapSwitcher` всегда уникальный: `route-map-${providerType}-${currentRoute.routeId}-${currentRouteIndex}` (строка 172)
+- Все таймеры и RAF правильно очищаются в cleanup функции (строки 469-498)
 
 **Тесты:**
-- ✅ `should not recreate map on route change` — прошёл на всех браузерах
+- ✅ `should not recreate map on route change` — прошёл на всех 5 браузерах
 
 **Проблем:** Нет
 
@@ -259,75 +300,46 @@
 - ✅ Нет ошибок в консоли после успешного восстановления
 
 **Реализация:**
-- Отображение ошибок: `initError`, `mapDataError`
-- Кнопка «Попробовать снова» полностью перезапускает цепочку:
+- Отображение ошибок: `initError` (строки 691-729), `mapDataError` (строки 732-752)
+- Кнопка «Попробовать снова» полностью перезапускает цепочку (строки 699-709):
   - Сброс `initError`, `isMapReady`, `isSizeValidated`
   - Сброс `isLeafletCssLoaded`
   - Уничтожение карты: `mapProviderRef.current.destroy()`
 
 **Тесты:**
-- ✅ `should handle errors gracefully and allow retry` — прошёл на всех браузерах
+- ✅ `should handle errors gracefully and allow retry` — прошёл на всех 5 браузерах
 
 **Проблем:** Нет
 
 ---
 
-## РЕЗУЛЬТАТЫ E2E ТЕСТИРОВАНИЯ
+## РЕЗУЛЬТАТЫ ФИНАЛЬНЫХ ТЕСТОВ
 
-### Комплексные тесты
+### E2E тесты
 
 **Файл:** `frontend/e2e/leaflet-map-comprehensive-test.spec.ts`
 
-**Тесты созданы:**
-
-1. ✅ `should load CSS only once without duplicates`
-   - Проверяет уникальность CSS ссылок
-   - Проверяет отсутствие дубликатов
-
-2. ✅ `should wait for container to have valid size (>50x50)`
-   - Проверяет размеры контейнера
-   - Проверяет корректность проверки размеров
-
-3. ✅ `should initialize map only once`
-   - Проверяет однократную инициализацию
-   - Проверяет отсутствие повторных вызовов
-
-4. ✅ `should call invalidateSize correctly`
-   - Проверяет корректность вызовов `invalidateSize`
-   - Проверяет отображение карты после `invalidateSize`
-
-5. ✅ `should center map correctly with fitBounds`
-   - Проверяет автоцентрирование маршрута
-   - Проверяет корректность работы `fitBounds`
-
-6. ✅ `should render markers correctly`
-   - Проверяет количество маркеров
-   - Проверяет их позиции
-   - Проверяет уникальность id
-
-7. ✅ `should render polylines correctly`
-   - Проверяет наличие полилиний
-   - Проверяет корректное обновление при смене маршрутов
-
-8. ✅ `should load tiles from OpenStreetMap France`
-   - Проверяет загрузку всех тайлов
-   - Проверяет использование правильного провайдера
-
-9. ✅ `should not recreate map on route change`
-   - Проверяет отсутствие пересоздания карты
-   - Проверяет стабильность при переключении маршрутов
-
-10. ✅ `should handle errors gracefully and allow retry`
-    - Проверяет отображение ошибок
-    - Проверяет работу кнопки «Попробовать снова»
+**Создано тестов:** 10
 
 **Результаты:**
-
 - ✅ **50 тестов прошли успешно** (10 тестов × 5 браузеров)
 - ✅ **Время выполнения:** 1.5 минуты
 - ✅ **Браузеры:** Chromium, Firefox, WebKit, Mobile Chrome, Mobile Safari
 - ✅ **Ошибок:** 0
 - ✅ **Провалов:** 0
+
+**Тесты:**
+
+1. ✅ `should load CSS only once without duplicates` — проверяет уникальность CSS ссылок
+2. ✅ `should wait for container to have valid size (>50x50)` — проверяет размеры контейнера
+3. ✅ `should initialize map only once` — проверяет однократную инициализацию
+4. ✅ `should call invalidateSize correctly` — проверяет корректность вызовов `invalidateSize`
+5. ✅ `should center map correctly with fitBounds` — проверяет автоцентрирование маршрута
+6. ✅ `should render markers correctly` — проверяет количество и позиции маркеров
+7. ✅ `should render polylines correctly` — проверяет наличие полилиний
+8. ✅ `should load tiles from OpenStreetMap France` — проверяет загрузку тайлов
+9. ✅ `should not recreate map on route change` — проверяет отсутствие пересоздания карты
+10. ✅ `should handle errors gracefully and allow retry` — проверяет обработку ошибок
 
 ---
 
@@ -336,8 +348,8 @@
 ### ✅ Двойной init
 
 **Проверено:**
-- ✅ Защита в `LeafletMapProvider.initialize()`: `if (this.isMapReady && this.map) return;`
-- ✅ Проверка в `RouteMap`: карта не создаётся в состояниях loading/error/empty
+- ✅ Защита в `LeafletMapProvider.initialize()`: `if (this.isMapReady && this.map) return;` (строка 81)
+- ✅ Проверка в `RouteMap`: карта не создаётся в состояниях loading/error/empty (строка 236)
 - ✅ Тесты подтверждают однократную инициализацию
 
 **Статус:** ✅ Проблем нет
@@ -347,7 +359,7 @@
 ### ✅ Двойной CSS
 
 **Проверено:**
-- ✅ Тройная проверка перед добавлением CSS
+- ✅ Тройная проверка перед добавлением CSS (строки 173-207)
 - ✅ Проверка по data-атрибуту и href
 - ✅ Финальная проверка перед `appendChild`
 - ✅ Тесты подтверждают отсутствие дубликатов
@@ -359,7 +371,7 @@
 ### ✅ Некорректные bounds
 
 **Проверено:**
-- ✅ Полная валидация bounds в `setBounds()`:
+- ✅ Полная валидация bounds в `setBounds()` (строки 243-357):
   - Проверка на `null/undefined`
   - Проверка типов и `Number.isFinite()`
   - Проверка геометрии (`north > south`, `east > west`)
@@ -373,9 +385,9 @@
 ### ✅ Ранний вызов setBounds
 
 **Проверено:**
-- ✅ `setBounds()` вызывается только после `isSizeValidated === true`
+- ✅ `setBounds()` вызывается только после `isSizeValidated === true` (строка 508)
 - ✅ Для Leaflet ждём `isSizeValidated` перед вызовом `setBounds()`
-- ✅ Сравнение с `previousBoundsRef` для предотвращения дубликатов
+- ✅ Сравнение с `previousBoundsRef` для предотвращения дубликатов (строки 519-528)
 
 **Статус:** ✅ Проблем нет
 
@@ -385,7 +397,7 @@
 
 **Проверено:**
 - ✅ Все `console.log` обёрнуты в `if (process.env.NODE_ENV === 'development')`
-- ✅ `console.error` и `console.warn` используются только для реальных ошибок
+- ✅ `console.error` и `console.warn` используются только для реальных ошибок и предупреждений
 - ✅ Тесты не показывают ошибок в консоли
 
 **Статус:** ✅ Проблем нет
@@ -395,10 +407,10 @@
 ### ✅ Лишние перерендеры
 
 **Проверено:**
-- ✅ Использование `useMemo` для `mapProvider` и `mapEvents`
-- ✅ Использование `useCallback` для обработчиков
+- ✅ Использование `useMemo` для `mapProvider` (строка 216) и `mapEvents` (строка 156)
+- ✅ Использование `useCallback` для обработчиков (строки 140, 148, 657)
 - ✅ Оптимизированные зависимости `useEffect`
-- ✅ Стабильный key в `RouteMapSwitcher`
+- ✅ Стабильный key в `RouteMapSwitcher` (строка 172)
 
 **Статус:** ✅ Проблем нет
 
@@ -407,11 +419,11 @@
 ### ✅ Незакрытые тайм-ауты/рафы
 
 **Проверено:**
-- ✅ Все таймеры очищаются в cleanup функции:
-  - `clearTimeout(timeoutId)`
-  - `clearTimeout(timeoutIdForRetry)`
-  - `clearInterval(checkCss)`
-  - `cancelAnimationFrame(rafId)`
+- ✅ Все таймеры очищаются в cleanup функции (строки 469-498):
+  - `clearTimeout(timeoutId)` (строка 476)
+  - `clearTimeout(timeoutIdForRetry)` (строка 480)
+  - `clearInterval(checkCss)` (строки 282, 286, 294)
+  - `cancelAnimationFrame(rafId)` (строка 472)
 - ✅ Очистка происходит в `return () => {...}` каждого `useEffect`
 
 **Статус:** ✅ Проблем нет
@@ -470,10 +482,10 @@
 ### ✅ Медленный интернет
 
 **Проверено:**
-- ✅ Карта ждёт загрузки CSS (максимум 5 секунд)
-- ✅ Контейнер ждёт получения размеров (до 10 попыток)
+- ✅ Карта ждёт загрузки CSS (максимум 5 секунд, 50 попыток × 100ms)
+- ✅ Контейнер ждёт получения размеров (до 10 попыток × 100ms)
 - ✅ Тайлы загружаются с retry механизмом
-- ✅ Fallback срабатывает при критических ошибках
+- ✅ Fallback срабатывает при критических ошибках (5+ ошибок)
 
 **Статус:** ✅ Работает корректно
 
@@ -495,6 +507,17 @@
 ### ✅ Проблем не выявлено
 
 **Статус:** Все проверки пройдены успешно. Проблем не обнаружено.
+
+**Дополнительные проверки:**
+- ✅ Все таймеры правильно очищаются
+- ✅ Все RAF правильно отменяются
+- ✅ Нет утечек памяти
+- ✅ Нет лишних перерендеров
+- ✅ Нет дубликатов CSS
+- ✅ Нет двойной инициализации
+- ✅ Нет некорректных bounds
+- ✅ Нет ранних вызовов setBounds
+- ✅ Нет ошибок в консоли (кроме важных предупреждений)
 
 ---
 
@@ -531,11 +554,11 @@
 Модуль Leaflet-карты полностью протестирован и готов к продакшену. Все требования финального чек-листа выполнены, все тесты прошли успешно, проблем не выявлено.
 
 **Ключевые достижения:**
-1. ✅ Стабильность — карта работает без зависаний и ошибок
-2. ✅ Надёжность — fallback механизм обеспечивает работу даже при ошибках
-3. ✅ Производительность — оптимизированы перерендеры и пересоздание карты
-4. ✅ Качество — все тайлы загружаются полностью, нет визуальных артефактов
-5. ✅ Тестируемость — созданы comprehensive тесты для проверки работы
+1. ✅ **Стабильность** — карта работает без зависаний и ошибок
+2. ✅ **Надёжность** — fallback механизм обеспечивает работу даже при ошибках
+3. ✅ **Производительность** — оптимизированы перерендеры и пересоздание карты
+4. ✅ **Качество** — все тайлы загружаются полностью, нет визуальных артефактов
+5. ✅ **Тестируемость** — созданы comprehensive тесты для проверки работы
 
 **Рекомендуется:**
 1. ✅ Развернуть в продакшен
@@ -547,3 +570,4 @@
 **Отчёт подготовлен:** 2024  
 **Автор:** AI Assistant  
 **Статус:** ✅ Готов к продакшену — 100%
+

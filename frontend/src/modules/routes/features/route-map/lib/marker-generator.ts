@@ -201,3 +201,4 @@ export function generateMapMarkers(segments: IRouteSegmentMapData[]): IMapMarker
   return markers;
 }
 
+

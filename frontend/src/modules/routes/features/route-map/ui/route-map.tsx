@@ -231,6 +231,13 @@ export function RouteMap({
       return;
     }
 
+    // Убеждаемся, что карта не создаётся в состояниях loading/error/empty state
+    // где контейнер может быть скрыт или иметь неправильные размеры
+    if (isLoading || initError || mapDataError || !mapData || !mapData.segments || mapData.segments.length === 0) {
+      // Не инициализируем карту в этих состояниях
+      return;
+    }
+
     // Сбрасываем предыдущую ошибку при перезапуске эффекта
     setInitError(null);
     setIsMapReady(false);
@@ -289,7 +296,7 @@ export function RouteMap({
       }
     }
 
-    // Проверяем, что контейнер имеет размеры
+    // Строгая проверка готовности контейнера - требуем реальные размеры (width > 50 и height > 50)
     const checkContainerSize = () => {
       const container = containerRef.current;
       if (!container) {
@@ -297,7 +304,8 @@ export function RouteMap({
       }
 
       const rect = container.getBoundingClientRect();
-      return rect.width > 0 && rect.height > 0;
+      // Строгая проверка: контейнер должен иметь реальные размеры
+      return rect.width > 50 && rect.height > 50;
     };
 
     // Счётчик попыток инициализации
@@ -335,15 +343,17 @@ export function RouteMap({
         return;
       }
 
-      // Логирование начала инициализации
-      console.log('Initializing map with provider:', mapProvider.constructor.name, 'providerType:', providerType, {
-        containerId,
-        hasContainer: !!containerRef.current,
-        containerSize: containerRef.current ? {
-          width: containerRef.current.getBoundingClientRect().width,
-          height: containerRef.current.getBoundingClientRect().height,
-        } : null,
-      });
+      // Логирование начала инициализации (только в dev режиме)
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Initializing map with provider:', mapProvider.constructor.name, 'providerType:', providerType, {
+          containerId,
+          hasContainer: !!containerRef.current,
+          containerSize: containerRef.current ? {
+            width: containerRef.current.getBoundingClientRect().width,
+            height: containerRef.current.getBoundingClientRect().height,
+          } : null,
+        });
+      }
 
       mapProvider
         .initialize({
@@ -356,24 +366,69 @@ export function RouteMap({
         .then(() => {
           mapProviderRef.current = mapProvider;
           setIsMapReady(true);
-          console.log('Map initialized successfully', {
-            providerType,
-            containerId,
-            isInitialized: mapProviderRef.current.isInitialized(),
-          });
+          if (process.env.NODE_ENV === 'development') {
+            console.log('Map initialized successfully', {
+              providerType,
+              containerId,
+              isInitialized: mapProviderRef.current.isInitialized(),
+            });
+          }
           
-          // Принудительно обновляем размеры карты после инициализации
+          // Двойной invalidateSize после инициализации карты
           if (providerType === 'leaflet' && mapProviderRef.current) {
-            // Для Leaflet нужно вызвать invalidateSize после инициализации
-            // Используем requestAnimationFrame для более надёжного ожидания рендера
+            // Первый invalidateSize сразу после init
+            if (typeof (mapProviderRef.current as { invalidateSize?: () => void }).invalidateSize === 'function') {
+              (mapProviderRef.current as { invalidateSize: () => void }).invalidateSize();
+            }
+            
+            // Второй invalidateSize внутри requestAnimationFrame / setTimeout(0)
             requestAnimationFrame(() => {
-              requestAnimationFrame(() => {
+              setTimeout(() => {
                 if (mapProviderRef.current && typeof (mapProviderRef.current as { invalidateSize?: () => void }).invalidateSize === 'function') {
                   (mapProviderRef.current as { invalidateSize: () => void }).invalidateSize();
-                  // Устанавливаем флаг после успешного обновления размеров
-                  setIsSizeValidated(true);
+                  
+                  // Повторная проверка размеров контейнера через небольшую задержку (100–200 мс)
+                  setTimeout(() => {
+                    const container = containerRef.current;
+                    if (container && mapProviderRef.current) {
+                      const rect = container.getBoundingClientRect();
+                      const previousWidth = container.getAttribute('data-previous-width');
+                      const previousHeight = container.getAttribute('data-previous-height');
+                      const currentWidth = Math.round(rect.width);
+                      const currentHeight = Math.round(rect.height);
+                      
+                      // Если контейнер получил новые размеры — повторно вызываем invalidateSize + setBounds
+                      if (
+                        previousWidth && previousHeight &&
+                        (currentWidth !== Number(previousWidth) || currentHeight !== Number(previousHeight))
+                      ) {
+                        if (process.env.NODE_ENV === 'development') {
+                          console.log('LeafletMapProvider: Container size changed, revalidating size', {
+                            previous: { width: previousWidth, height: previousHeight },
+                            current: { width: currentWidth, height: currentHeight },
+                          });
+                        }
+                        
+                        if (typeof (mapProviderRef.current as { invalidateSize?: () => void }).invalidateSize === 'function') {
+                          (mapProviderRef.current as { invalidateSize: () => void }).invalidateSize();
+                        }
+                        
+                        // Вызываем setBounds после invalidateSize, если bounds доступны
+                        if (bounds && boundsValid && mapProviderRef.current.isInitialized()) {
+                          mapProviderRef.current.setBounds(bounds, 50);
+                        }
+                      }
+                      
+                      // Сохраняем текущие размеры для следующей проверки
+                      container.setAttribute('data-previous-width', String(currentWidth));
+                      container.setAttribute('data-previous-height', String(currentHeight));
+                    }
+                    
+                    // Устанавливаем флаг после успешного обновления размеров
+                    setIsSizeValidated(true);
+                  }, 150);
                 }
-              });
+              }, 0);
             });
           } else {
             // Для не-Leaflet провайдеров сразу считаем размеры валидными
@@ -435,10 +490,16 @@ export function RouteMap({
       setIsMapReady(false);
       setIsSizeValidated(false);
       previousBoundsRef.current = null;
+      
+      // Очищаем сохранённые размеры контейнера
+      if (containerRef.current) {
+        containerRef.current.removeAttribute('data-previous-width');
+        containerRef.current.removeAttribute('data-previous-height');
+      }
     };
-  }, [mapProvider, showControls, providerType, isLeafletCssLoaded]);
+  }, [mapProvider, showControls, providerType, isLeafletCssLoaded, isLoading, initError, mapDataError, mapData]);
 
-  // Установка границ карты
+  // Установка границ карты - выполняется только после invalidateSize, когда карта точно получила размеры
   useEffect(() => {
     if (!mapProviderRef.current || !bounds || !boundsValid || !isMapReady) {
       return;
@@ -449,6 +510,7 @@ export function RouteMap({
     }
 
     // Для Leaflet ждём, пока размеры карты будут обновлены через invalidateSize
+    // setBounds должен выполняться только после invalidateSize
     if (providerType === 'leaflet' && !isSizeValidated) {
       return;
     }
@@ -490,14 +552,20 @@ export function RouteMap({
     };
   }, [mapEvents, isMapReady]);
 
-  // Рендеринг полилиний
+  // Рендеринг полилиний - выполняем только когда карта инициализирована и после успешного invalidateSize
   useEffect(() => {
     if (!mapProviderRef.current || !visibleSegments || visibleSegments.length === 0) {
       return;
     }
 
-    // Проверяем, что карта инициализирована
+    // Проверяем, что карта инициализирована и размеры валидированы
     if (!isMapReady || !mapProviderRef.current.isInitialized()) {
+      return;
+    }
+
+    // Для Leaflet ждём, пока размеры карты будут обновлены через invalidateSize
+    // Не рендерим полилинии преждевременно
+    if (providerType === 'leaflet' && !isSizeValidated) {
       return;
     }
 
@@ -527,16 +595,22 @@ export function RouteMap({
 
       polylinesRef.current.set(polylineId, segment.segmentId);
     }
-  }, [visibleSegments, selectedSegmentId, isMapReady]);
+  }, [visibleSegments, selectedSegmentId, isMapReady, isSizeValidated, providerType]);
 
-  // Рендеринг маркеров
+  // Рендеринг маркеров - выполняем только когда карта инициализирована и после успешного invalidateSize
   useEffect(() => {
     if (!mapProviderRef.current || !mapData || !mapData.segments || mapData.segments.length === 0) {
       return;
     }
 
-    // Проверяем, что карта инициализирована
+    // Проверяем, что карта инициализирована и размеры валидированы
     if (!isMapReady || !mapProviderRef.current.isInitialized()) {
+      return;
+    }
+
+    // Для Leaflet ждём, пока размеры карты будут обновлены через invalidateSize
+    // Не рендерим маркеры преждевременно
+    if (providerType === 'leaflet' && !isSizeValidated) {
       return;
     }
 
@@ -566,7 +640,7 @@ export function RouteMap({
 
       markersRef.current.set(markerId, marker.id);
     }
-  }, [mapData, isMapReady]);
+  }, [mapData, isMapReady, isSizeValidated, providerType]);
 
   // Очистка при размонтировании
   useEffect(() => {

@@ -56,3 +56,4 @@ npm install
 
 Ошибка `Module not found: Can't resolve 'leaflet'` должна исчезнуть при сборке или запуске Next.js.
 
+

@@ -430,3 +430,4 @@ for await (const batch of stopRepository.getAllRealStopsBatch()) {
 - Метрики должны быть экспортированы в Prometheus/Grafana
 - Индексы должны быть добавлены через миграции БД
 
+

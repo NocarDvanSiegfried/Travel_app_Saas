@@ -135,3 +135,4 @@
 - `frontend/e2e/routes-search.spec.ts` - обновлены селекторы и улучшены ожидания
 - `frontend/e2e/route-map-integration.spec.ts` - обновлён селектор контейнера карты
 
+

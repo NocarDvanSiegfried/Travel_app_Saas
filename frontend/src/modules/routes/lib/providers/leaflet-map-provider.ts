@@ -64,6 +64,11 @@ export class LeafletMapProvider implements IMapProvider {
   private polylineCounter = 0;
   private eventHandlers: Map<string, () => void> = new Map();
   private leafletModule: unknown | null = null; // Кэш для загруженного Leaflet модуля
+  private currentTileLayer: { remove: () => void; on: (event: string, handler: (error: unknown, tile: unknown) => void) => void } | null = null; // Текущий слой тайлов
+  private fallbackTileLayer: { addTo: (map: LeafletMap) => unknown } | null = null; // Fallback слой тайлов (CartoDB)
+  private tileErrorCount = 0; // Счётчик ошибок загрузки тайлов
+  private readonly MAX_TILE_ERRORS = 5; // Максимальное количество ошибок перед переключением на fallback
+  private fallbackTimeout: NodeJS.Timeout | null = null; // Таймер для отложенного переключения на fallback
 
   /**
    * Инициализирует карту Leaflet
@@ -79,11 +84,15 @@ export class LeafletMapProvider implements IMapProvider {
 
     return new Promise((resolve, reject) => {
       // Динамический импорт Leaflet (для SSR совместимости)
-      console.log('Loading Leaflet module...');
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Loading Leaflet module...');
+      }
       
       import('leaflet')
         .then((LModule) => {
-          console.log('Leaflet module loaded successfully');
+          if (process.env.NODE_ENV === 'development') {
+            console.log('Leaflet module loaded successfully');
+          }
           
           const L = (LModule as { default?: unknown }).default || LModule;
           
@@ -103,18 +112,24 @@ export class LeafletMapProvider implements IMapProvider {
           }
 
           try {
-            console.log('Creating Leaflet map with options:', {
-              containerId: options.containerId,
-              center: options.center,
-              zoom: options.zoom,
-            });
+            if (process.env.NODE_ENV === 'development') {
+              console.log('Creating Leaflet map with options:', {
+                containerId: options.containerId,
+                center: options.center,
+                zoom: options.zoom,
+              });
+            }
             const center: [number, number] = options.center || [62.0, 129.0];
             const zoom = options.zoom || 10;
 
             // Создаём карту
             const Leaflet = L as unknown as {
               map: (id: string, opts: unknown) => LeafletMap;
-              tileLayer: (url: string, opts: unknown) => { addTo: (map: LeafletMap) => unknown };
+              tileLayer: (url: string, opts: unknown) => {
+                addTo: (map: LeafletMap) => unknown;
+                on: (event: string, handler: (error: unknown, tile: unknown) => void) => void;
+                remove: () => void;
+              };
             };
             
             this.map = Leaflet.map(options.containerId, {
@@ -125,11 +140,61 @@ export class LeafletMapProvider implements IMapProvider {
               zoomControl: options.zoomControl !== false,
             });
 
-            // Добавляем тайлы OpenStreetMap
-            Leaflet.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-              attribution: '© OpenStreetMap contributors',
-              maxZoom: 19,
-            }).addTo(this.map);
+            // Добавляем тайлы от стабильного провайдера (OpenStreetMap France)
+            // Используем OpenStreetMap France как основной провайдер - стабильный, бесплатный, без ограничений
+            const tileLayer = Leaflet.tileLayer('https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png', {
+              attribution: '© OpenStreetMap France contributors | © OpenStreetMap contributors',
+              maxZoom: 20,
+              subdomains: ['a', 'b', 'c'],
+              detectRetina: true,
+              errorTileUrl: 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', // Прозрачный fallback тайл
+            });
+
+            // Обработка ошибок загрузки тайлов с fallback на CartoDB
+            tileLayer.on('tileerror', (error: unknown, tile: unknown) => {
+              this.tileErrorCount++;
+              
+              console.warn(`LeafletMapProvider: Tile loading error (${this.tileErrorCount}/${this.MAX_TILE_ERRORS})`, {
+                error,
+                tile,
+                tileUrl: (tile as { url?: string })?.url,
+                errorCount: this.tileErrorCount,
+              });
+
+              // Если накопилось критическое количество ошибок, переключаемся на fallback провайдер
+              // Используем задержку, чтобы дать Leaflet возможность повторить загрузку
+              if (this.map && !this.fallbackTileLayer && this.tileErrorCount >= this.MAX_TILE_ERRORS) {
+                // Очищаем предыдущий таймер, если он есть
+                if (this.fallbackTimeout) {
+                  clearTimeout(this.fallbackTimeout);
+                }
+
+                // Переключаемся на fallback через 2 секунды (даём время на retry)
+                this.fallbackTimeout = setTimeout(() => {
+                  if (this.map && !this.fallbackTileLayer) {
+                    console.warn('LeafletMapProvider: Switching to fallback tile provider due to multiple errors');
+                    this.createFallbackTileLayer(Leaflet);
+                  }
+                  this.fallbackTimeout = null;
+                }, 2000);
+              }
+            });
+
+            // Логирование успешной загрузки тайлов для мониторинга
+            tileLayer.on('tileload', () => {
+              // Сбрасываем счётчик ошибок при успешной загрузке
+              if (this.tileErrorCount > 0) {
+                this.tileErrorCount = Math.max(0, this.tileErrorCount - 1);
+              }
+
+              // Тайл успешно загружен (логируем только в dev режиме)
+              if (process.env.NODE_ENV === 'development') {
+                console.debug('LeafletMapProvider: Tile loaded successfully');
+              }
+            });
+
+            tileLayer.addTo(this.map);
+            this.currentTileLayer = tileLayer;
 
             // Подключаем события карты
             this.attachMapEvents();
@@ -147,11 +212,13 @@ export class LeafletMapProvider implements IMapProvider {
                 }
               }, 0);
             }
-            console.log('Leaflet map initialized successfully', {
-              containerId: options.containerId,
-              isMapReady: this.isMapReady,
-              hasMap: !!this.map,
-            });
+            if (process.env.NODE_ENV === 'development') {
+              console.log('Leaflet map initialized successfully', {
+                containerId: options.containerId,
+                isMapReady: this.isMapReady,
+                hasMap: !!this.map,
+              });
+            }
             resolve();
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : String(error);
@@ -569,6 +636,34 @@ export class LeafletMapProvider implements IMapProvider {
     this.clear();
     this.removeEvents();
 
+    // Очищаем таймер fallback
+    if (this.fallbackTimeout) {
+      clearTimeout(this.fallbackTimeout);
+      this.fallbackTimeout = null;
+    }
+
+    // Сбрасываем счётчик ошибок
+    this.tileErrorCount = 0;
+
+    // Удаляем tile layers
+    if (this.currentTileLayer) {
+      try {
+        this.currentTileLayer.remove();
+      } catch (error) {
+        console.warn('LeafletMapProvider: Error removing current tile layer on destroy', error);
+      }
+      this.currentTileLayer = null;
+    }
+
+    if (this.fallbackTileLayer) {
+      try {
+        (this.fallbackTileLayer as unknown as { remove: () => void }).remove();
+      } catch (error) {
+        console.warn('LeafletMapProvider: Error removing fallback tile layer on destroy', error);
+      }
+      this.fallbackTileLayer = null;
+    }
+
     if (this.map) {
       this.map.remove();
       this.map = null;
@@ -705,6 +800,68 @@ export class LeafletMapProvider implements IMapProvider {
     }
 
     return null;
+  }
+
+  /**
+   * Создаёт fallback tile layer (CartoDB) при ошибках основного провайдера
+   */
+  private createFallbackTileLayer(Leaflet: {
+    tileLayer: (url: string, opts: unknown) => {
+      addTo: (map: LeafletMap) => unknown;
+      on: (event: string, handler: (error: unknown, tile: unknown) => void) => void;
+      remove: () => void;
+    };
+  }): void {
+    if (!this.map || this.fallbackTileLayer) {
+      return;
+    }
+
+    console.warn('LeafletMapProvider: Switching to fallback tile provider (CartoDB)');
+
+    // Удаляем текущий слой тайлов
+    if (this.currentTileLayer) {
+      try {
+        this.currentTileLayer.remove();
+      } catch (error) {
+        console.warn('LeafletMapProvider: Error removing current tile layer', error);
+      }
+    }
+
+    // Создаём fallback слой (CartoDB Voyager - стабильный и бесплатный)
+    const fallbackLayer = Leaflet.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+      attribution: '© OpenStreetMap contributors | © CARTO',
+      maxZoom: 20,
+      subdomains: ['a', 'b', 'c', 'd'],
+      detectRetina: true,
+      errorTileUrl: 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7',
+    });
+
+    // Обработка ошибок fallback слоя
+    fallbackLayer.on('tileerror', (error: unknown, tile: unknown) => {
+      console.error('LeafletMapProvider: Fallback tile layer also failed', {
+        error,
+        tile,
+        tileUrl: (tile as { url?: string })?.url,
+      });
+    });
+
+    fallbackLayer.addTo(this.map);
+    this.fallbackTileLayer = fallbackLayer;
+    this.currentTileLayer = fallbackLayer as unknown as { remove: () => void; on: (event: string, handler: (error: unknown, tile: unknown) => void) => void };
+    
+    // Вызываем invalidateSize после переключения на fallback, чтобы карта корректно обновилась
+    // Это не мешает invalidateSize и fitBounds, а наоборот помогает им работать корректно
+    if (this.map && this.isMapReady) {
+      const nativeMap = this.map as unknown as { invalidateSize?: () => void };
+      if (nativeMap.invalidateSize) {
+        // Используем небольшую задержку для гарантии, что fallback слой полностью добавлен
+        setTimeout(() => {
+          if (nativeMap.invalidateSize) {
+            nativeMap.invalidateSize();
+          }
+        }, 100);
+      }
+    }
   }
 
   /**

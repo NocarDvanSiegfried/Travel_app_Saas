@@ -305,3 +305,4 @@ curl "http://localhost:5000/api/v1/cities?limit=100" | jq '.data | contains(["Я
 4. Проверить `pagination.total` в ответе
 5. Если проблема сохраняется, проверить логи на наличие ошибок в финальном шаге
 
+

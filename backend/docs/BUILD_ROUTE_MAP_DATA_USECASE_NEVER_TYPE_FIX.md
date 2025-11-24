@@ -104,3 +104,4 @@ if (realStop && realStop.cityId) { // ✅ Корректный тип: RealStop 
 
 **Готово к компиляции** ✅
 
+
