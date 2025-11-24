@@ -133,7 +133,7 @@ export function RouteDetailsView({ data }: RouteDetailsViewProps) {
         route={primaryRoute.route}
       />
 
-      <RouteMapWithAlternatives primaryRouteId={primaryRoute.route.Ref_Key} height="500px" />
+      <RouteMapWithAlternatives primaryRouteId={primaryRoute.route.Ref_Key} height="500px" providerType="leaflet" />
 
       <RouteSegments segments={primaryRoute.segments} />
 

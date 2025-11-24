@@ -24,7 +24,7 @@ import type { MarkerId, PolylineId } from '../map-provider.interface';
  */
 type LeafletMap = {
   setView: (center: [number, number], zoom: number) => void;
-  setBounds: (bounds: [[number, number], [number, number]], options?: { padding?: [number, number] }) => void;
+  fitBounds: (bounds: [[number, number], [number, number]] | { getNorth: () => number; getSouth: () => number; getEast: () => number; getWest: () => number }, options?: { padding?: [number, number] }) => void;
   getCenter: () => { lat: number; lng: number };
   getZoom: () => number;
   on: (event: string, handler: () => void) => void;
@@ -79,9 +79,21 @@ export class LeafletMapProvider implements IMapProvider {
 
     return new Promise((resolve, reject) => {
       // Динамический импорт Leaflet (для SSR совместимости)
+      console.log('Loading Leaflet module...');
+      
       import('leaflet')
         .then((LModule) => {
+          console.log('Leaflet module loaded successfully');
+          
           const L = (LModule as { default?: unknown }).default || LModule;
+          
+          if (!L) {
+            const error = new Error('Leaflet module loaded but L is undefined');
+            console.error('Failed to load Leaflet:', error);
+            reject(error);
+            return;
+          }
+          
           // Сохраняем загруженный модуль для последующего использования
           this.leafletModule = L;
           
@@ -91,6 +103,11 @@ export class LeafletMapProvider implements IMapProvider {
           }
 
           try {
+            console.log('Creating Leaflet map with options:', {
+              containerId: options.containerId,
+              center: options.center,
+              zoom: options.zoom,
+            });
             const center: [number, number] = options.center || [62.0, 129.0];
             const zoom = options.zoom || 10;
 
@@ -114,40 +131,171 @@ export class LeafletMapProvider implements IMapProvider {
               maxZoom: 19,
             }).addTo(this.map);
 
-            // Устанавливаем границы, если указаны
-            if (options.bounds) {
-              this.setBounds(options.bounds);
-            }
-
             // Подключаем события карты
             this.attachMapEvents();
 
+            // Устанавливаем флаг готовности карты
             this.isMapReady = true;
+
+            // Устанавливаем границы, если указаны (после установки isMapReady)
+            // Используем небольшую задержку для гарантии, что карта полностью отрендерена
+            if (options.bounds) {
+              // Используем setTimeout для гарантии, что карта готова к установке bounds
+              setTimeout(() => {
+                if (this.map && this.isMapReady) {
+                  this.setBounds(options.bounds);
+                }
+              }, 0);
+            }
+            console.log('Leaflet map initialized successfully', {
+              containerId: options.containerId,
+              isMapReady: this.isMapReady,
+              hasMap: !!this.map,
+            });
             resolve();
           } catch (error) {
-            reject(error);
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            const errorStack = error instanceof Error ? error.stack : undefined;
+            console.error('Error during Leaflet map creation:', error, {
+              containerId: options.containerId,
+              errorMessage,
+              errorStack,
+            });
+            reject(error instanceof Error ? error : new Error(errorMessage));
           }
         })
         .catch((error) => {
-          reject(new Error(`Failed to load Leaflet: ${error.message}`));
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          const errorStack = error instanceof Error ? error.stack : undefined;
+          console.error('Failed to load Leaflet module:', error, {
+            errorMessage,
+            errorStack,
+            isWindowDefined: typeof window !== 'undefined',
+          });
+          reject(new Error(`Failed to load Leaflet: ${errorMessage}`));
         });
     });
   }
 
   /**
    * Устанавливает границы карты
+   * Использует fitBounds для подгонки карты под указанные границы
    */
   setBounds(bounds: IMapBounds, padding = 0): void {
     if (!this.map || !this.isMapReady) {
+      console.warn('LeafletMapProvider.setBounds: Map is not initialized or not ready');
       return;
     }
 
-    const leafletBounds: [[number, number], [number, number]] = [
-      [bounds.south, bounds.west],
-      [bounds.north, bounds.east],
-    ];
+    // Валидация bounds: проверяем, что bounds существуют
+    if (!bounds) {
+      console.warn('LeafletMapProvider.setBounds: Bounds are null or undefined');
+      return;
+    }
 
-    this.map.setBounds(leafletBounds, padding > 0 ? { padding: [padding, padding] } : undefined);
+    // Валидация bounds: проверяем, что все значения являются числами и конечными
+    const { north, south, east, west } = bounds;
+    if (
+      typeof north !== 'number' ||
+      typeof south !== 'number' ||
+      typeof east !== 'number' ||
+      typeof west !== 'number' ||
+      !Number.isFinite(north) ||
+      !Number.isFinite(south) ||
+      !Number.isFinite(east) ||
+      !Number.isFinite(west)
+    ) {
+      console.warn('LeafletMapProvider.setBounds: Bounds contain invalid values', {
+        north,
+        south,
+        east,
+        west,
+      });
+      // Используем fallback - центрирование по центру bounds, если они частично валидны
+      const centerLat = Number.isFinite(north) && Number.isFinite(south) ? (north + south) / 2 : 62.0;
+      const centerLng = Number.isFinite(east) && Number.isFinite(west) ? (east + west) / 2 : 129.0;
+      this.setCenter([centerLat, centerLng]);
+      return;
+    }
+
+    // Валидация bounds: проверяем геометрию (north > south, east > west)
+    if (north <= south || east <= west) {
+      console.warn('LeafletMapProvider.setBounds: Invalid bounds geometry', {
+        north,
+        south,
+        east,
+        west,
+        latDiff: north - south,
+        lngDiff: east - west,
+      });
+      // Используем fallback - центрирование по центру bounds
+      const centerLat = (north + south) / 2;
+      const centerLng = (east + west) / 2;
+      this.setCenter([centerLat, centerLng]);
+      return;
+    }
+
+    // Получаем Leaflet из кэша или window
+    const L = this.getLeaflet();
+    if (!L) {
+      console.error('LeafletMapProvider.setBounds: Leaflet is not loaded');
+      return;
+    }
+
+    try {
+      // Создаём LatLngBounds объект для Leaflet
+      const Leaflet = L as unknown as {
+        latLngBounds: (southWest: [number, number], northEast: [number, number]) => {
+          getNorth: () => number;
+          getSouth: () => number;
+          getEast: () => number;
+          getWest: () => number;
+        };
+      };
+
+      // Создаём bounds в формате Leaflet: [[south, west], [north, east]]
+      const southWest: [number, number] = [south, west];
+      const northEast: [number, number] = [north, east];
+      
+      // Используем LatLngBounds для создания правильного объекта bounds
+      const leafletBounds = Leaflet.latLngBounds(southWest, northEast);
+
+      // Проверяем, что bounds не слишком маленькие (минимальный размер 0.001 градуса)
+      const latDiff = north - south;
+      const lngDiff = east - west;
+      const MIN_BOUNDS_SIZE = 0.001;
+
+      if (latDiff < MIN_BOUNDS_SIZE || lngDiff < MIN_BOUNDS_SIZE) {
+        console.warn('LeafletMapProvider.setBounds: Bounds are too small, using center instead', {
+          latDiff,
+          lngDiff,
+        });
+        // Используем fallback - центрирование по центру bounds
+        const centerLat = (north + south) / 2;
+        const centerLng = (east + west) / 2;
+        this.setCenter([centerLat, centerLng]);
+        return;
+      }
+
+      // Используем fitBounds вместо setBounds (Leaflet не имеет метода setBounds)
+      const options = padding > 0 ? { padding: [padding, padding] as [number, number] } : undefined;
+      this.map.fitBounds(leafletBounds, options);
+    } catch (error) {
+      console.error('LeafletMapProvider.setBounds: Error setting bounds', error, {
+        bounds,
+        padding,
+        isMapReady: this.isMapReady,
+        hasMap: !!this.map,
+      });
+      // Fallback: используем центрирование по центру bounds
+      try {
+        const centerLat = (north + south) / 2;
+        const centerLng = (east + west) / 2;
+        this.setCenter([centerLat, centerLng]);
+      } catch (fallbackError) {
+        console.error('LeafletMapProvider.setBounds: Fallback center also failed', fallbackError);
+      }
+    }
   }
 
   /**
@@ -208,14 +356,21 @@ export class LeafletMapProvider implements IMapProvider {
       iconUrl: string;
       iconSize: [number, number];
       iconAnchor: [number, number];
+      zIndexOffset?: number;
     } = {
       iconUrl: options?.iconUrl || this.getDefaultMarkerIcon(options?.isTransfer),
       iconSize: options?.iconSize || [32, 32],
       iconAnchor: options?.iconAnchor || [16, 32],
+      // Для transfer маркеров устанавливаем более высокий zIndex, чтобы они отображались поверх обычных
+      zIndexOffset: options?.isTransfer ? 1000 : 0,
     };
 
     const icon = (L as { icon: (opts: unknown) => unknown }).icon(iconOptions);
-    const marker = (L as { marker: (coords: [number, number], opts: { icon: unknown }) => { addTo: (map: unknown) => LeafletMarker } }).marker([coordinate[0], coordinate[1]], { icon }).addTo(
+    const marker = (L as { marker: (coords: [number, number], opts: { icon: unknown; zIndexOffset?: number }) => { addTo: (map: unknown) => LeafletMarker } }).marker([coordinate[0], coordinate[1]], { 
+      icon,
+      // Дополнительно устанавливаем zIndexOffset на уровне маркера для transfer точек
+      zIndexOffset: options?.isTransfer ? 1000 : undefined,
+    }).addTo(
       this.map as unknown
     ) as unknown as LeafletMarker;
 
@@ -434,6 +589,22 @@ export class LeafletMapProvider implements IMapProvider {
    */
   getNativeMap(): unknown {
     return this.map;
+  }
+
+  /**
+   * Обновляет размеры карты (для Leaflet)
+   * Полезно после изменения размеров контейнера
+   */
+  invalidateSize(): void {
+    if (!this.map || !this.isMapReady) {
+      return;
+    }
+
+    // Для Leaflet вызываем invalidateSize на нативном объекте карты
+    const nativeMap = this.map as unknown as { invalidateSize?: () => void };
+    if (nativeMap.invalidateSize) {
+      nativeMap.invalidateSize();
+    }
   }
 
   /**

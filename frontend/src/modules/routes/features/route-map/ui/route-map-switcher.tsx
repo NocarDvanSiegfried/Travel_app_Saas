@@ -163,13 +163,21 @@ export const RouteMapSwitcher = memo(function RouteMapSwitcher({
 
       {/* Карта */}
       <div className="relative">
-        <RouteMap
-          route={currentRoute}
-          height={height}
-          showLegend={showLegend}
-          providerType={providerType}
-          key={preserveMapPosition ? 'preserve' : currentRoute?.routeId}
-        />
+        {currentRoute ? (
+          <RouteMap
+            route={currentRoute}
+            height={height}
+            showLegend={showLegend}
+            providerType={providerType}
+            key={preserveMapPosition ? 'preserve' : `route-map-${providerType}-${currentRoute.routeId}-${currentRouteIndex}`}
+          />
+        ) : (
+          <div className="card p-lg" style={{ height }}>
+            <div className="flex items-center justify-center h-full">
+              <p className="text-secondary">Маршрут не найден</p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
