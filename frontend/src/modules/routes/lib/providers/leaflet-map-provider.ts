@@ -68,7 +68,117 @@ export class LeafletMapProvider implements IMapProvider {
   private fallbackTileLayer: { addTo: (map: LeafletMap) => unknown } | null = null; // Fallback слой тайлов (CartoDB)
   private tileErrorCount = 0; // Счётчик ошибок загрузки тайлов
   private readonly MAX_TILE_ERRORS = 5; // Максимальное количество ошибок перед переключением на fallback
+  private readonly TILE_LOAD_TIMEOUT = 4000; // Таймаут загрузки тайла в миллисекундах (4 секунды)
   private fallbackTimeout: NodeJS.Timeout | null = null; // Таймер для отложенного переключения на fallback
+  private tileErrorTimestamps: number[] = []; // Временные метки ошибок для диагностики
+  private tileLoadTimestamps: Map<string, number> = new Map(); // Временные метки начала загрузки тайлов
+  private tileTimeoutTimers: Map<string, NodeJS.Timeout> = new Map(); // Таймеры таймаутов для каждого тайла
+  private tileLoadDurations: number[] = []; // Длительности загрузки тайлов для диагностики
+
+  /**
+   * Диагностика DNS и скорости загрузки тайлов (только в dev-режиме)
+   */
+  private async diagnoseTileServer(): Promise<void> {
+    if (process.env.NODE_ENV !== 'development') {
+      return;
+    }
+
+    console.log('[TILE DIAGNOSTICS] Starting tile server diagnostics...');
+
+    const subdomains = ['a', 'b', 'c'];
+    const baseUrl = 'tile.openstreetmap.fr';
+    const testPath = '/osmfr/10/500/300.png';
+
+    // Проверка DNS для каждого поддомена
+    for (const subdomain of subdomains) {
+      const hostname = `${subdomain}.${baseUrl}`;
+      const fullUrl = `https://${hostname}${testPath}`;
+
+      try {
+        // Проверка DNS через fetch с коротким таймаутом
+        const startTime = performance.now();
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+        try {
+          const response = await fetch(fullUrl, {
+            method: 'HEAD',
+            signal: controller.signal,
+            cache: 'no-cache',
+          });
+          clearTimeout(timeoutId);
+          const duration = performance.now() - startTime;
+
+          console.log(`[TILE DIAGNOSTICS] ${hostname}`, {
+            status: response.status,
+            statusText: response.statusText,
+            duration: `${duration.toFixed(2)}ms`,
+            headers: {
+              'content-type': response.headers.get('content-type'),
+              'content-length': response.headers.get('content-length'),
+            },
+          });
+        } catch (fetchError) {
+          clearTimeout(timeoutId);
+          const duration = performance.now() - startTime;
+          
+          if (fetchError instanceof Error && fetchError.name === 'AbortError') {
+            console.warn(`[TILE DIAGNOSTICS] ${hostname} - Timeout after ${duration.toFixed(2)}ms`);
+          } else {
+            console.error(`[TILE DIAGNOSTICS] ${hostname} - Error`, {
+              error: fetchError instanceof Error ? fetchError.message : String(fetchError),
+              duration: `${duration.toFixed(2)}ms`,
+            });
+          }
+        }
+      } catch (error) {
+        console.error(`[TILE DIAGNOSTICS] ${hostname} - Failed to test`, {
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+
+    // Проверка CartoDB fallback
+    const cartoSubdomains = ['a', 'b', 'c', 'd'];
+    const cartoBaseUrl = 'basemaps.cartocdn.com';
+    const cartoTestPath = '/rastertiles/voyager/10/500/300.png';
+
+    console.log('[TILE DIAGNOSTICS] Testing CartoDB fallback...');
+    for (const subdomain of cartoSubdomains.slice(0, 2)) {
+      const hostname = `${subdomain}.${cartoBaseUrl}`;
+      const fullUrl = `https://${hostname}${cartoTestPath}`;
+
+      try {
+        const startTime = performance.now();
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+        try {
+          const response = await fetch(fullUrl, {
+            method: 'HEAD',
+            signal: controller.signal,
+            cache: 'no-cache',
+          });
+          clearTimeout(timeoutId);
+          const duration = performance.now() - startTime;
+
+          console.log(`[TILE DIAGNOSTICS] CartoDB ${hostname}`, {
+            status: response.status,
+            duration: `${duration.toFixed(2)}ms`,
+          });
+        } catch (fetchError) {
+          clearTimeout(timeoutId);
+          const duration = performance.now() - startTime;
+          console.warn(`[TILE DIAGNOSTICS] CartoDB ${hostname} - Error`, {
+            error: fetchError instanceof Error ? fetchError.message : String(fetchError),
+            duration: `${duration.toFixed(2)}ms`,
+          });
+        }
+      } catch (error) {
+        console.error(`[TILE DIAGNOSTICS] CartoDB ${hostname} - Failed to test`, error);
+      }
+    }
+  }
 
   /**
    * Инициализирует карту Leaflet
@@ -152,49 +262,140 @@ export class LeafletMapProvider implements IMapProvider {
 
             // Обработка ошибок загрузки тайлов с fallback на CartoDB
             tileLayer.on('tileerror', (error: unknown, tile: unknown) => {
-              this.tileErrorCount++;
+              const now = Date.now();
+              const tileUrl = (tile as { url?: string })?.url || 'unknown';
               
-              console.warn(`LeafletMapProvider: Tile loading error (${this.tileErrorCount}/${this.MAX_TILE_ERRORS})`, {
-                error,
-                tile,
-                tileUrl: (tile as { url?: string })?.url,
-                errorCount: this.tileErrorCount,
-              });
-
-              // Если накопилось критическое количество ошибок, переключаемся на fallback провайдер
-              // Используем задержку, чтобы дать Leaflet возможность повторить загрузку
-              if (this.map && !this.fallbackTileLayer && this.tileErrorCount >= this.MAX_TILE_ERRORS) {
-                // Очищаем предыдущий таймер, если он есть
-                if (this.fallbackTimeout) {
-                  clearTimeout(this.fallbackTimeout);
-                }
-
-                // Переключаемся на fallback через 2 секунды (даём время на retry)
-                this.fallbackTimeout = setTimeout(() => {
-                  if (this.map && !this.fallbackTileLayer) {
-                    console.warn('LeafletMapProvider: Switching to fallback tile provider due to multiple errors');
-                    this.createFallbackTileLayer(Leaflet);
-                  }
-                  this.fallbackTimeout = null;
-                }, 2000);
+              this.tileErrorCount++;
+              this.tileErrorTimestamps.push(now);
+              
+              // Очищаем старые метки (старше 10 секунд)
+              this.tileErrorTimestamps = this.tileErrorTimestamps.filter(ts => now - ts < 10000);
+              
+              // Подсчитываем ошибки за последнюю секунду
+              const errorsInLastSecond = this.tileErrorTimestamps.filter(ts => now - ts < 1000).length;
+              
+              // Диагностическое логирование в dev-режиме
+              if (process.env.NODE_ENV === 'development') {
+                const loadStartTime = this.tileLoadTimestamps.get(tileUrl);
+                const loadDuration = loadStartTime ? now - loadStartTime : null;
+                
+                console.warn(`[TILE DIAGNOSTICS] Tile error #${this.tileErrorCount}/${this.MAX_TILE_ERRORS}`, {
+                  tileUrl,
+                  error: error instanceof Error ? error.message : String(error),
+                  errorType: error instanceof Error ? error.constructor.name : typeof error,
+                  errorCount: this.tileErrorCount,
+                  errorsInLastSecond,
+                  errorsInLast10Seconds: this.tileErrorTimestamps.length,
+                  loadDuration: loadDuration !== null ? `${loadDuration}ms` : 'unknown',
+                  timestamp: new Date(now).toISOString(),
+                  willTriggerFallback: this.tileErrorCount >= this.MAX_TILE_ERRORS,
+                });
+              } else {
+                console.warn(`LeafletMapProvider: Tile loading error (${this.tileErrorCount}/${this.MAX_TILE_ERRORS})`, {
+                  error,
+                  tile,
+                  tileUrl,
+                  errorCount: this.tileErrorCount,
+                });
               }
+              
+              // Удаляем метку загрузки
+              this.tileLoadTimestamps.delete(tileUrl);
+
+              // Обрабатываем ошибку и проверяем необходимость fallback
+              this.handleTileError(Leaflet);
             });
 
             // Логирование успешной загрузки тайлов для мониторинга
-            tileLayer.on('tileload', () => {
+            tileLayer.on('tileload', (event: unknown) => {
+              const now = Date.now();
+              const tileUrl = (event as { tile?: { url?: string } })?.tile?.url || 'unknown';
+              
+              // Очищаем таймаут для этого тайла
+              const timeoutId = this.tileTimeoutTimers.get(tileUrl);
+              if (timeoutId) {
+                clearTimeout(timeoutId);
+                this.tileTimeoutTimers.delete(tileUrl);
+              }
+              
               // Сбрасываем счётчик ошибок при успешной загрузке
               if (this.tileErrorCount > 0) {
                 this.tileErrorCount = Math.max(0, this.tileErrorCount - 1);
               }
 
-              // Тайл успешно загружен (логируем только в dev режиме)
+              // Диагностическое логирование в dev-режиме
               if (process.env.NODE_ENV === 'development') {
-                console.debug('LeafletMapProvider: Tile loaded successfully');
+                const loadStartTime = this.tileLoadTimestamps.get(tileUrl);
+                const loadDuration = loadStartTime ? now - loadStartTime : null;
+                
+                if (loadDuration !== null) {
+                  this.tileLoadDurations.push(loadDuration);
+                  // Храним только последние 100 значений
+                  if (this.tileLoadDurations.length > 100) {
+                    this.tileLoadDurations.shift();
+                  }
+                  
+                  // Проверяем, не медленный ли сервер (среднее время > 2 секунды)
+                  const avgDuration = this.tileLoadDurations.reduce((a, b) => a + b, 0) / this.tileLoadDurations.length;
+                  if (avgDuration > 2000 && this.tileLoadDurations.length >= 5) {
+                    console.warn('[TILE SERVER SLOW]', {
+                      averageLoadTime: `${avgDuration.toFixed(2)}ms`,
+                      sampleSize: this.tileLoadDurations.length,
+                      currentTileDuration: `${loadDuration}ms`,
+                    });
+                  }
+                }
+                
+                console.debug('[TILE LOAD OK]', {
+                  tileUrl,
+                  loadDuration: loadDuration !== null ? `${loadDuration}ms` : 'unknown',
+                  timestamp: new Date(now).toISOString(),
+                  currentErrorCount: this.tileErrorCount,
+                });
               }
+              
+              // Удаляем метку загрузки
+              this.tileLoadTimestamps.delete(tileUrl);
+            });
+            
+            // Отслеживаем начало загрузки тайлов для измерения времени и установки таймаута
+            tileLayer.on('tileloadstart', (event: unknown) => {
+              const tileUrl = (event as { tile?: { url?: string } })?.tile?.url || 'unknown';
+              const now = Date.now();
+              
+              this.tileLoadTimestamps.set(tileUrl, now);
+              
+              // Диагностическое логирование в dev-режиме
+              if (process.env.NODE_ENV === 'development') {
+                console.debug('[TILE LOAD START]', {
+                  tileUrl,
+                  timestamp: new Date(now).toISOString(),
+                });
+              }
+              
+              // Устанавливаем таймаут для этого тайла
+              const timeoutId = setTimeout(() => {
+                // Проверяем, не загрузился ли тайл за это время
+                if (this.tileLoadTimestamps.has(tileUrl)) {
+                  // Тайл не загрузился вовремя - обрабатываем как ошибку
+                  this.handleTileTimeout(tileUrl, Leaflet);
+                }
+                this.tileTimeoutTimers.delete(tileUrl);
+              }, this.TILE_LOAD_TIMEOUT);
+              
+              this.tileTimeoutTimers.set(tileUrl, timeoutId);
             });
 
             tileLayer.addTo(this.map);
             this.currentTileLayer = tileLayer;
+
+            // Запускаем диагностику tile-сервера в dev-режиме
+            if (process.env.NODE_ENV === 'development') {
+              // Запускаем диагностику асинхронно, не блокируя инициализацию
+              this.diagnoseTileServer().catch((error) => {
+                console.warn('[TILE DIAGNOSTICS] Diagnostic failed', error);
+              });
+            }
 
             // Подключаем события карты
             this.attachMapEvents();
@@ -642,8 +843,17 @@ export class LeafletMapProvider implements IMapProvider {
       this.fallbackTimeout = null;
     }
 
+    // Очищаем все таймеры таймаутов тайлов
+    for (const [tileUrl, timeoutId] of this.tileTimeoutTimers) {
+      clearTimeout(timeoutId);
+    }
+    this.tileTimeoutTimers.clear();
+
     // Сбрасываем счётчик ошибок
     this.tileErrorCount = 0;
+    this.tileErrorTimestamps = [];
+    this.tileLoadTimestamps.clear();
+    this.tileLoadDurations = [];
 
     // Удаляем tile layers
     if (this.currentTileLayer) {
@@ -803,6 +1013,78 @@ export class LeafletMapProvider implements IMapProvider {
   }
 
   /**
+   * Обрабатывает таймаут загрузки тайла
+   */
+  private handleTileTimeout(tileUrl: string, Leaflet: {
+    tileLayer: (url: string, opts: unknown) => {
+      addTo: (map: LeafletMap) => unknown;
+      on: (event: string, handler: (error: unknown, tile: unknown) => void) => void;
+      remove: () => void;
+    };
+  }): void {
+    const now = Date.now();
+    const loadStartTime = this.tileLoadTimestamps.get(tileUrl);
+    const loadDuration = loadStartTime ? now - loadStartTime : null;
+    
+    // Диагностическое логирование в dev-режиме
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('[TILE TIMEOUT]', {
+        tileUrl,
+        timeout: `${this.TILE_LOAD_TIMEOUT}ms`,
+        loadDuration: loadDuration !== null ? `${loadDuration}ms` : 'unknown',
+        timestamp: new Date(now).toISOString(),
+      });
+    }
+    
+    // Обрабатываем таймаут как ошибку
+    this.tileErrorCount++;
+    this.tileErrorTimestamps.push(now);
+    
+    // Очищаем старые метки (старше 10 секунд)
+    this.tileErrorTimestamps = this.tileErrorTimestamps.filter(ts => now - ts < 10000);
+    
+    // Удаляем метку загрузки
+    this.tileLoadTimestamps.delete(tileUrl);
+    
+    // Обрабатываем ошибку и проверяем необходимость fallback
+    this.handleTileError(Leaflet);
+  }
+
+  /**
+   * Обрабатывает ошибку тайла и активирует fallback при необходимости
+   */
+  private handleTileError(Leaflet: {
+    tileLayer: (url: string, opts: unknown) => {
+      addTo: (map: LeafletMap) => unknown;
+      on: (event: string, handler: (error: unknown, tile: unknown) => void) => void;
+      remove: () => void;
+    };
+  }): void {
+    // Если накопилось критическое количество ошибок, переключаемся на fallback провайдер немедленно
+    if (this.map && !this.fallbackTileLayer && this.tileErrorCount >= this.MAX_TILE_ERRORS) {
+      // Очищаем предыдущий таймер fallback, если он есть
+      if (this.fallbackTimeout) {
+        clearTimeout(this.fallbackTimeout);
+        this.fallbackTimeout = null;
+      }
+
+      const errorsInLastSecond = this.tileErrorTimestamps.filter(ts => Date.now() - ts < 1000).length;
+      
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('[TILE FALLBACK ACTIVATED]', {
+          errorCount: this.tileErrorCount,
+          errorsInLastSecond,
+          errorsInLast10Seconds: this.tileErrorTimestamps.length,
+          timestamp: new Date().toISOString(),
+        });
+      }
+
+      // Немедленно переключаемся на fallback (без задержки)
+      this.createFallbackTileLayer(Leaflet);
+    }
+  }
+
+  /**
    * Создаёт fallback tile layer (CartoDB) при ошибках основного провайдера
    */
   private createFallbackTileLayer(Leaflet: {
@@ -816,7 +1098,16 @@ export class LeafletMapProvider implements IMapProvider {
       return;
     }
 
-    console.warn('LeafletMapProvider: Switching to fallback tile provider (CartoDB)');
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('[TILE FALLBACK ACTIVATED] Switching to fallback tile provider (CartoDB)', {
+        errorCount: this.tileErrorCount,
+        errorsInLastSecond: this.tileErrorTimestamps.filter(ts => Date.now() - ts < 1000).length,
+        errorsInLast10Seconds: this.tileErrorTimestamps.length,
+        timestamp: new Date().toISOString(),
+      });
+    } else {
+      console.warn('LeafletMapProvider: Switching to fallback tile provider (CartoDB)');
+    }
 
     // Удаляем текущий слой тайлов
     if (this.currentTileLayer) {
@@ -845,21 +1136,73 @@ export class LeafletMapProvider implements IMapProvider {
       });
     });
 
+    // Добавляем таймауты для fallback слоя тоже
+    fallbackLayer.on('tileloadstart', (event: unknown) => {
+      const tileUrl = (event as { tile?: { url?: string } })?.tile?.url || 'unknown';
+      const now = Date.now();
+      
+      this.tileLoadTimestamps.set(tileUrl, now);
+      
+      // Устанавливаем таймаут для fallback тайла
+      const timeoutId = setTimeout(() => {
+        if (this.tileLoadTimestamps.has(tileUrl)) {
+          if (process.env.NODE_ENV === 'development') {
+            console.warn('[TILE TIMEOUT] Fallback tile timeout', {
+              tileUrl,
+              timeout: `${this.TILE_LOAD_TIMEOUT}ms`,
+            });
+          }
+        }
+        this.tileTimeoutTimers.delete(tileUrl);
+      }, this.TILE_LOAD_TIMEOUT);
+      
+      this.tileTimeoutTimers.set(tileUrl, timeoutId);
+    });
+
+    fallbackLayer.on('tileload', (event: unknown) => {
+      const tileUrl = (event as { tile?: { url?: string } })?.tile?.url || 'unknown';
+      
+      // Очищаем таймаут для этого тайла
+      const timeoutId = this.tileTimeoutTimers.get(tileUrl);
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        this.tileTimeoutTimers.delete(tileUrl);
+      }
+      
+      // Удаляем метку загрузки
+      this.tileLoadTimestamps.delete(tileUrl);
+    });
+
     fallbackLayer.addTo(this.map);
     this.fallbackTileLayer = fallbackLayer;
     this.currentTileLayer = fallbackLayer as unknown as { remove: () => void; on: (event: string, handler: (error: unknown, tile: unknown) => void) => void };
     
-    // Вызываем invalidateSize после переключения на fallback, чтобы карта корректно обновилась
-    // Это не мешает invalidateSize и fitBounds, а наоборот помогает им работать корректно
+    // Диагностическое логирование активации fallback
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[TILE FALLBACK ACTIVATED] Fallback tile layer activated', {
+        provider: 'CartoDB Voyager',
+        url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+        subdomains: ['a', 'b', 'c', 'd'],
+        timestamp: new Date().toISOString(),
+        previousErrorCount: this.tileErrorCount,
+        errorsInLastSecond: this.tileErrorTimestamps.filter(ts => Date.now() - ts < 1000).length,
+        errorsInLast10Seconds: this.tileErrorTimestamps.length,
+      });
+    }
+    
+    // Немедленно вызываем invalidateSize после переключения на fallback
     if (this.map && this.isMapReady) {
       const nativeMap = this.map as unknown as { invalidateSize?: () => void };
       if (nativeMap.invalidateSize) {
-        // Используем небольшую задержку для гарантии, что fallback слой полностью добавлен
-        setTimeout(() => {
+        // Вызываем сразу, без задержки
+        nativeMap.invalidateSize();
+        
+        // Дополнительный вызов через requestAnimationFrame для гарантии
+        requestAnimationFrame(() => {
           if (nativeMap.invalidateSize) {
             nativeMap.invalidateSize();
           }
-        }, 100);
+        });
       }
     }
   }
