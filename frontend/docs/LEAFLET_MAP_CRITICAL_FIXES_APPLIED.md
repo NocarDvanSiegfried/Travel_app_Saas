@@ -282,3 +282,4 @@ key={preserveMapPosition ? 'preserve' : `route-map-${providerType}`}
 Карта Leaflet должна корректно инициализироваться и отображаться на странице `/routes/details`.
 
 
+

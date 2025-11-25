@@ -514,3 +514,4 @@ normalized = normalized
 4. Убедиться, что виртуальные остановки созданы для всех городов из unified reference
 
 
+

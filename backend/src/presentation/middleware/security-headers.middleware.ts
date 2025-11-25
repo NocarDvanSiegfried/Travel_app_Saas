@@ -34,8 +34,19 @@ export function securityHeaders(req: Request, res: Response, next: NextFunction)
     );
   }
 
-  // Content Security Policy (basic)
-  const csp = process.env.CSP_POLICY || "default-src 'self'";
+  // Content Security Policy (Leaflet-compatible)
+  // Allow Leaflet, Yandex Maps, tile servers, and external resources
+  const csp = process.env.CSP_POLICY || [
+    "default-src 'self'",
+    "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://api-maps.yandex.ru https://unpkg.com",
+    "style-src 'self' 'unsafe-inline' https://unpkg.com",
+    "img-src 'self' data: blob: https: http:",
+    "font-src 'self' data:",
+    "connect-src 'self' https: http:",
+    "worker-src blob:",
+    "child-src blob:",
+    "frame-src 'none'",
+  ].join('; ');
   res.setHeader('Content-Security-Policy', csp);
 
   // Referrer Policy

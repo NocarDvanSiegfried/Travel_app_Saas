@@ -136,3 +136,4 @@
 - `frontend/e2e/route-map-integration.spec.ts` - обновлён селектор контейнера карты
 
 
+

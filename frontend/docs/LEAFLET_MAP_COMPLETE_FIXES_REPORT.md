@@ -462,3 +462,4 @@ document.querySelectorAll('link[href*="leaflet"]').length
 - ✅ При медленном рендеринге
 
 
+

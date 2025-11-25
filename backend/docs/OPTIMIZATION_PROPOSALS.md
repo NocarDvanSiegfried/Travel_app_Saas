@@ -431,3 +431,4 @@ for await (const batch of stopRepository.getAllRealStopsBatch()) {
 - Индексы должны быть добавлены через миграции БД
 
 
+

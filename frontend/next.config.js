@@ -39,7 +39,7 @@ const nextConfig = {
     minimumCacheTTL: 60,
     // Оптимизация загрузки
     dangerouslyAllowSVG: true,
-    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; img-src 'self' data: blob: https: http:; style-src 'self' 'unsafe-inline';",
   },
   // Security headers для Best Practices
   async headers() {
@@ -73,7 +73,17 @@ const nextConfig = {
           },
           {
             key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: http: localhost:9000; font-src 'self' data:; connect-src 'self' http://localhost:3000 http://localhost:5000 https:;",
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://api-maps.yandex.ru https://unpkg.com",
+              "style-src 'self' 'unsafe-inline' https://unpkg.com",
+              "img-src 'self' data: blob: https: http: localhost:9000",
+              "font-src 'self' data:",
+              "connect-src 'self' http://localhost:3000 http://localhost:5000 https:",
+              "worker-src blob:",
+              "child-src blob:",
+              "frame-src 'none'",
+            ].join('; '),
           },
         ],
       },
