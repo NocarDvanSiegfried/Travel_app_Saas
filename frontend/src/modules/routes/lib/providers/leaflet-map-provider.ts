@@ -305,6 +305,8 @@ export class LeafletMapProvider implements IMapProvider {
               minZoom: options.minZoom,
               maxZoom: options.maxZoom,
               zoomControl: options.zoomControl !== false,
+              // Отключаем attribution control глобально
+              attributionControl: false,
               // Оптимизация производительности карты
               preferCanvas: false, // Используем DOM рендеринг для лучшей производительности
             });
@@ -314,7 +316,7 @@ export class LeafletMapProvider implements IMapProvider {
             // Это самый быстрый и стабильный провайдер для региона Якутии
             const primaryTileUrl = 'https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png';
             const tileLayer = Leaflet.tileLayer(primaryTileUrl, {
-              attribution: '© OpenStreetMap France contributors | © OpenStreetMap contributors',
+              attribution: '', // Отключаем атрибуцию для основного провайдера
               maxZoom: 20,
               subdomains: ['a', 'b', 'c'],
               detectRetina: true,
@@ -1322,7 +1324,7 @@ export class LeafletMapProvider implements IMapProvider {
 
     // Создаём fallback слой (CartoDB Voyager - стабильный и быстрый)
     const fallbackLayer = Leaflet.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-      attribution: '© OpenStreetMap contributors | © CARTO',
+      attribution: '', // Отключаем атрибуцию для fallback провайдера
       maxZoom: 20,
       subdomains: ['a', 'b', 'c', 'd'],
       detectRetina: true,
