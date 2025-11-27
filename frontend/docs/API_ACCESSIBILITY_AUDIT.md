@@ -476,3 +476,6 @@ return validatedResponse.cities || [];  // ❌ Ищет поле "cities", но 
 
 
 
+
+
+

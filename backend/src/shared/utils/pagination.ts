@@ -45,9 +45,12 @@ export function parsePaginationParams(
   defaultLimit: number = 20,
   maxLimit: number = 100
 ): PaginationParams {
+  // Если maxLimit передан как 1000, используем его (для cities endpoint)
   const page = Math.max(1, parseInt(String(query.page || '1'), 10) || 1);
+  // Если maxLimit >= 1000, используем его (для cities endpoint, чтобы вернуть все города)
+  const actualMaxLimit = maxLimit >= 1000 ? maxLimit : 100;
   const limit = Math.min(
-    maxLimit,
+    actualMaxLimit,
     Math.max(1, parseInt(String(query.limit || defaultLimit), 10) || defaultLimit)
   );
 

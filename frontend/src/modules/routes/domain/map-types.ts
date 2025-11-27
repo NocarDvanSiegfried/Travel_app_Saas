@@ -16,6 +16,8 @@ export type Coordinate = [number, number];
 
 /**
  * Данные остановки для карты
+ * 
+ * Поддерживает новые поля SmartRoute: isHub, hubLevel
  */
 export interface IStopMapData {
   id: string;
@@ -24,6 +26,10 @@ export interface IStopMapData {
   longitude: number;
   cityName: string;
   isTransfer: boolean;
+  
+  // Новые поля SmartRoute
+  isHub?: boolean; // Является ли остановка хабом
+  hubLevel?: 'federal' | 'regional'; // Уровень хаба
 }
 
 /**
@@ -35,18 +41,69 @@ export interface IPolylineData {
 
 /**
  * Данные сегмента маршрута для карты
+ * 
+ * Поддерживает как старый формат (polyline, distance, duration, price),
+ * так и новый формат SmartRoute (pathGeometry, distance.value, duration.value, price.total)
  */
 export interface IRouteSegmentMapData {
   segmentId: string;
   transportType: TransportType;
   fromStop: IStopMapData;
   toStop: IStopMapData;
-  polyline: IPolylineData;
-  distance: number; // км
-  duration: number; // минуты
-  price: number;
-  departureTime: string;
-  arrivalTime: string;
+  
+  // Старый формат (для обратной совместимости)
+  polyline?: IPolylineData;
+  distance?: number; // км
+  duration?: number; // минуты
+  price?: number;
+  
+  // Новый формат SmartRoute
+  pathGeometry?: Coordinate[]; // Реалистичный путь вместо прямой линии
+  viaHubs?: Array<{ level: 'federal' | 'regional' }>; // Хабы через которые проходит маршрут
+  isDirect?: boolean; // Прямой рейс (для авиа)
+  
+  // Новые структурированные поля
+  distanceData?: {
+    value: number;
+    unit: string;
+  };
+  durationData?: {
+    value: number; // минуты
+    unit: string;
+    display: string;
+  };
+  priceData?: {
+    base: number;
+    total: number;
+    currency: string;
+  };
+  
+  // Расписание
+  schedule?: {
+    departureTime?: string;
+    arrivalTime?: string;
+  };
+  
+  // Сезонность
+  seasonality?: {
+    available: boolean;
+    season: string;
+    period?: {
+      start: string;
+      end: string;
+    };
+  };
+  
+  // Валидация
+  validation?: {
+    isValid: boolean;
+    errors: string[];
+    warnings: string[];
+  };
+  
+  // Старые поля для обратной совместимости
+  departureTime?: string;
+  arrivalTime?: string;
 }
 
 /**
@@ -61,6 +118,8 @@ export interface IMapBounds {
 
 /**
  * Данные маршрута для карты (ответ от backend)
+ * 
+ * Поддерживает как старый формат, так и новый формат SmartRoute
  */
 export interface IRouteMapData {
   routeId: string;
@@ -68,8 +127,40 @@ export interface IRouteMapData {
   toCity: string;
   segments: IRouteSegmentMapData[];
   bounds: IMapBounds;
-  totalDistance: number; // км
-  totalDuration: number; // минуты
+  
+  // Старый формат (для обратной совместимости)
+  totalDistance?: number; // км
+  totalDuration?: number; // минуты
+  
+  // Новый формат SmartRoute
+  totalDistanceData?: {
+    value: number;
+    unit: string;
+  };
+  totalDurationData?: {
+    value: number; // минуты
+    unit: string;
+    display: string;
+  };
+  totalPriceData?: {
+    base: number;
+    total: number;
+    currency: string;
+    display: string;
+  };
+  
+  // Валидация маршрута
+  validation?: {
+    isValid: boolean;
+    errors: string[];
+    warnings: string[];
+    segmentValidations?: Array<{
+      segmentId: string;
+      isValid: boolean;
+      errors: string[];
+      warnings: string[];
+    }>;
+  };
 }
 
 /**
@@ -221,6 +312,7 @@ export interface IMapEvents {
    */
   onZoomChange?: (zoom: number) => void;
 }
+
 
 
 

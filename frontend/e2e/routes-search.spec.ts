@@ -18,36 +18,61 @@ test.describe('Routes Search', () => {
       })
     })
 
-    // Мокируем API ответ для поиска маршрутов
-    await page.route('**/api/v1/routes/search*', async (route) => {
-      const url = new URL(route.request().url())
-      const from = url.searchParams.get('from')
-      const to = url.searchParams.get('to')
+    // Мокируем API ответ для поиска маршрутов (новый SmartRoute endpoint)
+    await page.route('**/smart-route/build', async (route) => {
+      const request = route.request()
+      const postData = request.postDataJSON()
+      const from = postData?.from
+      const to = postData?.to
 
       if (from === 'Якутск' && to === 'Нерюнгри') {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
           body: JSON.stringify({
-            routes: [
-              {
-                routeId: 'route-1',
-                fromCity: 'Якутск',
-                toCity: 'Нерюнгри',
-                date: '2024-12-25',
-                passengers: 1,
-                segments: [],
-                totalDuration: 120,
-                totalPrice: 5000,
-                transferCount: 0,
-                transportTypes: ['bus'],
-                departureTime: '08:00',
-                arrivalTime: '10:00',
+            success: true,
+            route: {
+              id: 'route-1',
+              fromCity: {
+                id: 'yakutsk',
+                name: 'Якутск',
+                coordinates: { latitude: 62.0278, longitude: 129.7042 },
               },
-            ],
+              toCity: {
+                id: 'nerungri',
+                name: 'Нерюнгри',
+                coordinates: { latitude: 56.6583, longitude: 124.7264 },
+              },
+              segments: [
+                {
+                  segmentId: 'seg-1',
+                  type: 'bus',
+                  from: {
+                    id: 'stop-1',
+                    name: 'Якутск',
+                    type: 'bus_station',
+                    coordinates: { latitude: 62.0278, longitude: 129.7042 },
+                    cityId: 'yakutsk',
+                  },
+                  to: {
+                    id: 'stop-2',
+                    name: 'Нерюнгри',
+                    type: 'bus_station',
+                    coordinates: { latitude: 56.6583, longitude: 124.7264 },
+                    cityId: 'nerungri',
+                  },
+                  distance: { value: 800, unit: 'km' },
+                  duration: { value: 120, unit: 'minutes', display: '2 часа' },
+                  price: { base: 5000, total: 5000, currency: 'RUB', display: '5 000 ₽' },
+                  schedule: { departureTime: '08:00', arrivalTime: '10:00' },
+                },
+              ],
+              totalDistance: { value: 800, unit: 'km' },
+              totalDuration: { value: 120, unit: 'minutes', display: '2 часа' },
+              totalPrice: { base: 5000, total: 5000, currency: 'RUB', display: '5 000 ₽' },
+            },
             alternatives: [],
-            dataMode: 'real',
-            dataQuality: 1,
+            executionTimeMs: 100,
           }),
         })
       } else {
@@ -55,8 +80,10 @@ test.describe('Routes Search', () => {
           status: 200,
           contentType: 'application/json',
           body: JSON.stringify({
-            routes: [],
+            success: true,
+            route: null,
             alternatives: [],
+            executionTimeMs: 100,
           }),
         })
       }
@@ -173,12 +200,13 @@ test.describe('Routes Search', () => {
       })
     })
 
-    // Мокируем ошибку API при поиске маршрутов
-    await page.route('**/api/v1/routes/search*', async (route) => {
+    // Мокируем ошибку API при поиске маршрутов (новый SmartRoute endpoint)
+    await page.route('**/smart-route/build', async (route) => {
       await route.fulfill({
         status: 500,
         contentType: 'application/json',
         body: JSON.stringify({
+          success: false,
           error: {
             code: 'INTERNAL_ERROR',
             message: 'Внутренняя ошибка сервера',
@@ -230,28 +258,54 @@ test.describe('Routes Search', () => {
       })
     })
 
-    await page.route('**/api/v1/routes/search*', async (route) => {
+    await page.route('**/smart-route/build', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({
-          routes: [
-            {
-              routeId: 'route-1',
-              fromCity: 'Якутск',
-              toCity: 'Нерюнгри',
-              date: '2024-12-25',
-              passengers: 1,
-              segments: [],
-              totalDuration: 120,
-              totalPrice: 5000,
-              transferCount: 0,
-              transportTypes: ['bus'],
-              departureTime: '08:00',
-              arrivalTime: '10:00',
+          success: true,
+          route: {
+            id: 'route-1',
+            fromCity: {
+              id: 'yakutsk',
+              name: 'Якутск',
+              coordinates: { latitude: 62.0278, longitude: 129.7042 },
             },
-          ],
+            toCity: {
+              id: 'nerungri',
+              name: 'Нерюнгри',
+              coordinates: { latitude: 56.6583, longitude: 124.7264 },
+            },
+            segments: [
+              {
+                segmentId: 'seg-1',
+                type: 'bus',
+                from: {
+                  id: 'stop-1',
+                  name: 'Якутск',
+                  type: 'bus_station',
+                  coordinates: { latitude: 62.0278, longitude: 129.7042 },
+                  cityId: 'yakutsk',
+                },
+                to: {
+                  id: 'stop-2',
+                  name: 'Нерюнгри',
+                  type: 'bus_station',
+                  coordinates: { latitude: 56.6583, longitude: 124.7264 },
+                  cityId: 'nerungri',
+                },
+                distance: { value: 800, unit: 'km' },
+                duration: { value: 120, unit: 'minutes', display: '2 часа' },
+                price: { base: 5000, total: 5000, currency: 'RUB', display: '5 000 ₽' },
+                schedule: { departureTime: '08:00', arrivalTime: '10:00' },
+              },
+            ],
+            totalDistance: { value: 800, unit: 'km' },
+            totalDuration: { value: 120, unit: 'minutes', display: '2 часа' },
+            totalPrice: { base: 5000, total: 5000, currency: 'RUB', display: '5 000 ₽' },
+          },
           alternatives: [],
+          executionTimeMs: 100,
         }),
       })
     })
@@ -259,8 +313,8 @@ test.describe('Routes Search', () => {
     // Переходим на страницу результатов (симулируем поиск)
     await page.goto('/routes?from=Якутск&to=Нерюнгри', { waitUntil: 'domcontentloaded' })
     
-    // Ждем завершения API запроса
-    await page.waitForResponse('**/api/v1/routes/search*', { timeout: 10000 })
+    // Ждем завершения API запроса (новый endpoint)
+    await page.waitForResponse('**/smart-route/build', { timeout: 10000 })
 
     // Ждем загрузки результатов
     await expect(page.getByText('Результаты поиска маршрутов')).toBeVisible({ timeout: 10000 })

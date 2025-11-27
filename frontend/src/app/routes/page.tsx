@@ -69,12 +69,184 @@ function RoutesContent() {
 
   // Мемоизация функции выбора маршрута
   const handleSelectRoute = useCallback((route: Route) => {
-    safeLocalStorage.setItem(`route-${route.routeId}`, JSON.stringify({
-      route,
-      riskAssessment: route.riskAssessment,
-    }))
-    router.push(`/routes/details?routeId=${route.routeId}`)
-  }, [router])
+    // КРИТИЧЕСКИЙ ФИКС ФАЗА 1: Генерируем routeId, если он отсутствует
+    if (!route) {
+      console.error('[RoutesContent] Cannot select route: route is null')
+      // Показываем сообщение пользователю через alert (можно заменить на toast)
+      if (typeof window !== 'undefined') {
+        alert('Ошибка: маршрут не найден. Пожалуйста, попробуйте выбрать другой маршрут.')
+      }
+      return
+    }
+    
+    // Генерируем routeId, если он отсутствует
+    const routeId = route.routeId || `route-${route.fromCity}-${route.toCity}-${Date.now()}`
+    
+    // Обновляем route с routeId
+    const routeWithId: Route = {
+      ...route,
+      routeId,
+    }
+    
+    try {
+      // Проверяем, что localStorage доступен
+      if (typeof window === 'undefined' || !safeLocalStorage) {
+        throw new Error('localStorage недоступен')
+      }
+      
+      // ФАЗА 2: Безопасная сериализация данных (удаляем функции и undefined)
+      const routeData = {
+        route: {
+          ...routeWithId,
+          // Убеждаемся, что все поля сериализуемы
+          segments: routeWithId.segments?.map(seg => ({
+            ...seg,
+            // Удаляем функции, если есть
+          })) || [],
+        },
+        riskAssessment: routeWithId.riskAssessment ? {
+          ...routeWithId.riskAssessment,
+          // Удаляем функции, если есть
+        } : undefined,
+      }
+      
+      // Используем безопасную сериализацию с обработкой циклических ссылок
+      let serialized: string
+      try {
+        serialized = JSON.stringify(routeData, (key, value) => {
+          // Пропускаем функции и undefined
+          if (typeof value === 'function' || value === undefined) {
+            return null
+          }
+          // Обрабатываем циклические ссылки
+          if (typeof value === 'object' && value !== null) {
+            // Проверяем на циклические ссылки через WeakSet
+            const seen = new WeakSet()
+            if (seen.has(value)) {
+              return '[Circular]'
+            }
+            seen.add(value)
+          }
+          return value
+        })
+      } catch (serializationError) {
+        // Если сериализация не удалась, пробуем упрощённый вариант
+        console.warn('[RoutesContent] Serialization failed, using simplified version:', serializationError)
+        const simplifiedData = {
+          route: {
+            routeId: routeWithId.routeId,
+            fromCity: routeWithId.fromCity,
+            toCity: routeWithId.toCity,
+            date: routeWithId.date,
+            passengers: routeWithId.passengers,
+            segments: routeWithId.segments?.map(seg => ({
+              segmentId: seg.segment?.segmentId,
+              fromStopId: seg.segment?.fromStopId,
+              toStopId: seg.segment?.toStopId,
+              transportType: seg.segment?.transportType,
+              departureTime: seg.departureTime,
+              arrivalTime: seg.arrivalTime,
+              duration: seg.duration,
+              price: seg.price,
+            })) || [],
+            totalDuration: routeWithId.totalDuration,
+            totalPrice: routeWithId.totalPrice,
+            transferCount: routeWithId.transferCount,
+            transportTypes: routeWithId.transportTypes,
+            departureTime: routeWithId.departureTime,
+            arrivalTime: routeWithId.arrivalTime,
+          },
+          riskAssessment: routeWithId.riskAssessment,
+        }
+        serialized = JSON.stringify(simplifiedData)
+      }
+      
+      // ФАЗА 2: Сохраняем основной маршрут
+      safeLocalStorage.setItem(`route-${routeId}`, serialized)
+      
+      // Проверяем, что данные действительно сохранились
+      const saved = safeLocalStorage.getItem(`route-${routeId}`)
+      if (!saved) {
+        throw new Error('Данные не сохранились в localStorage')
+      }
+      
+      // ФАЗА 2: Сохраняем альтернативные маршруты, если они есть
+      if (alternatives && Array.isArray(alternatives) && alternatives.length > 0) {
+        try {
+          // Безопасная сериализация альтернатив
+          const alternativesData = {
+            routes: alternatives.map((altRoute, index) => {
+              const altRouteId = altRoute.routeId || `${routeId}-alt-${index + 1}`
+              return {
+                ...altRoute,
+                routeId: altRouteId,
+                segments: altRoute.segments?.map(seg => ({
+                  segmentId: seg.segment?.segmentId,
+                  fromStopId: seg.segment?.fromStopId,
+                  toStopId: seg.segment?.toStopId,
+                  transportType: seg.segment?.transportType,
+                  departureTime: seg.departureTime,
+                  arrivalTime: seg.arrivalTime,
+                  duration: seg.duration,
+                  price: seg.price,
+                })) || [],
+              }
+            }),
+          }
+          
+          const alternativesSerialized = JSON.stringify(alternativesData, (key, value) => {
+            if (typeof value === 'function' || value === undefined) {
+              return null
+            }
+            return value
+          })
+          
+          const alternativesKey = `route-${routeId}-alternatives`
+          safeLocalStorage.setItem(alternativesKey, alternativesSerialized)
+          
+          // Проверяем, что альтернативы сохранились
+          const savedAlternatives = safeLocalStorage.getItem(alternativesKey)
+          if (!savedAlternatives) {
+            console.warn('[RoutesContent] Alternatives not saved, but continuing')
+          } else {
+            console.log('[RoutesContent] Alternatives saved:', {
+              routeId,
+              alternativesCount: alternatives.length,
+            })
+          }
+        } catch (alternativesError) {
+          // Не прерываем выполнение, если сохранение альтернатив не удалось
+          console.warn('[RoutesContent] Error saving alternatives, but continuing:', alternativesError)
+        }
+      }
+      
+      console.log('[RoutesContent] Route saved to localStorage:', {
+        routeId,
+        fromCity: routeWithId.fromCity,
+        toCity: routeWithId.toCity,
+        wasGenerated: !route.routeId,
+        hasAlternatives: alternatives && alternatives.length > 0,
+      })
+      
+      // Переходим на страницу деталей только после успешного сохранения
+      router.push(`/routes/details?routeId=${routeId}`)
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Неизвестная ошибка'
+      console.error('[RoutesContent] Error saving route to localStorage:', {
+        routeId,
+        error: err,
+        errorMessage,
+      })
+      
+      // Показываем сообщение пользователю
+      if (typeof window !== 'undefined') {
+        alert(`Ошибка при сохранении маршрута: ${errorMessage}. Попробуйте ещё раз.`)
+      }
+      
+      // НЕ переходим на страницу деталей, если сохранение не удалось
+      // Это предотвратит ошибку "Маршрут не найден" на странице деталей
+    }
+  }, [router, alternatives])
 
   // Мемоизация функции получения метки типа транспорта
   const getTransportTypeLabel = useCallback((type: string): string => {
@@ -151,9 +323,13 @@ function RoutesContent() {
                 </h2>
                 {routes.map((route) => {
                   // Безопасная проверка наличия всех необходимых полей
-                  if (!route || !route.routeId || !route.fromCity || !route.toCity) {
+                  if (!route || !route.routeId) {
                     return null
                   }
+                  
+                  // Используем названия из route или fallback на from/to из URL
+                  const routeFromCity = route.fromCity || from
+                  const routeToCity = route.toCity || to
                   
                   return (
                     <div key={route.routeId} className="card card-hover p-lg transition-fast">
@@ -163,11 +339,11 @@ function RoutesContent() {
                           <div>
                             <div className="flex items-center gap-sm mb-sm">
                               <span className="text-lg font-medium text-primary">
-                                {route.fromCity}
+                                {routeFromCity}
                               </span>
                               <span className="text-lg text-primary">→</span>
                               <span className="text-lg font-medium text-primary">
-                                {route.toCity}
+                                {routeToCity}
                               </span>
                             </div>
                             <div className="text-sm text-secondary">
@@ -181,18 +357,22 @@ function RoutesContent() {
                           </div>
                           <div className="text-right">
                             <div className="flex items-center justify-end gap-md mb-sm">
-                              {route.totalPrice !== undefined && (
+                              {/* TODO: Использовать новые поля SmartRoute (totalPriceData.display) вместо totalPrice */}
+                              {/* Приоритет: totalPriceData.display > totalPrice */}
+                              {((route as any).totalPriceData?.display || route.totalPrice !== undefined) && (
                                 <div className="text-xl font-medium text-primary">
-                                  {formatPrice(route.totalPrice)}
+                                  {(route as any).totalPriceData?.display || formatPrice(route.totalPrice || 0)}
                                 </div>
                               )}
                               {route.riskAssessment && route.riskAssessment.riskScore && (
                                 <RouteRiskBadge riskScore={route.riskAssessment.riskScore} compact />
                               )}
                             </div>
-                            {route.totalDuration !== undefined && (
+                            {/* TODO: Использовать новые поля SmartRoute (totalDurationData.display) вместо totalDuration */}
+                            {/* Приоритет: totalDurationData.display > totalDuration */}
+                            {((route as any).totalDurationData?.display || route.totalDuration !== undefined) && (
                               <div className="text-sm text-secondary">
-                                {formatDuration(route.totalDuration)}
+                                {(route as any).totalDurationData?.display || formatDuration(route.totalDuration || 0)}
                               </div>
                             )}
                           </div>
@@ -208,21 +388,51 @@ function RoutesContent() {
                                   return null
                                 }
                                 
+                                // Если segment.segment отсутствует, не отображаем сегмент (невалидные данные)
+                                if (!segment.segment) {
+                                  return null
+                                }
+                                
                                 // Если segment.segment отсутствует, используем значения напрямую из segment
                                 const transportType = segment.segment?.transportType || TransportType.BUS
-                                const segmentDuration = segment.duration ?? 0
-                                const segmentPrice = segment.price ?? 0
+                                // TODO: Использовать новые поля SmartRoute (duration.display) вместо duration
+                                // Приоритет: durationData.display > duration
+                                const segmentDuration = (segment as any).durationData?.display 
+                                  || (segment.duration ?? 0)
+                                // TODO: Использовать новые поля SmartRoute (price.display) вместо price
+                                // Приоритет: priceData.display > price
+                                const segmentPrice = (segment as any).priceData?.display 
+                                  || (segment.price ?? 0)
+                                
+                                // Новые поля SmartRoute (если доступны)
+                                const viaHubs = (segment.segment as any)?.viaHubs
+                                const isHub = (segment.segment as any)?.isHub
+                                const hubLevel = (segment.segment as any)?.hubLevel
+                                const seasonality = (segment.segment as any)?.seasonality
+                                const validation = (route as any)?.validation?.segmentValidations?.find(
+                                  (v: any) => v.segmentId === segment.segment?.segmentId
+                                )
                                 
                                 return (
-                                  <div key={index} className="flex items-center gap-md">
+                                  <div key={index} className="flex items-center gap-md" data-testid={`route-segment-${index}`}>
                                     <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium bg-primary text-inverse">
                                       {index + 1}
                                     </div>
                                     <div className="flex-1">
-                                      <div className="flex items-center gap-sm mb-xs">
+                                      <div className="flex items-center gap-sm mb-xs flex-wrap">
                                         <span className="text-sm font-medium text-primary">
                                           {getTransportTypeLabel(String(transportType))}
                                         </span>
+                                        {viaHubs && viaHubs.length > 0 && (
+                                          <span className="text-xs px-sm py-xs rounded-sm bg-primary-light text-primary">
+                                            через {viaHubs.length} {viaHubs.length === 1 ? 'хаб' : 'хаба'}
+                                          </span>
+                                        )}
+                                        {isHub && hubLevel && (
+                                          <span className="text-xs px-sm py-xs rounded-sm bg-primary-light text-primary">
+                                            {hubLevel === 'federal' ? '⭐ Федеральный хаб' : '⭐ Региональный хаб'}
+                                          </span>
+                                        )}
                                         {segment.departureTime && segment.arrivalTime && (
                                           <span className="text-xs text-secondary">
                                             {formatTime(segment.departureTime)} - {formatTime(segment.arrivalTime)}
@@ -231,9 +441,19 @@ function RoutesContent() {
                                       </div>
                                       {(segmentDuration > 0 || segmentPrice > 0) && (
                                         <div className="text-xs text-secondary">
-                                          {segmentDuration > 0 && formatDuration(segmentDuration)}
+                                          {typeof segmentDuration === 'string' ? segmentDuration : segmentDuration > 0 && formatDuration(segmentDuration)}
                                           {segmentDuration > 0 && segmentPrice > 0 && ' • '}
-                                          {segmentPrice > 0 && formatPrice(segmentPrice)}
+                                          {typeof segmentPrice === 'string' ? segmentPrice : segmentPrice > 0 && formatPrice(segmentPrice)}
+                                        </div>
+                                      )}
+                                      {seasonality && (
+                                        <div className="text-xs text-secondary mt-xs">
+                                          {seasonality.available ? '✅' : '❌'} {seasonality.season === 'summer' ? 'Лето' : seasonality.season === 'winter' ? 'Зима' : seasonality.season}
+                                        </div>
+                                      )}
+                                      {validation && !validation.isValid && validation.errors.length > 0 && (
+                                        <div className="text-xs text-error mt-xs">
+                                          ⚠️ {validation.errors[0]}
                                         </div>
                                       )}
                                     </div>
@@ -312,18 +532,22 @@ function RoutesContent() {
                           </div>
                           <div className="text-right">
                             <div className="flex items-center justify-end gap-md mb-sm">
-                              {route.totalPrice !== undefined && (
+                              {/* TODO: Использовать новые поля SmartRoute (totalPriceData.display) вместо totalPrice */}
+                              {/* Приоритет: totalPriceData.display > totalPrice */}
+                              {((route as any).totalPriceData?.display || route.totalPrice !== undefined) && (
                                 <div className="text-xl font-medium text-primary">
-                                  {formatPrice(route.totalPrice)}
+                                  {(route as any).totalPriceData?.display || formatPrice(route.totalPrice || 0)}
                                 </div>
                               )}
                               {route.riskAssessment && route.riskAssessment.riskScore && (
                                 <RouteRiskBadge riskScore={route.riskAssessment.riskScore} compact />
                               )}
                             </div>
-                            {route.totalDuration !== undefined && (
+                            {/* TODO: Использовать новые поля SmartRoute (totalDurationData.display) вместо totalDuration */}
+                            {/* Приоритет: totalDurationData.display > totalDuration */}
+                            {((route as any).totalDurationData?.display || route.totalDuration !== undefined) && (
                               <div className="text-sm text-secondary">
-                                {formatDuration(route.totalDuration)}
+                                {(route as any).totalDurationData?.display || formatDuration(route.totalDuration || 0)}
                               </div>
                             )}
                           </div>
@@ -339,21 +563,51 @@ function RoutesContent() {
                                   return null
                                 }
                                 
+                                // Если segment.segment отсутствует, не отображаем сегмент (невалидные данные)
+                                if (!segment.segment) {
+                                  return null
+                                }
+                                
                                 // Если segment.segment отсутствует, используем значения напрямую из segment
                                 const transportType = segment.segment?.transportType || TransportType.BUS
-                                const segmentDuration = segment.duration ?? 0
-                                const segmentPrice = segment.price ?? 0
+                                // TODO: Использовать новые поля SmartRoute (duration.display) вместо duration
+                                // Приоритет: durationData.display > duration
+                                const segmentDuration = (segment as any).durationData?.display 
+                                  || (segment.duration ?? 0)
+                                // TODO: Использовать новые поля SmartRoute (price.display) вместо price
+                                // Приоритет: priceData.display > price
+                                const segmentPrice = (segment as any).priceData?.display 
+                                  || (segment.price ?? 0)
+                                
+                                // Новые поля SmartRoute (если доступны)
+                                const viaHubs = (segment.segment as any)?.viaHubs
+                                const isHub = (segment.segment as any)?.isHub
+                                const hubLevel = (segment.segment as any)?.hubLevel
+                                const seasonality = (segment.segment as any)?.seasonality
+                                const validation = (route as any)?.validation?.segmentValidations?.find(
+                                  (v: any) => v.segmentId === segment.segment?.segmentId
+                                )
                                 
                                 return (
-                                  <div key={index} className="flex items-center gap-md">
+                                  <div key={index} className="flex items-center gap-md" data-testid={`route-segment-${index}`}>
                                     <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium bg-primary text-inverse">
                                       {index + 1}
                                     </div>
                                     <div className="flex-1">
-                                      <div className="flex items-center gap-sm mb-xs">
+                                      <div className="flex items-center gap-sm mb-xs flex-wrap">
                                         <span className="text-sm font-medium text-primary">
                                           {getTransportTypeLabel(String(transportType))}
                                         </span>
+                                        {viaHubs && viaHubs.length > 0 && (
+                                          <span className="text-xs px-sm py-xs rounded-sm bg-primary-light text-primary">
+                                            через {viaHubs.length} {viaHubs.length === 1 ? 'хаб' : 'хаба'}
+                                          </span>
+                                        )}
+                                        {isHub && hubLevel && (
+                                          <span className="text-xs px-sm py-xs rounded-sm bg-primary-light text-primary">
+                                            {hubLevel === 'federal' ? '⭐ Федеральный хаб' : '⭐ Региональный хаб'}
+                                          </span>
+                                        )}
                                         {segment.departureTime && segment.arrivalTime && (
                                           <span className="text-xs text-secondary">
                                             {formatTime(segment.departureTime)} - {formatTime(segment.arrivalTime)}
@@ -362,9 +616,19 @@ function RoutesContent() {
                                       </div>
                                       {(segmentDuration > 0 || segmentPrice > 0) && (
                                         <div className="text-xs text-secondary">
-                                          {segmentDuration > 0 && formatDuration(segmentDuration)}
+                                          {typeof segmentDuration === 'string' ? segmentDuration : segmentDuration > 0 && formatDuration(segmentDuration)}
                                           {segmentDuration > 0 && segmentPrice > 0 && ' • '}
-                                          {segmentPrice > 0 && formatPrice(segmentPrice)}
+                                          {typeof segmentPrice === 'string' ? segmentPrice : segmentPrice > 0 && formatPrice(segmentPrice)}
+                                        </div>
+                                      )}
+                                      {seasonality && (
+                                        <div className="text-xs text-secondary mt-xs">
+                                          {seasonality.available ? '✅' : '❌'} {seasonality.season === 'summer' ? 'Лето' : seasonality.season === 'winter' ? 'Зима' : seasonality.season}
+                                        </div>
+                                      )}
+                                      {validation && !validation.isValid && validation.errors.length > 0 && (
+                                        <div className="text-xs text-error mt-xs">
+                                          ⚠️ {validation.errors[0]}
                                         </div>
                                       )}
                                     </div>

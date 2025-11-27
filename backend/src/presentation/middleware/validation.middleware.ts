@@ -39,13 +39,40 @@ export function validateRequest(options: ValidationOptions) {
 
       // Validate request body
       if (options.body) {
+        // КРИТИЧЕСКИЙ ФИКС: Добавляем логирование для отладки валидации
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[validateRequest] Validating body:', {
+            path: req.path,
+            method: req.method,
+            body: req.body,
+            hasBody: !!req.body,
+            bodyKeys: req.body ? Object.keys(req.body) : [],
+          });
+        }
         const validatedBody = await options.body.parseAsync(req.body);
         req.body = validatedBody;
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[validateRequest] Body validation passed:', {
+            path: req.path,
+            validatedBody: validatedBody,
+          });
+        }
       }
 
       next();
     } catch (error) {
       if (error instanceof z.ZodError) {
+        // КРИТИЧЕСКИЙ ФИКС: Добавляем логирование ошибок валидации
+        console.error('[validateRequest] Validation error:', {
+          path: req.path,
+          method: req.method,
+          body: req.body,
+          errors: error.issues.map((err) => ({
+            path: err.path.join('.'),
+            message: err.message,
+            code: err.code,
+          })),
+        });
         res.status(400).json({
           error: {
             code: 'VALIDATION_ERROR',
@@ -60,6 +87,7 @@ export function validateRequest(options: ValidationOptions) {
       }
 
       // Unexpected error
+      console.error('[validateRequest] Unexpected validation error:', error);
       res.status(500).json({
         error: {
           code: 'INTERNAL_ERROR',

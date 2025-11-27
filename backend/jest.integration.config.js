@@ -1,15 +1,30 @@
 /**
  * Jest Configuration for Integration Tests
  * 
- * Separate configuration for integration tests with real databases.
+ * Конфигурация для integration тестов с реальными зависимостями.
+ * Использует тестовую базу данных и Redis.
  */
 
 module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
+  
   roots: ['<rootDir>/src'],
-  testMatch: ['**/__tests__/integration/**/*.test.ts'],
+  
+  testMatch: [
+    '**/__tests__/integration/**/*.test.ts',
+    '**/__tests__/integration/**/*.spec.ts',
+  ],
+  
+  testPathIgnorePatterns: [
+    '/node_modules/',
+    '/dist/',
+    '/__tests__/unit/',
+    '/__tests__/e2e/',
+  ],
+  
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
+  
   collectCoverageFrom: [
     'src/**/*.ts',
     '!src/**/*.d.ts',
@@ -20,14 +35,34 @@ module.exports = {
     '!src/**/*.test.ts',
     '!src/**/*.spec.ts',
   ],
+  
   coverageDirectory: 'coverage/integration',
-  coverageReporters: ['text', 'lcov', 'html'],
+  coverageReporters: ['text', 'lcov', 'html', 'json-summary'],
+  
+  coverageThreshold: {
+    global: {
+      branches: 70,
+      functions: 70,
+      lines: 70,
+      statements: 70,
+    },
+  },
+  
+  moduleNameMapper: {
+    '^@/(.*)$': '<rootDir>/src/$1',
+  },
+  
   setupFilesAfterEnv: ['<rootDir>/src/__tests__/integration/setup.ts'],
-  testTimeout: 30000, // 30 seconds for integration tests
+  
+  // Увеличенный таймаут для integration тестов (30 секунд)
+  testTimeout: 30000,
+  
   verbose: true,
-  maxWorkers: 1, // Run integration tests sequentially to avoid DB conflicts
+  
+  // Запуск тестов последовательно для избежания конфликтов БД
+  maxWorkers: 1,
+  
+  // Не очищать моки автоматически (для проверки реальных вызовов)
+  clearMocks: false,
+  restoreMocks: false,
 };
-
-
-
-

@@ -21,10 +21,10 @@ FROM base AS deps
 COPY package.json package-lock.json* ./
 
 # Устанавливаем все зависимости (включая devDependencies) с BuildKit cache mount
-# Используем npm ci если lock-файл существует, иначе npm install
+# Используем npm ci если lock-файл существует и синхронизирован, иначе npm install
 RUN --mount=type=cache,target=/root/.npm \
     if [ -f package-lock.json ]; then \
-      npm ci --prefer-offline --no-audit --no-fund; \
+      npm ci --prefer-offline --no-audit --no-fund || npm install --prefer-offline --no-audit --no-fund; \
     else \
       npm install --prefer-offline --no-audit --no-fund; \
     fi
@@ -38,10 +38,10 @@ FROM base AS deps-prod
 COPY package.json package-lock.json* ./
 
 # Устанавливаем только production зависимости
-# Используем npm ci если lock-файл существует, иначе npm install
+# Используем npm ci если lock-файл существует и синхронизирован, иначе npm install
 RUN --mount=type=cache,target=/root/.npm \
     if [ -f package-lock.json ]; then \
-      npm ci --only=production --prefer-offline --no-audit --no-fund; \
+      npm ci --only=production --prefer-offline --no-audit --no-fund || npm install --only=production --prefer-offline --no-audit --no-fund; \
     else \
       npm install --only=production --prefer-offline --no-audit --no-fund; \
     fi
@@ -70,12 +70,18 @@ FROM base AS development
 
 ENV NODE_ENV=development
 
+# Удаляем любые артефакты сборки перед копированием
+RUN rm -rf dist build .ts-node .cache *.tsbuildinfo 2>/dev/null || true
+
 # Копируем зависимости (включая devDependencies с nodemon и ts-node)
 COPY --from=deps /app/node_modules ./node_modules
 
 # Копируем только необходимые файлы для разработки
 COPY package.json tsconfig.json ./
 COPY src ./src
+
+# Убеждаемся, что артефакты не попали в контейнер
+RUN rm -rf dist build .ts-node .cache *.tsbuildinfo 2>/dev/null || true
 
 EXPOSE 5000
 

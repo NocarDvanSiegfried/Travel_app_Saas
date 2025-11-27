@@ -67,13 +67,21 @@ export function useRouteMapBounds({
     const allCoordinates: Array<[number, number]> = [];
 
     for (const segment of segments) {
-      if (segment.polyline?.coordinates) {
+      // TODO: Использовать pathGeometry из SmartRoute вместо polyline.coordinates
+      // Приоритет: pathGeometry > polyline.coordinates
+      if (segment.pathGeometry && segment.pathGeometry.length > 0) {
+        // Используем реалистичный путь из SmartRoute
+        for (const coord of segment.pathGeometry) {
+          allCoordinates.push(coord);
+        }
+      } else if (segment.polyline?.coordinates) {
+        // Fallback на старый формат
         for (const coord of segment.polyline.coordinates) {
           allCoordinates.push(coord);
         }
       }
 
-      // Также добавляем координаты остановок (на случай, если полилиния пуста)
+      // Также добавляем координаты остановок (на случай, если полилиния/путь пусты)
       allCoordinates.push([segment.fromStop.latitude, segment.fromStop.longitude]);
       allCoordinates.push([segment.toStop.latitude, segment.toStop.longitude]);
     }
@@ -91,6 +99,7 @@ export function useRouteMapBounds({
     isValid: bounds !== null,
   };
 }
+
 
 
 

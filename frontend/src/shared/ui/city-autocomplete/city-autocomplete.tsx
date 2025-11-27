@@ -1,15 +1,17 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { useCities } from '@/shared/hooks/use-cities'
+import type { City } from '@/shared/schemas/cities.schema'
 
 interface CityAutocompleteProps {
   id: string
   name: string
   label: string
   placeholder: string
-  value: string
-  onChange: (value: string) => void
+  value: string // cityId
+  displayValue?: string // cityName для отображения
+  onChange: (cityId: string, cityName: string) => void
   onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void
   error?: string
   'aria-describedby'?: string
@@ -20,14 +22,16 @@ interface CityAutocompleteProps {
  * 
  * Предоставляет выпадающий список городов с фильтрацией по введенному тексту.
  * Поддерживает навигацию с клавиатуры (стрелки вверх/вниз, Enter, Escape).
+ * Работает с объектами City (id, name) - отображает name, возвращает id.
  * 
  * @param props - Пропсы компонента
  * @param props.id - Уникальный идентификатор поля
  * @param props.name - Имя поля для формы
  * @param props.label - Текст метки поля
  * @param props.placeholder - Текст подсказки
- * @param props.value - Текущее значение поля
- * @param props.onChange - Callback при изменении значения
+ * @param props.value - Текущий cityId
+ * @param props.displayValue - Текущее название города для отображения
+ * @param props.onChange - Callback при изменении значения (cityId, cityName)
  * @param props.onKeyDown - Callback при нажатии клавиши (опционально)
  * @returns JSX элемент поля автокомплита
  */
@@ -36,19 +40,47 @@ export function CityAutocomplete({
   name,
   label,
   placeholder,
-  value,
+  value, // cityId
+  displayValue, // cityName для отображения
   onChange,
   onKeyDown,
   error,
   'aria-describedby': ariaDescribedBy,
 }: CityAutocompleteProps) {
-  const { cities: availableCities, isLoading: loading } = useCities()
+  const { cities: citiesFromHook, isLoading: loading } = useCities()
   const [isOpen, setIsOpen] = useState(false)
-  const [filteredCities, setFilteredCities] = useState<string[]>([])
+  const [filteredCities, setFilteredCities] = useState<City[]>([])
+  const [inputValue, setInputValue] = useState(displayValue || '')
   const [highlightedIndex, setHighlightedIndex] = useState(-1)
   const inputRef = useRef<HTMLInputElement>(null)
   const listRef = useRef<HTMLUListElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+
+  // КРИТИЧЕСКИЙ ФИКС: Стабилизируем availableCities через useMemo для предотвращения бесконечных обновлений
+  const availableCities = useMemo(() => {
+    return citiesFromHook || []
+  }, [citiesFromHook?.map(c => c.id).join(',')])
+
+  // Обновляем inputValue при изменении displayValue
+  // КРИТИЧЕСКИЙ ФИКС: Используем useMemo для стабилизации cityNameFromId
+  // и предотвращения бесконечных обновлений
+  const cityNameFromId = useMemo(() => {
+    if (value && availableCities.length > 0) {
+      const city = availableCities.find(c => c.id === value)
+      return city?.name || ''
+    }
+    return ''
+  }, [value, availableCities.length > 0 ? availableCities.map(c => c.id).join(',') : ''])
+
+  useEffect(() => {
+    if (displayValue !== undefined) {
+      setInputValue(displayValue)
+    } else if (value && cityNameFromId) {
+      setInputValue(cityNameFromId)
+    } else if (!value) {
+      setInputValue('')
+    }
+  }, [displayValue, value, cityNameFromId])
 
   useEffect(() => {
     if (loading || availableCities.length === 0) {
@@ -57,10 +89,10 @@ export function CityAutocomplete({
       return
     }
 
-    const trimmedValue = value?.trim() || ''
+    const trimmedValue = inputValue?.trim() || ''
     if (trimmedValue.length > 0) {
       const exactMatch = availableCities.find(
-        (c) => c.toLowerCase().trim() === trimmedValue.toLowerCase()
+        (c) => c.name.toLowerCase().trim() === trimmedValue.toLowerCase()
       )
       if (exactMatch) {
         setFilteredCities([])
@@ -68,10 +100,10 @@ export function CityAutocomplete({
       } else {
         const valueLower = trimmedValue.toLowerCase()
         const filtered = availableCities.filter((city) => {
-          const cityLower = city.toLowerCase().trim()
-          return cityLower.length > 1 && cityLower.includes(valueLower) && city.trim().length > 1
+          const cityNameLower = city.name.toLowerCase().trim()
+          return cityNameLower.length > 1 && cityNameLower.includes(valueLower) && city.name.trim().length > 1
         })
-        const uniqueFiltered = Array.from(new Set(filtered.map(c => c.trim()))).filter(c => c.length > 1)
+        const uniqueFiltered = Array.from(new Map(filtered.map(c => [c.id, c])).values())
         setFilteredCities(uniqueFiltered)
         setIsOpen(uniqueFiltered.length > 0)
       }
@@ -80,7 +112,7 @@ export function CityAutocomplete({
       setIsOpen(false)
     }
     setHighlightedIndex(-1)
-  }, [value, availableCities, loading])
+  }, [inputValue, availableCities, loading])
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -102,7 +134,9 @@ export function CityAutocomplete({
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value
-    onChange(newValue)
+    setInputValue(newValue)
+    // При вводе текста очищаем cityId
+    onChange('', newValue)
   }
 
   const handleInputFocus = () => {
@@ -110,21 +144,21 @@ export function CityAutocomplete({
       return
     }
 
-    const trimmedValue = value?.trim() || ''
+    const trimmedValue = inputValue?.trim() || ''
     if (trimmedValue.length > 0) {
       const valueLower = trimmedValue.toLowerCase()
       const exactMatch = availableCities.find(
-        (c) => c.toLowerCase().trim() === trimmedValue.toLowerCase()
+        (c) => c.name.toLowerCase().trim() === trimmedValue.toLowerCase()
       )
       if (exactMatch) {
         setFilteredCities([])
         setIsOpen(false)
       } else {
         const filtered = availableCities.filter((city) => {
-          const cityLower = city.toLowerCase().trim()
-          return cityLower.length > 0 && cityLower.includes(valueLower) && city.length > 1
+          const cityNameLower = city.name.toLowerCase().trim()
+          return cityNameLower.length > 0 && cityNameLower.includes(valueLower) && city.name.length > 1
         })
-        const uniqueFiltered = Array.from(new Set(filtered))
+        const uniqueFiltered = Array.from(new Map(filtered.map(c => [c.id, c])).values())
         setFilteredCities(uniqueFiltered)
         setIsOpen(uniqueFiltered.length > 0)
       }
@@ -140,10 +174,10 @@ export function CityAutocomplete({
       return
     }
 
-    const trimmedValue = value?.trim() || ''
+    const trimmedValue = inputValue?.trim() || ''
     if (trimmedValue.length > 0) {
       const exactMatch = availableCities.find(
-        (c) => c.toLowerCase().trim() === trimmedValue.toLowerCase()
+        (c) => c.name.toLowerCase().trim() === trimmedValue.toLowerCase()
       )
       if (exactMatch) {
         setFilteredCities([])
@@ -151,10 +185,10 @@ export function CityAutocomplete({
       } else {
         const valueLower = trimmedValue.toLowerCase()
         const filtered = availableCities.filter((city) => {
-          const cityLower = city.toLowerCase().trim()
-          return cityLower.length > 1 && cityLower.includes(valueLower) && city.trim().length > 1
+          const cityNameLower = city.name.toLowerCase().trim()
+          return cityNameLower.length > 1 && cityNameLower.includes(valueLower) && city.name.trim().length > 1
         })
-        const uniqueFiltered = Array.from(new Set(filtered.map(c => c.trim()))).filter(c => c.length > 1)
+        const uniqueFiltered = Array.from(new Map(filtered.map(c => [c.id, c])).values())
         setFilteredCities(uniqueFiltered)
         setIsOpen(uniqueFiltered.length > 0)
       }
@@ -173,25 +207,12 @@ export function CityAutocomplete({
     }, 200)
   }
 
-  const handleSelectCity = (city: string) => {
-    // Проверяем, что город не пустой и существует в списке доступных городов
-    const trimmedCity = city?.trim() || ''
-    if (trimmedCity.length > 0) {
-      // Проверяем, что город есть в списке (регистронезависимо)
-      const cityExists = availableCities.some(
-        (c) => c.toLowerCase().trim() === trimmedCity.toLowerCase()
-      )
-      if (cityExists) {
-        // Находим точное совпадение из списка для корректного значения
-        const exactCity = availableCities.find(
-          (c) => c.toLowerCase().trim() === trimmedCity.toLowerCase()
-        )
-        if (exactCity) {
-          onChange(exactCity)
-          setIsOpen(false)
-          inputRef.current?.blur()
-        }
-      }
+  const handleSelectCity = (city: City) => {
+    if (city && city.id && city.name) {
+      onChange(city.id, city.name)
+      setInputValue(city.name)
+      setIsOpen(false)
+      inputRef.current?.blur()
     }
   }
 
@@ -201,7 +222,6 @@ export function CityAutocomplete({
       if (isOpen && filteredCities.length > 0) {
         setHighlightedIndex((prev: number) => {
           const nextIndex = prev < filteredCities.length - 1 ? prev + 1 : prev
-          // Скролл после обновления состояния
           setTimeout(() => {
             if (listRef.current && nextIndex >= 0) {
               const items = listRef.current.children
@@ -218,7 +238,6 @@ export function CityAutocomplete({
       if (isOpen) {
         setHighlightedIndex((prev: number) => {
           const prevIndex = prev > 0 ? prev - 1 : -1
-          // Скролл после обновления состояния
           setTimeout(() => {
             if (listRef.current && prevIndex >= 0) {
               const items = listRef.current.children
@@ -233,17 +252,14 @@ export function CityAutocomplete({
     } else if (e.key === 'Enter') {
       e.preventDefault()
       if (isOpen && filteredCities.length > 0) {
-        // Если есть выделенный элемент, выбираем его
         if (highlightedIndex >= 0 && highlightedIndex < filteredCities.length && filteredCities[highlightedIndex]) {
           handleSelectCity(filteredCities[highlightedIndex])
         } else if (filteredCities.length === 1) {
-          // Если только один результат, выбираем его
           handleSelectCity(filteredCities[0])
         } else {
-          // Проверяем точное совпадение
-          const trimmedValue = value?.trim() || ''
+          const trimmedValue = inputValue?.trim() || ''
           const exactMatch = filteredCities.find(
-            (city) => city.toLowerCase().trim() === trimmedValue.toLowerCase()
+            (city) => city.name.toLowerCase().trim() === trimmedValue.toLowerCase()
           )
           if (exactMatch) {
             handleSelectCity(exactMatch)
@@ -276,7 +292,7 @@ export function CityAutocomplete({
           type="text"
           id={id}
           name={name}
-          value={value}
+          value={inputValue}
           onChange={handleInputChange}
           onFocus={handleInputFocus}
           onClick={handleInputClick}
@@ -294,7 +310,7 @@ export function CityAutocomplete({
           aria-describedby={error ? `${id}-error` : ariaDescribedBy}
           aria-invalid={error ? 'true' : 'false'}
         />
-        {isOpen && filteredCities.filter((city) => city && typeof city === 'string' && city.trim().length > 1).length > 0 && (
+        {isOpen && filteredCities.filter((city) => city && city.id && city.name && city.name.trim().length > 1).length > 0 && (
           <ul
             ref={listRef}
             id={`${id}-listbox`}
@@ -303,27 +319,26 @@ export function CityAutocomplete({
             aria-label={`Список городов для ${label}`}
           >
             {filteredCities
-              .filter((city) => city && typeof city === 'string' && city.trim().length > 1)
-              .map((city: string, index: number) => {
-                const trimmedCity = city.trim()
+              .filter((city) => city && city.id && city.name && city.name.trim().length > 1)
+              .map((city: City, index: number) => {
                 return (
                   <li
-                    key={`${trimmedCity}-${index}`}
+                    key={`${city.id}-${index}`}
                     id={`${id}-option-${index}`}
                     role="option"
                     aria-selected={index === highlightedIndex}
-                    onClick={() => handleSelectCity(trimmedCity)}
+                    onClick={() => handleSelectCity(city)}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault()
-                        handleSelectCity(trimmedCity)
+                        handleSelectCity(city)
                       }
                     }}
                     tabIndex={-1}
                     className={`dropdown-item ${index === highlightedIndex ? 'dropdown-item-active' : ''}`}
                     onMouseEnter={() => setHighlightedIndex(index)}
                   >
-                    {trimmedCity}
+                    {city.name}
                   </li>
                 )
               })}
@@ -338,4 +353,3 @@ export function CityAutocomplete({
     </div>
   )
 }
-

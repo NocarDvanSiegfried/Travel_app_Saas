@@ -8,6 +8,7 @@ export enum TransportType {
   TRAIN = 'train',
   FERRY = 'ferry',
   TAXI = 'taxi',
+  WINTER_ROAD = 'winter_road',
   UNKNOWN = 'unknown',
 }
 

@@ -23,10 +23,10 @@ FROM base AS deps
 COPY package.json package-lock.json* ./
 
 # Устанавливаем все зависимости (включая devDependencies) с BuildKit cache mount
-# Используем npm ci если lock-файл существует, иначе npm install
+# Используем npm ci если lock-файл существует и синхронизирован, иначе npm install
 RUN --mount=type=cache,target=/root/.npm \
     if [ -f package-lock.json ]; then \
-      npm ci --prefer-offline --no-audit --no-fund; \
+      npm ci --prefer-offline --no-audit --no-fund || npm install --prefer-offline --no-audit --no-fund; \
     else \
       npm install --prefer-offline --no-audit --no-fund; \
     fi
@@ -40,10 +40,10 @@ FROM base AS deps-prod
 COPY package.json package-lock.json* ./
 
 # Устанавливаем только production зависимости
-# Используем npm ci если lock-файл существует, иначе npm install
+# Используем npm ci если lock-файл существует и синхронизирован, иначе npm install
 RUN --mount=type=cache,target=/root/.npm \
     if [ -f package-lock.json ]; then \
-      npm ci --only=production --prefer-offline --no-audit --no-fund; \
+      npm ci --only=production --prefer-offline --no-audit --no-fund || npm install --only=production --prefer-offline --no-audit --no-fund; \
     else \
       npm install --only=production --prefer-offline --no-audit --no-fund; \
     fi

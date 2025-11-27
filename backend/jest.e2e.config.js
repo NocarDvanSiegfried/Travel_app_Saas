@@ -1,16 +1,30 @@
 /**
  * Jest Configuration for E2E Tests
  * 
- * Separate configuration for end-to-end tests with real databases.
- * E2E tests verify complete user scenarios across the entire stack.
+ * Конфигурация для end-to-end тестов.
+ * Использует реальное окружение (Docker Compose).
  */
 
 module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
+  
   roots: ['<rootDir>/src'],
-  testMatch: ['**/__tests__/e2e/**/*.test.ts'],
+  
+  testMatch: [
+    '**/__tests__/e2e/**/*.test.ts',
+    '**/__tests__/e2e/**/*.spec.ts',
+  ],
+  
+  testPathIgnorePatterns: [
+    '/node_modules/',
+    '/dist/',
+    '/__tests__/unit/',
+    '/__tests__/integration/',
+  ],
+  
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
+  
   collectCoverageFrom: [
     'src/**/*.ts',
     '!src/**/*.d.ts',
@@ -21,20 +35,33 @@ module.exports = {
     '!src/**/*.test.ts',
     '!src/**/*.spec.ts',
   ],
+  
   coverageDirectory: 'coverage/e2e',
-  coverageReporters: ['text', 'lcov', 'html'],
-  setupFilesAfterEnv: ['<rootDir>/src/__tests__/integration/setup.ts'],
-  testTimeout: 30000, // 30 seconds for E2E tests
+  coverageReporters: ['text', 'lcov', 'html', 'json-summary'],
+  
+  coverageThreshold: {
+    global: {
+      branches: 50,
+      functions: 50,
+      lines: 50,
+      statements: 50,
+    },
+  },
+  
+  moduleNameMapper: {
+    '^@/(.*)$': '<rootDir>/src/$1',
+  },
+  
+  setupFilesAfterEnv: ['<rootDir>/src/__tests__/e2e/setup.ts'],
+  
+  // Увеличенный таймаут для E2E тестов (60 секунд)
+  testTimeout: 60000,
+  
   verbose: true,
-  maxWorkers: 1, // Run E2E tests sequentially to avoid DB conflicts
+  
+  // Запуск тестов последовательно
+  maxWorkers: 1,
+  
+  clearMocks: false,
+  restoreMocks: false,
 };
-
-
-
-
-
-
-
-
-
-

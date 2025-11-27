@@ -1,6 +1,9 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { formatPrice } from '@/shared/utils/format';
+import { safeLocalStorage } from '@/shared/utils/storage';
+import type { IBuiltRoute } from '@/modules/routes/domain';
 
 interface Route {
   route: {
@@ -18,10 +21,90 @@ interface Route {
 
 interface RouteAlternativesProps {
   routes: Route[];
+  routeId?: string; // Добавляем routeId для загрузки альтернатив
 }
 
-export function RouteAlternatives({ routes }: RouteAlternativesProps) {
-  if (!routes || routes.length <= 1) {
+export function RouteAlternatives({ routes, routeId }: RouteAlternativesProps) {
+  // ФАЗА 4: Загружаем альтернативы из localStorage или API, если routes пуст
+  const [loadedAlternatives, setLoadedAlternatives] = useState<Route[]>([]);
+  const [loadingAlternatives, setLoadingAlternatives] = useState(false);
+  
+  useEffect(() => {
+    if ((!routes || routes.length <= 1) && routeId) {
+      setLoadingAlternatives(true);
+      
+      // Пытаемся загрузить альтернативы из localStorage
+      try {
+        const alternativesKey = `route-${routeId}-alternatives`;
+        const alternativesData = safeLocalStorage.getItem(alternativesKey);
+        
+        if (alternativesData) {
+          try {
+            const parsed = JSON.parse(alternativesData);
+            if (parsed.routes && Array.isArray(parsed.routes)) {
+              // Преобразуем IBuiltRoute в Route формат
+              const convertedRoutes: Route[] = parsed.routes.map((altRoute: IBuiltRoute) => ({
+                route: {
+                  Ref_Key: altRoute.routeId || `route-${Date.now()}`,
+                  Наименование: `${altRoute.fromCity} → ${altRoute.toCity}`,
+                  Код: altRoute.routeId || '',
+                },
+                flights: altRoute.segments?.map(seg => ({
+                  Ref_Key: seg.segment?.segmentId || `flight-${Date.now()}`,
+                  НомерРейса: seg.segment?.transportType || 'UNKNOWN',
+                  ВремяОтправления: seg.departureTime,
+                  ВремяПрибытия: seg.arrivalTime,
+                  tariffs: [{
+                    Цена: seg.price || 0,
+                  }],
+                })) || [],
+              }));
+              setLoadedAlternatives(convertedRoutes);
+              setLoadingAlternatives(false);
+              return;
+            }
+          } catch (parseError) {
+            console.error('[RouteAlternatives] Error parsing alternatives:', parseError);
+          }
+        }
+        
+        // Если в localStorage нет, можно загрузить из API (закомментировано)
+        // fetch(`/api/v1/routes/alternatives/${routeId}`)
+        //   .then(res => res.json())
+        //   .then(data => {
+        //     if (data.routes && Array.isArray(data.routes)) {
+        //       setLoadedAlternatives(data.routes);
+        //     }
+        //   })
+        //   .catch(err => {
+        //     console.error('[RouteAlternatives] Error loading alternatives:', err);
+        //   })
+        //   .finally(() => {
+        //     setLoadingAlternatives(false);
+        //   });
+      } catch (err) {
+        console.error('[RouteAlternatives] Error loading alternatives:', err);
+      } finally {
+        setLoadingAlternatives(false);
+      }
+    }
+  }, [routes, routeId]);
+  
+  // Используем переданные routes или загруженные альтернативы
+  const finalRoutes = (routes && routes.length > 1) ? routes : loadedAlternatives;
+  
+  if (loadingAlternatives) {
+    return (
+      <div className="card p-lg">
+        <h2 className="text-xl font-medium mb-md text-heading">
+          Альтернативные варианты
+        </h2>
+        <p className="text-secondary">Загрузка альтернативных маршрутов...</p>
+      </div>
+    );
+  }
+  
+  if (!finalRoutes || finalRoutes.length <= 1) {
     return (
       <div className="card p-lg">
         <h2 className="text-xl font-medium mb-md text-heading">
@@ -53,7 +136,7 @@ export function RouteAlternatives({ routes }: RouteAlternativesProps) {
     return Math.min(...prices.filter((p) => p !== Infinity));
   };
 
-  const alternatives = routes.slice(1).map((route) => {
+  const alternatives = finalRoutes.slice(1).map((route) => {
     const firstFlight = route.flights[0];
     const duration = calculateDuration(
       firstFlight?.ВремяОтправления,

@@ -165,8 +165,18 @@ export function useRouteMapSegments({
     const result: SegmentGroup[] = [];
 
     for (const [transportType, segmentList] of groupsMap.entries()) {
-      const totalDistance = segmentList.reduce((sum, seg) => sum + seg.distance, 0);
-      const totalDuration = segmentList.reduce((sum, seg) => sum + seg.duration, 0);
+      // КРИТИЧЕСКИЙ ФИКС: Используем новые поля SmartRoute (distanceData.value, durationData.value)
+      // Приоритет: distanceData.value > distance, durationData.value > duration
+      // Используем ?? вместо || для безопасной обработки 0
+      const totalDistance = segmentList.reduce((sum, seg) => {
+        const distanceValue = seg.distanceData?.value ?? seg.distance ?? 0;
+        return sum + distanceValue;
+      }, 0);
+      
+      const totalDuration = segmentList.reduce((sum, seg) => {
+        const durationValue = seg.durationData?.value ?? seg.duration ?? 0;
+        return sum + durationValue;
+      }, 0);
 
       result.push({
         transportType,
@@ -247,6 +257,7 @@ export function useRouteMapSegments({
     toggleVisibility,
   };
 }
+
 
 
 

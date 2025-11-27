@@ -96,19 +96,26 @@ export function generateMapMarkers(segments: IRouteSegmentMapData[]): IMapMarker
   // Обработка первого сегмента - Start Marker
   const firstSegment = segments[0];
   if (firstSegment.fromStop) {
+    // TODO: Добавить отображение хабов (isHub, hubLevel) в маркеры
+    const hubInfo = firstSegment.fromStop.isHub && firstSegment.fromStop.hubLevel
+      ? `\n⭐ ${firstSegment.fromStop.hubLevel === 'federal' ? 'Федеральный' : 'Региональный'} хаб`
+      : '';
+    
     const startMarker: IMapMarker = {
       id: firstSegment.fromStop.id,
       coordinate: [firstSegment.fromStop.latitude, firstSegment.fromStop.longitude],
       type: 'start',
       name: firstSegment.fromStop.name,
       cityName: firstSegment.fromStop.cityName,
-      time: firstSegment.departureTime,
+      time: firstSegment.schedule?.departureTime || firstSegment.departureTime,
       color: getMarkerColor('start'),
       icon: getMarkerIcon('start'),
-      popupContent: `Отправление: ${firstSegment.fromStop.name}\n${firstSegment.departureTime || ''}`,
+      popupContent: `Отправление: ${firstSegment.fromStop.name}${hubInfo}\n${firstSegment.schedule?.departureTime || firstSegment.departureTime || ''}`,
       metadata: {
         segmentId: firstSegment.segmentId,
         isTransfer: false,
+        isHub: firstSegment.fromStop.isHub,
+        hubLevel: firstSegment.fromStop.hubLevel,
       },
     };
     markers.push(startMarker);
@@ -128,6 +135,11 @@ export function generateMapMarkers(segments: IRouteSegmentMapData[]): IMapMarker
     ) {
       // Это transfer точка
       if (!processedStopIds.has(currentSegment.fromStop.id)) {
+        // TODO: Добавить отображение хабов (isHub, hubLevel) в маркеры пересадок
+        const hubInfo = currentSegment.fromStop.isHub && currentSegment.fromStop.hubLevel
+          ? `\n⭐ ${currentSegment.fromStop.hubLevel === 'federal' ? 'Федеральный' : 'Региональный'} хаб`
+          : '';
+        
         const transferMarker: IMapMarker = {
           id: currentSegment.fromStop.id,
           coordinate: [
@@ -137,14 +149,16 @@ export function generateMapMarkers(segments: IRouteSegmentMapData[]): IMapMarker
           type: 'transfer',
           name: currentSegment.fromStop.name,
           cityName: currentSegment.fromStop.cityName,
-          time: currentSegment.departureTime,
+          time: currentSegment.schedule?.departureTime || currentSegment.departureTime,
           color: getMarkerColor('transfer'),
           icon: getMarkerIcon('transfer'),
-          popupContent: `Пересадка: ${currentSegment.fromStop.name}\n${currentSegment.departureTime || ''}`,
+          popupContent: `Пересадка: ${currentSegment.fromStop.name}${hubInfo}\n${currentSegment.schedule?.departureTime || currentSegment.departureTime || ''}`,
           metadata: {
             segmentId: currentSegment.segmentId,
             isTransfer: true,
             previousSegmentId: previousSegment.segmentId,
+            isHub: currentSegment.fromStop.isHub,
+            hubLevel: currentSegment.fromStop.hubLevel,
           },
         };
         markers.push(transferMarker);
@@ -179,19 +193,26 @@ export function generateMapMarkers(segments: IRouteSegmentMapData[]): IMapMarker
   // Обработка последнего сегмента - End Marker
   const lastSegment = segments[segments.length - 1];
   if (lastSegment.toStop && !processedStopIds.has(lastSegment.toStop.id)) {
+    // TODO: Добавить отображение хабов (isHub, hubLevel) в маркеры прибытия
+    const hubInfo = lastSegment.toStop.isHub && lastSegment.toStop.hubLevel
+      ? `\n⭐ ${lastSegment.toStop.hubLevel === 'federal' ? 'Федеральный' : 'Региональный'} хаб`
+      : '';
+    
     const endMarker: IMapMarker = {
       id: lastSegment.toStop.id,
       coordinate: [lastSegment.toStop.latitude, lastSegment.toStop.longitude],
       type: 'end',
       name: lastSegment.toStop.name,
       cityName: lastSegment.toStop.cityName,
-      time: lastSegment.arrivalTime,
+      time: lastSegment.schedule?.arrivalTime || lastSegment.arrivalTime,
       color: getMarkerColor('end'),
       icon: getMarkerIcon('end'),
-      popupContent: `Прибытие: ${lastSegment.toStop.name}\n${lastSegment.arrivalTime || ''}`,
+      popupContent: `Прибытие: ${lastSegment.toStop.name}${hubInfo}\n${lastSegment.schedule?.arrivalTime || lastSegment.arrivalTime || ''}`,
       metadata: {
         segmentId: lastSegment.segmentId,
         isTransfer: false,
+        isHub: lastSegment.toStop.isHub,
+        hubLevel: lastSegment.toStop.hubLevel,
       },
     };
     markers.push(endMarker);
@@ -200,6 +221,7 @@ export function generateMapMarkers(segments: IRouteSegmentMapData[]): IMapMarker
 
   return markers;
 }
+
 
 
 

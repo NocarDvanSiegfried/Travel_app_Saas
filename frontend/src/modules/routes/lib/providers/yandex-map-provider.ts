@@ -52,6 +52,13 @@ export class YandexMapProvider implements IMapProvider {
    */
   async initialize(options: IMapInitOptions): Promise<void> {
     if (this.isMapReady && this.map) {
+      const container = document.getElementById(options.containerId);
+      if (container && (container as unknown as { _yandexMapId?: string })._yandexMapId) {
+        return;
+      }
+    }
+
+    if (this.isMapReady && this.map) {
       return;
     }
 

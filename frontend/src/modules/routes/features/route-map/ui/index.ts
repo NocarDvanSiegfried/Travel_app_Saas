@@ -7,6 +7,7 @@
  */
 
 export { RouteMap } from './route-map';
+export { SmartRouteMap } from './smart-route-map';
 export { MapLegend } from './map-legend';
 export { RouteMapSection } from './route-map-section';
 export { RouteMapSwitcher } from './route-map-switcher';

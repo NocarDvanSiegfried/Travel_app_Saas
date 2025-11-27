@@ -41,19 +41,152 @@ function RouteDetailsContent() {
     try {
       const storedData = safeLocalStorage.getItem(`route-${routeId}`);
       if (!storedData) {
+        console.error('[RouteDetailsContent] Route not found in localStorage:', {
+          routeId,
+          storageKey: `route-${routeId}`,
+        })
         setError('Маршрут не найден');
         setLoading(false);
         return;
       }
 
-      const parsedData: StoredRouteData = JSON.parse(storedData);
-      const adaptedData = adaptRouteToDetailsFormat(
+      // ФАЗА 6 ФИКС: Валидация и безопасный парсинг данных
+      let parsedData: StoredRouteData | null = null;
+      try {
+        parsedData = JSON.parse(storedData);
+      } catch (parseError) {
+        const errorMessage = parseError instanceof Error ? parseError.message : String(parseError);
+        console.error('[RouteDetailsContent] Failed to parse route data from localStorage:', {
+          routeId,
+          storageKey: `route-${routeId}`,
+          error: parseError,
+          errorMessage,
+          dataLength: storedData.length,
+          dataPreview: storedData.substring(0, 100),
+        });
+        setError('Данные маршрута повреждены и не могут быть прочитаны');
+        setLoading(false);
+        return;
+      }
+
+      // ФАЗА 6 ФИКС: Валидация структуры данных
+      if (!parsedData || typeof parsedData !== 'object') {
+        console.error('[RouteDetailsContent] Invalid route data structure: not an object:', {
+          routeId,
+          parsedType: typeof parsedData,
+        });
+        setError('Данные маршрута имеют неверный формат');
+        setLoading(false);
+        return;
+      }
+      
+      // ФАЗА 6 ФИКС: Проверяем, что route существует и имеет необходимые поля
+      if (!parsedData.route || typeof parsedData.route !== 'object') {
+        console.error('[RouteDetailsContent] Route data is missing or invalid:', {
+          routeId,
+          hasRoute: !!parsedData.route,
+          routeType: typeof parsedData.route,
+        });
+        setError('Данные маршрута повреждены');
+        setLoading(false);
+        return;
+      }
+
+      // ФАЗА 6 ФИКС: Убеждаемся, что segments - это массив
+      if (!Array.isArray(parsedData.route.segments)) {
+        console.warn('[RouteDetailsContent] Route segments is not an array, setting to empty array:', {
+          routeId,
+          segmentsType: typeof parsedData.route.segments,
+        });
+        parsedData.route.segments = [];
+      }
+      
+      // ФАЗА 3: КРИТИЧЕСКИЙ ФИКС - Используем routeId из URL как приоритетный
+      if (!parsedData.route.routeId) {
+        console.warn('[RouteDetailsContent] Route missing routeId, using URL routeId:', {
+          routeId,
+          route: parsedData.route,
+        })
+        parsedData.route.routeId = routeId || `route-${Date.now()}`
+      } else if (parsedData.route.routeId !== routeId) {
+        // Если routeId из данных не совпадает с URL, обновляем данные
+        console.warn('[RouteDetailsContent] RouteId mismatch, updating:', {
+          urlRouteId: routeId,
+          dataRouteId: parsedData.route.routeId,
+        })
+        parsedData.route.routeId = routeId
+      }
+      
+      // ФАЗА 3: Адаптация данных с fallback
+      let adaptedData = adaptRouteToDetailsFormat(
         parsedData.route,
         parsedData.riskAssessment
       );
+      
+      // КРИТИЧЕСКИЙ ФИКС: Если адаптация вернула null, создаём минимальный формат данных
+      if (!adaptedData) {
+        console.warn('[RouteDetailsContent] Route adaptation failed, creating fallback:', {
+          routeId,
+          route: parsedData.route,
+        })
+        
+        // Создаём минимальный формат данных для отображения
+        const fromCityCode = parsedData.route.fromCity?.substring(0, 3).toUpperCase() || 'FROM'
+        const toCityCode = parsedData.route.toCity?.substring(0, 3).toUpperCase() || 'TO'
+        
+        adaptedData = {
+          from: {
+            Ref_Key: `city-${parsedData.route.fromCity || routeId}`,
+            Наименование: parsedData.route.fromCity || 'Неизвестно',
+            Код: fromCityCode,
+            Адрес: undefined,
+          },
+          to: {
+            Ref_Key: `city-${parsedData.route.toCity || routeId}`,
+            Наименование: parsedData.route.toCity || 'Неизвестно',
+            Код: toCityCode,
+            Адрес: undefined,
+          },
+          date: parsedData.route.date || new Date().toISOString(),
+          routes: [{
+            route: {
+              Ref_Key: routeId,
+              Наименование: `${parsedData.route.fromCity || 'От'} → ${parsedData.route.toCity || 'До'}`,
+              Код: routeId,
+              Description: `Маршрут с ${parsedData.route.transferCount || 0} пересадками`,
+            },
+            segments: parsedData.route.segments?.map((seg, index) => ({
+              from: seg.segment?.fromStopId ? {
+                Наименование: seg.segment.fromStopId,
+                Код: seg.segment.fromStopId,
+                Адрес: undefined,
+              } : null,
+              to: seg.segment?.toStopId ? {
+                Наименование: seg.segment.toStopId,
+                Код: seg.segment.toStopId,
+                Адрес: undefined,
+              } : null,
+              order: index,
+              transportType: seg.segment?.transportType || 'unknown',
+              departureTime: seg.departureTime,
+              arrivalTime: seg.arrivalTime,
+              duration: seg.duration,
+            })) || [],
+            schedule: [],
+            flights: [],
+          }],
+        } as any
+      }
+      
       setRouteData(adaptedData);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ошибка при загрузке маршрута');
+      const errorMessage = err instanceof Error ? err.message : 'Ошибка при загрузке маршрута'
+      console.error('[RouteDetailsContent] Error loading route:', {
+        routeId,
+        error: err,
+        errorMessage,
+      })
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

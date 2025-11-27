@@ -27,8 +27,10 @@ export function SearchForm() {
   const router = useRouter()
   const { cities: availableCities } = useCities()
   const [formData, setFormData] = useState({
-    from: '',
-    to: '',
+    fromId: '', // cityId
+    fromName: '', // cityName для отображения
+    toId: '', // cityId
+    toName: '', // cityName для отображения
     date: '',
     returnDate: '',
     passengers: '1',
@@ -43,91 +45,123 @@ export function SearchForm() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 
-    // Используем актуальные значения из состояния
-    setFormData((currentFormData) => {
-      try {
-        // Валидация через Zod
-        const validatedData = RouteSearchParamsWithValidationSchema.parse({
-          from: currentFormData.from.trim(),
-          to: currentFormData.to.trim(),
-          date: currentFormData.date || undefined,
-          passengers: currentFormData.passengers || undefined,
-        })
-
-        // Дополнительная проверка: города должны быть в списке доступных
-        if (availableCities.length > 0) {
-          if (!availableCities.includes(validatedData.from)) {
-            setErrors({ from: 'Выберите город из списка' })
-            return currentFormData
-          }
-          if (!availableCities.includes(validatedData.to)) {
-            setErrors({ to: 'Выберите город из списка' })
-            return currentFormData
-          }
-        }
-
-        // Очищаем ошибки
-        setErrors({})
-
-        // Формируем параметры для URL
-        // Всегда включаем все обязательные параметры: from, to, date, passengers
-        const params = new URLSearchParams({
-          from: validatedData.from,
-          to: validatedData.to,
-        })
-
-        // Для date: если не выбрана, подставляем текущую дату в формате YYYY-MM-DD
-        const dateValue = validatedData.date || (() => {
-          const today = new Date()
-          const year = today.getFullYear()
-          const month = String(today.getMonth() + 1).padStart(2, '0')
-          const day = String(today.getDate()).padStart(2, '0')
-          return `${year}-${month}-${day}`
-        })()
-        params.set('date', dateValue)
-
-        // Для passengers: если не выбрано, устанавливаем 1 по умолчанию
-        const passengersValue = validatedData.passengers || '1'
-        params.set('passengers', passengersValue)
-
-        // Переход на страницу результатов поиска
-        router.push(`/routes?${params.toString()}`)
-
-        return currentFormData
-      } catch (error) {
-        // Обработка ошибок Zod валидации
+    // КРИТИЧЕСКИЙ ФИКС: Выносим валидацию и навигацию из setFormData
+    // чтобы избежать ошибки "Cannot update a component (Router) while rendering"
+    try {
+      // Проверяем, что выбраны города с ID
+      if (!formData.fromId || !formData.toId) {
         const newErrors: typeof errors = {}
-        if (error instanceof ZodError) {
-          error.issues.forEach((issue) => {
-            const field = issue.path[0] as keyof typeof errors
-            if (field && (field === 'from' || field === 'to' || field === 'date')) {
-              newErrors[field] = issue.message
-            }
-          })
+        if (!formData.fromId) {
+          newErrors.from = 'Выберите город из списка'
+        }
+        if (!formData.toId) {
+          newErrors.to = 'Выберите город из списка'
         }
         setErrors(newErrors)
-        return currentFormData
+        return
       }
-    })
+
+      // Проверяем, что города разные
+      if (formData.fromId === formData.toId) {
+        setErrors({ to: 'Город назначения должен отличаться от города отправления' })
+        return
+      }
+
+      // Дополнительная проверка: города должны быть в списке доступных
+      if (availableCities.length > 0) {
+        const fromCity = availableCities.find(c => c.id === formData.fromId)
+        const toCity = availableCities.find(c => c.id === formData.toId)
+        const newErrors: typeof errors = {}
+        if (!fromCity) {
+          newErrors.from = 'Выберите город из списка'
+        }
+        if (!toCity) {
+          newErrors.to = 'Выберите город из списка'
+        }
+        if (newErrors.from || newErrors.to) {
+          setErrors(newErrors)
+          return
+        }
+      }
+
+      // Очищаем ошибки
+      setErrors({})
+
+      // Формируем параметры для URL
+      // Используем cityId для запроса, но сохраняем cityName для отображения
+      const params = new URLSearchParams({
+        from: formData.fromId, // cityId
+        to: formData.toId, // cityId
+      })
+
+      // Сохраняем названия для отображения (опционально)
+      if (formData.fromName) {
+        params.set('fromName', formData.fromName)
+      }
+      if (formData.toName) {
+        params.set('toName', formData.toName)
+      }
+
+      // Для date: если не выбрана, подставляем текущую дату в формате YYYY-MM-DD
+      const dateValue = formData.date || (() => {
+        const today = new Date()
+        const year = today.getFullYear()
+        const month = String(today.getMonth() + 1).padStart(2, '0')
+        const day = String(today.getDate()).padStart(2, '0')
+        return `${year}-${month}-${day}`
+      })()
+      params.set('date', dateValue)
+
+      // Для passengers: если не выбрано, устанавливаем 1 по умолчанию
+      const passengersValue = formData.passengers || '1'
+      params.set('passengers', passengersValue)
+
+      // КРИТИЧЕСКИЙ ФИКС: Переход на страницу результатов поиска вынесен из setFormData
+      // Используем setTimeout для отложенного вызова, чтобы избежать ошибки рендеринга
+      setTimeout(() => {
+        router.push(`/routes?${params.toString()}`)
+      }, 0)
+    } catch (error) {
+      // Обработка ошибок
+      const newErrors: typeof errors = {}
+      if (error instanceof ZodError) {
+        error.issues.forEach((issue) => {
+          const field = issue.path[0] as keyof typeof errors
+          if (field && (field === 'from' || field === 'to' || field === 'date')) {
+            newErrors[field] = issue.message
+          }
+        })
+      }
+      setErrors(newErrors)
+    }
   }
 
 
   const isFormValid = () => {
-    // Кнопка активна только при заполнении "Откуда" и "Куда"
+    // Кнопка активна только при заполнении "Откуда" и "Куда" с cityId
     // Поля "Пассажиры", "Класс поездки", "Дата" не блокируют кнопку
-    if (!formData.from.trim() || !formData.to.trim()) {
+    if (!formData.fromId || !formData.toId) {
       return false
     }
     
-    // Если города еще загружаются, можно отправить форму
-    if (availableCities.length === 0) {
-      return formData.from !== formData.to
+    // Проверяем, что города разные
+    if (formData.fromId === formData.toId) {
+      return false
     }
 
+    // Если города еще загружаются, можно отправить форму если есть ID
+    if (availableCities.length === 0) {
+      return formData.fromId !== formData.toId
+    }
+
+    // Проверяем, что города есть в списке
+    const fromCity = availableCities.find(c => c.id === formData.fromId)
+    const toCity = availableCities.find(c => c.id === formData.toId)
+
     return (
-      availableCities.includes(formData.from) &&
-      availableCities.includes(formData.to) &&
-      formData.from !== formData.to
+      !!fromCity &&
+      !!toCity &&
+      formData.fromId !== formData.toId
     )
   }
 
@@ -159,10 +193,10 @@ export function SearchForm() {
             name="from"
             label="Откуда"
             placeholder="Город отправления"
-            value={formData.from}
-            onChange={(value) => {
-              const trimmedValue = value?.trim() || ''
-              setFormData((prev) => ({ ...prev, from: trimmedValue }))
+            value={formData.fromId}
+            displayValue={formData.fromName}
+            onChange={(cityId, cityName) => {
+              setFormData((prev) => ({ ...prev, fromId: cityId, fromName: cityName }))
               if (errors.from) {
                 setErrors((prev) => ({ ...prev, from: undefined }))
               }
@@ -179,10 +213,10 @@ export function SearchForm() {
             name="to"
             label="Куда"
             placeholder="Город назначения"
-            value={formData.to}
-            onChange={(value) => {
-              const trimmedValue = value?.trim() || ''
-              setFormData((prev) => ({ ...prev, to: trimmedValue }))
+            value={formData.toId}
+            displayValue={formData.toName}
+            onChange={(cityId, cityName) => {
+              setFormData((prev) => ({ ...prev, toId: cityId, toName: cityName }))
               if (errors.to) {
                 setErrors((prev) => ({ ...prev, to: undefined }))
               }

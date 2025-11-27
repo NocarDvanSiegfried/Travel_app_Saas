@@ -16,6 +16,7 @@ import { extractCityFromStopName } from '../../shared/utils/city-normalizer';
 import { getCityByAirportName } from '../../shared/utils/airports-loader';
 import { getMainCityBySuburb } from '../../shared/utils/suburbs-loader';
 import { RedisCacheService } from '../../infrastructure/cache/RedisCacheService';
+import { getCityById, searchCities } from '../../domain/smart-routing/data/cities-reference';
 
 const logger = getLogger('CitiesController');
 const cacheService = new RedisCacheService();
@@ -128,16 +129,21 @@ export async function getCities(req: Request, res: Response): Promise<void> {
   try {
     logger.info('Getting available cities', { module: 'CitiesController' });
 
-    // Check Redis cache first
+    // ФАЗА 4 ФИКС: Check Redis cache first with improved logging
     const cacheKey = `${CACHE_KEY}:${req.query.page || 1}:${req.query.limit || 100}`;
     const cachedResult = await cacheService.get<any>(cacheKey);
     
     if (cachedResult) {
       const duration = Date.now() - startTime;
+      // ФАЗА 4 ФИКС: Логируем количество городов из кеша для диагностики
+      const cachedCitiesCount = cachedResult?.data?.length || 0;
       logger.info('Cities list served from cache', {
         module: 'CitiesController',
         duration: `${duration}ms`,
         cacheHit: true,
+        cachedCitiesCount,
+        page: req.query.page || 1,
+        limit: req.query.limit || 100,
       });
       res.json(cachedResult);
       return;
@@ -268,7 +274,7 @@ export async function getCities(req: Request, res: Response): Promise<void> {
       }
     }
 
-    // CRITICAL: All cities must come from unified reference
+    // ФАЗА 4 ФИКС: All cities must come from unified reference
     // This section ensures that ALL cities from unified reference are included
     // and that we never use normalized names as fallback
 
@@ -279,19 +285,45 @@ export async function getCities(req: Request, res: Response): Promise<void> {
     try {
       const allUnifiedCities = getAllUnifiedCities();
       
-      // CRITICAL FIX: Check if unified reference is empty or failed to load
+      // ФАЗА 4 ФИКС: Check if unified reference is empty or failed to load
       if (!allUnifiedCities || allUnifiedCities.length === 0) {
         logger.error('Unified cities reference is empty - this should not happen', undefined, {
+          module: 'CitiesController',
           citiesFromStops: citiesSetBeforeFinal.size,
+          realStopsCount: realStops.length,
+          virtualStopsCount: virtualStops.length,
         });
-        // Continue with cities from stops only - this is a fallback
+        // FALLBACK: Add critical federal cities manually if unified reference is empty
+        const criticalFederalCities = [
+          { name: 'Москва', normalizedName: 'москва' },
+          { name: 'Санкт-Петербург', normalizedName: 'санкт-петербург' },
+          { name: 'Новосибирск', normalizedName: 'новосибирск' },
+          { name: 'Красноярск', normalizedName: 'красноярск' },
+          { name: 'Хабаровск', normalizedName: 'хабаровск' },
+          { name: 'Иркутск', normalizedName: 'иркутск' },
+        ];
+        for (const city of criticalFederalCities) {
+          const normalized = normalizeCityName(city.name);
+          if (!normalizedCitiesMap.has(normalized)) {
+            normalizedCitiesMap.set(normalized, city.name);
+            citiesSet.add(city.name);
+          }
+        }
+        logger.warn('Added critical federal cities as fallback', {
+          module: 'CitiesController',
+          addedCount: criticalFederalCities.length,
+          totalCitiesAfterFallback: citiesSet.size,
+        });
       } else {
         const unifiedCityNames = new Set<string>();
         
+        // ФАЗА 4 ФИКС: Улучшенное логирование для диагностики
         logger.info('Final step: Adding all cities from unified reference', {
           module: 'CitiesController',
           unifiedCitiesCount: allUnifiedCities.length,
           citiesFromStopsBefore: citiesSetBeforeFinal.size,
+          realStopsCount: realStops.length,
+          virtualStopsCount: virtualStops.length,
         });
         
         // Add ALL cities from unified reference
@@ -303,7 +335,7 @@ export async function getCities(req: Request, res: Response): Promise<void> {
           citiesSet.add(city.name);
         }
         
-        // Log cities that were in unified reference but not found in stops (BEFORE final step)
+        // ФАЗА 4 ФИКС: Log cities that were in unified reference but not found in stops (BEFORE final step)
         const missingFromStops = Array.from(unifiedCityNames).filter(
           cityName => !citiesSetBeforeFinal.has(cityName)
         );
@@ -312,11 +344,13 @@ export async function getCities(req: Request, res: Response): Promise<void> {
           logger.info('Cities from unified reference not found in stops (added in final step)', {
             module: 'CitiesController',
             missingCount: missingFromStops.length,
-            missingCities: missingFromStops.slice(0, 10), // Log first 10
+            missingCities: missingFromStops.slice(0, 20), // ФАЗА 4 ФИКС: Log first 20 instead of 10
+            totalUnifiedCities: allUnifiedCities.length,
+            citiesFromStopsBefore: citiesSetBeforeFinal.size,
           });
         }
         
-        // Log cities that were in stops but not in unified reference (should not happen)
+        // ФАЗА 4 ФИКС: Log cities that were in stops but not in unified reference (should not happen)
         const citiesFromStops = Array.from(citiesSetBeforeFinal);
         const notInReference = citiesFromStops.filter(
           cityName => !unifiedCityNames.has(cityName)
@@ -326,61 +360,123 @@ export async function getCities(req: Request, res: Response): Promise<void> {
           logger.warn('Cities found in stops but not in unified reference', {
             module: 'CitiesController',
             count: notInReference.length,
-            cities: notInReference.slice(0, 10), // Log first 10
+            cities: notInReference.slice(0, 20), // ФАЗА 4 ФИКС: Log first 20 instead of 10
+            totalUnifiedCities: allUnifiedCities.length,
           });
         }
         
+        // ФАЗА 4 ФИКС: Улучшенное логирование итогового результата
         logger.info('Final step completed', {
           module: 'CitiesController',
           totalCitiesAfterFinal: citiesSet.size,
           citiesAddedInFinal: citiesSet.size - citiesSetBeforeFinal.size,
+          unifiedCitiesCount: allUnifiedCities.length,
+          citiesFromStopsBefore: citiesSetBeforeFinal.size,
+          coverage: `${((citiesSet.size / allUnifiedCities.length) * 100).toFixed(1)}%`,
         });
       }
     } catch (error) {
       logger.error('Failed to load unified cities reference for final check', error as Error, {
+        module: 'CitiesController',
         errorDetails: error instanceof Error ? error.stack : String(error),
         citiesFromStops: citiesSetBeforeFinal.size,
+        realStopsCount: realStops.length,
+        virtualStopsCount: virtualStops.length,
       });
       // Continue with cities from stops only - this is a fallback
     }
 
-    const cities = Array.from(citiesSet).sort();
+    // CRITICAL FIX: Convert cities array to objects with { id, name }
+    // id must match cityId from cities-reference.ts for consistency
+    // ВАЖНО: Используем unified reference как источник правды, затем ищем в cities-reference.ts для получения id
+    const citiesWithId = Array.from(citiesSet).sort().map(cityName => {
+      // Сначала ищем в cities-reference.ts по названию (searchCities ищет по названию)
+      const cityRefFromSearch = searchCities(cityName)[0];
+      
+      if (cityRefFromSearch && cityRefFromSearch.id) {
+        // Используем id из cities-reference.ts (это источник правды для id)
+        return {
+          id: cityRefFromSearch.id,
+          name: cityRefFromSearch.name
+        };
+      }
+      
+      // Если не найден в cities-reference.ts, проверяем unified reference
+      const unifiedCity = getUnifiedCity(cityName);
+      if (unifiedCity) {
+        // Генерируем id из normalizedName unified reference (совпадает с форматом SmartRoute)
+        const normalized = unifiedCity.normalizedName || normalizeCityName(cityName);
+        const id = normalized
+          .replace(/[^а-яёa-z0-9]/g, '-')
+          .replace(/-+/g, '-')
+          .replace(/^-|-$/g, '');
+        
+        return {
+          id,
+          name: unifiedCity.name
+        };
+      }
+      
+      // Fallback: generate id from normalized name (same format as SmartRoute cityId)
+      const normalized = normalizeCityName(cityName);
+      const id = normalized
+        .replace(/[^а-яёa-z0-9]/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '');
+      
+      return {
+        id,
+        name: cityName
+      };
+    });
 
     // Apply pagination
-    // CRITICAL FIX: Use defaultLimit=100 for cities endpoint to return all cities by default
-    const { page, limit } = parsePaginationParams(req.query, 100);
-    const total = cities.length;
+    // CRITICAL FIX: Use defaultLimit=1000 and maxLimit=1000 for cities endpoint to return all cities from unified reference
+    // Unified reference может содержать больше 100 городов (yakutia + federal cities + railway stations)
+    const { page, limit } = parsePaginationParams(req.query, 1000, 1000);
+    const total = citiesWithId.length;
     const startIndex = (page - 1) * limit;
     const endIndex = startIndex + limit;
-    const paginatedCities = cities.slice(startIndex, endIndex);
+    const paginatedCities = citiesWithId.slice(startIndex, endIndex);
 
     // Final verification: compare with unified reference
     // CRITICAL: Use full cities list (before pagination) for comparison
     try {
       const allUnifiedCities = getAllUnifiedCities();
       const unifiedCityNames = new Set(allUnifiedCities.map(c => c.name));
-      const returnedCityNames = new Set(cities); // cities is full list before pagination
+      const returnedCityNames = new Set(citiesWithId.map(c => c.name)); // citiesWithId is full list before pagination
       
       const missingInResponse = Array.from(unifiedCityNames).filter(
         name => !returnedCityNames.has(name)
       );
       
+      // ФАЗА 4 ФИКС: Улучшенное логирование итоговой статистики
       logger.info('Cities loaded from database', {
         module: 'CitiesController',
-        count: cities.length,
+        count: citiesWithId.length,
         unifiedReferenceCount: allUnifiedCities.length,
         missingInResponse: missingInResponse.length,
         realStopsCount: realStops.length,
         virtualStopsCount: virtualStops.length,
         page,
         limit,
+        coverage: `${((citiesWithId.length / allUnifiedCities.length) * 100).toFixed(1)}%`,
+        paginatedCount: paginatedCities.length,
       });
       
       if (missingInResponse.length > 0) {
         logger.warn('Cities from unified reference missing in response', {
           module: 'CitiesController',
           missingCount: missingInResponse.length,
-          missingCities: missingInResponse.slice(0, 10),
+          missingCities: missingInResponse.slice(0, 20), // ФАЗА 4 ФИКС: Log first 20 instead of 10
+          totalUnifiedCities: allUnifiedCities.length,
+          totalReturned: citiesWithId.length,
+        });
+      } else {
+        logger.info('All cities from unified reference are included in response', {
+          module: 'CitiesController',
+          totalCities: citiesWithId.length,
+          unifiedReferenceCount: allUnifiedCities.length,
         });
       }
     } catch (error) {
@@ -409,7 +505,7 @@ export async function getCities(req: Request, res: Response): Promise<void> {
     logger.info('Cities list generated', {
       module: 'CitiesController',
       duration: `${duration}ms`,
-      totalCities: cities.length,
+      totalCities: citiesWithId.length,
       realStopsCount: realStops.length,
       virtualStopsCount: virtualStops.length,
       cacheHit: false,

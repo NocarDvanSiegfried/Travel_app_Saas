@@ -1,5 +1,8 @@
 'use client';
 
+import { useState, useEffect } from 'react';
+import { safeLocalStorage } from '@/shared/utils/storage';
+
 interface RiskAssessment {
   riskScore: {
     value: number;
@@ -31,7 +34,62 @@ export function RouteRiskAssessment({
   routeId: _routeId,
   riskAssessment,
 }: RouteRiskAssessmentProps) {
-  if (!riskAssessment) {
+  // ФАЗА 4: Пытаемся загрузить riskAssessment из localStorage, если он не передан
+  const [loadedRiskAssessment, setLoadedRiskAssessment] = useState(riskAssessment);
+  const [loadingRisk, setLoadingRisk] = useState(!riskAssessment && !!_routeId);
+  
+  useEffect(() => {
+    if (!riskAssessment && _routeId) {
+      // Пытаемся загрузить из localStorage
+      try {
+        const routeData = safeLocalStorage.getItem(`route-${_routeId}`);
+        if (routeData) {
+          const parsed = JSON.parse(routeData);
+          if (parsed.riskAssessment) {
+            setLoadedRiskAssessment(parsed.riskAssessment);
+            setLoadingRisk(false);
+            return;
+          }
+        }
+        
+        // Если в localStorage нет, можно загрузить из API (закомментировано, т.к. API может быть не готов)
+        // fetch(`/api/v1/risk-assessment/${_routeId}`)
+        //   .then(res => res.json())
+        //   .then(data => {
+        //     if (data.riskAssessment) {
+        //       setLoadedRiskAssessment(data.riskAssessment);
+        //     }
+        //   })
+        //   .catch(err => {
+        //     console.error('[RouteRiskAssessment] Error loading risk assessment:', err);
+        //   })
+        //   .finally(() => {
+        //     setLoadingRisk(false);
+        //   });
+      } catch (err) {
+        console.error('[RouteRiskAssessment] Error loading risk assessment:', err);
+      } finally {
+        setLoadingRisk(false);
+      }
+    }
+  }, [riskAssessment, _routeId]);
+  
+  const finalRiskAssessment = riskAssessment || loadedRiskAssessment;
+  
+  if (loadingRisk) {
+    return (
+      <div className="card p-lg">
+        <h2 className="text-xl font-medium mb-md text-heading">
+          Оценка рисков маршрута
+        </h2>
+        <div className="text-secondary">
+          <p>Загрузка оценки рисков...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  if (!finalRiskAssessment) {
     return (
       <div className="card p-lg">
         <h2 className="text-xl font-medium mb-md text-heading">
@@ -44,7 +102,7 @@ export function RouteRiskAssessment({
     );
   }
 
-  const { riskScore, factors, recommendations } = riskAssessment;
+  const { riskScore, factors, recommendations } = finalRiskAssessment;
 
   const getRiskClass = (score: number) => {
     if (score <= 2) return 'risk-badge-success';

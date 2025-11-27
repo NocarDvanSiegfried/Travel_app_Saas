@@ -321,3 +321,6 @@ console.log('[TILE DIAGNOSTICS] Fallback tile layer activated', {
 **Статус:** ✅ Диагностика добавлена и готова к использованию
 
 
+
+
+

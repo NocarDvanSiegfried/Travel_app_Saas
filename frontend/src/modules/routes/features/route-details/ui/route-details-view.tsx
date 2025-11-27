@@ -2,6 +2,8 @@
 
 import { RouteSummary } from './route-summary';
 import { RouteSegments } from './route-segments';
+import { SmartRouteSegments } from './smart-route-segments';
+import { RouteValidation } from './route-validation';
 import { RouteSchedule } from './route-schedule';
 import { RoutePricing } from './route-pricing';
 import { RouteAlternatives } from './route-alternatives';
@@ -11,6 +13,8 @@ import { OccupancyData } from '@/modules/routes/domain/types';
 
 /**
  * Данные для отображения детальной информации о маршруте
+ * 
+ * Поддерживает как старый формат OData, так и новый формат SmartRoute
  */
 interface RouteDetailsData {
   from: {
@@ -92,6 +96,72 @@ interface RouteDetailsData {
     };
     recommendations?: string[];
   };
+  
+  // Новые поля SmartRoute
+  smartRouteSegments?: Array<{
+    segmentId: string;
+    type: string;
+    from: {
+      id: string;
+      name: string;
+      type: string;
+      isHub?: boolean;
+      hubLevel?: 'federal' | 'regional';
+    };
+    to: {
+      id: string;
+      name: string;
+      type: string;
+      isHub?: boolean;
+      hubLevel?: 'federal' | 'regional';
+    };
+    distance: {
+      value: number;
+      unit: string;
+    };
+    duration: {
+      value: number;
+      unit: string;
+      display: string;
+    };
+    price: {
+      base: number;
+      total: number;
+      currency: string;
+    };
+    isDirect?: boolean;
+    viaHubs?: Array<{
+      level: 'federal' | 'regional';
+    }>;
+    schedule?: {
+      departureTime?: string;
+      arrivalTime?: string;
+    };
+    seasonality?: {
+      available: boolean;
+      season: string;
+      period?: {
+        start: string;
+        end: string;
+      };
+    };
+    validation?: {
+      isValid: boolean;
+      errors: string[];
+      warnings: string[];
+    };
+  }>;
+  validation?: {
+    isValid: boolean;
+    errors: string[];
+    warnings: string[];
+    segmentValidations?: Array<{
+      segmentId: string;
+      isValid: boolean;
+      errors: string[];
+      warnings: string[];
+    }>;
+  };
 }
 
 interface RouteDetailsViewProps {
@@ -124,6 +194,36 @@ export function RouteDetailsView({ data }: RouteDetailsViewProps) {
     );
   }
 
+  // Определяем, используем ли мы новый формат SmartRoute
+  const isSmartRoute = Boolean(data.smartRouteSegments && data.smartRouteSegments.length > 0);
+
+  // ФАЗА 4: КРИТИЧЕСКИЙ ФИКС - Получаем routeId с множественными fallback
+  // adaptRouteToDetailsFormat создаёт Ref_Key из route.routeId (строка 356 в route-adapter.ts)
+  // Но маршрут сохранён в localStorage с ключом route-${route.routeId}
+  // Поэтому используем primaryRoute.route.Ref_Key, который равен route.routeId
+  // Или получаем routeId из data, если он там есть
+  const routeId = 
+    primaryRoute.route.Ref_Key || 
+    primaryRoute.route.Код || 
+    (data as any)?.routeId ||
+    (data as any)?.primaryRoute?.route?.Ref_Key ||
+    (data as any)?.primaryRoute?.route?.Код ||
+    `route-${Date.now()}`; // Fallback
+  
+  if (!routeId) {
+    console.error('[RouteDetailsView] Cannot determine routeId:', {
+      primaryRoute,
+      data,
+    });
+    return (
+      <div className="card p-lg">
+        <div className="text-error">
+          Ошибка: не удалось определить ID маршрута
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-5">
       <RouteSummary
@@ -133,9 +233,19 @@ export function RouteDetailsView({ data }: RouteDetailsViewProps) {
         route={primaryRoute.route}
       />
 
-      <RouteMapWithAlternatives primaryRouteId={primaryRoute.route.Ref_Key} height="500px" providerType="leaflet" />
+      <RouteMapWithAlternatives primaryRouteId={routeId} height="500px" providerType="leaflet" />
 
-      <RouteSegments segments={primaryRoute.segments} />
+      {/* Валидация маршрута (только для SmartRoute) */}
+      {isSmartRoute && data.validation && (
+        <RouteValidation validation={data.validation} />
+      )}
+
+      {/* Сегменты маршрута */}
+      {isSmartRoute && data.smartRouteSegments ? (
+        <SmartRouteSegments segments={data.smartRouteSegments} showValidation={true} />
+      ) : (
+        <RouteSegments segments={primaryRoute.segments} />
+      )}
 
       <RouteSchedule
         schedule={primaryRoute.schedule}
@@ -144,10 +254,10 @@ export function RouteDetailsView({ data }: RouteDetailsViewProps) {
 
       <RoutePricing flights={primaryRoute.flights} />
 
-      <RouteAlternatives routes={data.routes} />
+      <RouteAlternatives routes={data.routes} routeId={routeId} />
 
       <RouteRiskAssessment
-        routeId={primaryRoute.route.Ref_Key}
+        routeId={routeId}
         riskAssessment={data.riskAssessment}
       />
     </div>

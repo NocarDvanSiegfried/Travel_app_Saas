@@ -1,13 +1,8 @@
 /**
- * Route Map Library
- * 
- * Экспорт всех утилит и библиотек для карты маршрутов
- * 
- * @module routes/features/route-map/lib
+ * Экспорты для модуля визуализации маршрутов на карте
  */
 
 export * from './map-styles';
 export * from './marker-generator';
-
-
-
+export * from './smart-route-visualization';
+export * from './smart-route-map-renderer';

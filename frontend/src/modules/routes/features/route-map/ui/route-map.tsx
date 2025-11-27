@@ -582,7 +582,24 @@ export function RouteMap({
       const isHighlighted = selectedSegmentId === segment.segmentId;
       const style = getPolylineStyle(segment.transportType, isHighlighted);
 
-      const polylineId = provider.addPolyline(segment.polyline.coordinates, {
+      // TODO: Использовать pathGeometry из SmartRoute вместо polyline.coordinates
+      // Приоритет: pathGeometry > polyline.coordinates > fallback (прямая линия)
+      let coordinates: Array<[number, number]>;
+      if (segment.pathGeometry && segment.pathGeometry.length > 0) {
+        // Используем реалистичный путь из SmartRoute
+        coordinates = segment.pathGeometry as Array<[number, number]>;
+      } else if (segment.polyline?.coordinates && segment.polyline.coordinates.length > 0) {
+        // Fallback на старый формат
+        coordinates = segment.polyline.coordinates;
+      } else {
+        // Fallback: прямая линия между остановками
+        coordinates = [
+          [segment.fromStop.latitude, segment.fromStop.longitude],
+          [segment.toStop.latitude, segment.toStop.longitude],
+        ];
+      }
+
+      const polylineId = provider.addPolyline(coordinates, {
         color: style.color,
         weight: style.weight,
         opacity: style.opacity,
@@ -590,6 +607,11 @@ export function RouteMap({
         metadata: {
           segmentId: segment.segmentId,
           hintContent: `${segment.fromStop.name} → ${segment.toStop.name}`,
+          // Добавляем информацию о хабах для popup
+          viaHubs: segment.viaHubs,
+          isDirect: segment.isDirect,
+          isHub: segment.fromStop.isHub || segment.toStop.isHub,
+          hubLevel: segment.fromStop.hubLevel || segment.toStop.hubLevel,
         },
       });
 

@@ -2,6 +2,47 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================
+   LEAFLET CUSTOM STYLES
+   Кастомные стили для Leaflet карты
+   ============================================ */
+
+/* Скрываем footer Leaflet с атрибуцией */
+.leaflet-control-attribution {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  height: 0 !important;
+  width: 0 !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
+}
+
+/* Дополнительная защита от отображения footer */
+.leaflet-container .leaflet-control-attribution {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  height: 0 !important;
+  width: 0 !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
+}
+
+/* Дополнительное скрытие для всех возможных вариантов */
+.leaflet-bottom .leaflet-control-attribution,
+.leaflet-top .leaflet-control-attribution,
+.leaflet-left .leaflet-control-attribution,
+.leaflet-right .leaflet-control-attribution {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  height: 0 !important;
+  width: 0 !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
+}
+
 @layer base {
   :root {
     /* ============================================

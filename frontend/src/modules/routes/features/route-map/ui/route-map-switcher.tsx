@@ -11,6 +11,7 @@
 import { memo, useCallback, useMemo } from 'react';
 import type { IBuiltRoute } from '../../../domain/types';
 import { RouteMap } from './route-map';
+import { SmartRouteMap } from './smart-route-map';
 
 interface RouteMapSwitcherProps {
   /**
@@ -71,6 +72,50 @@ export const RouteMapSwitcher = memo(function RouteMapSwitcher({
     const index = Math.max(0, Math.min(currentRouteIndex, routes.length - 1));
     return routes[index];
   }, [routes, currentRouteIndex]);
+
+  // КРИТИЧЕСКИЙ ФИКС: Проверяем, является ли маршрут SmartRoute
+  // SmartRoute маршруты содержат новые поля: pathGeometry, viaHubs, isHub, hubLevel, validation
+  // КРИТИЧЕСКИЙ ФИКС: Проверяем, что маршрут не имеет ошибки INVALID_ROUTE_RESPONSE
+  // КРИТИЧЕСКИЙ ФИКС: Используем SmartRouteMap для всех маршрутов, так как он поддерживает fallback координаты
+  const isSmartRoute = useMemo(() => {
+    if (!currentRoute) {
+      return false;
+    }
+    
+    // КРИТИЧЕСКИЙ ФИКС: Если маршрут имеет ошибку валидации INVALID_ROUTE_RESPONSE, не используем SmartRouteMap
+    const routeValidation = (currentRoute as any)?.validation;
+    if (routeValidation && !routeValidation.isValid && routeValidation.errors) {
+      const hasInvalidResponseError = routeValidation.errors.some((err: string) => 
+        err.toLowerCase().includes('invalid') || 
+        err.toLowerCase().includes('неверный формат') ||
+        err.toLowerCase().includes('invalid_route_response')
+      );
+      if (hasInvalidResponseError) {
+        console.warn('[RouteMapSwitcher] Route has INVALID_ROUTE_RESPONSE error, using RouteMap instead of SmartRouteMap');
+        return false;
+      }
+    }
+    
+    // КРИТИЧЕСКИЙ ФИКС: Проверяем наличие новых полей SmartRoute
+    const hasSmartRouteFields = Boolean(
+      currentRoute.segments?.some(seg => 
+        (seg.segment as any)?.pathGeometry || 
+        (seg.segment as any)?.viaHubs || 
+        (seg.segment as any)?.isHub ||
+        (currentRoute as any)?.validation
+      )
+    );
+    
+    // КРИТИЧЕСКИЙ ФИКС: Если маршрут в старом формате (только fromStopId/toStopId), но есть fromCity/toCity,
+    // используем SmartRouteMap с fallback координатами
+    const hasOldFormat = currentRoute.segments?.some(seg => 
+      (seg.segment as any)?.fromStopId && !(seg.segment as any)?.from?.coordinates
+    );
+    const hasCityNames = currentRoute.fromCity && currentRoute.toCity;
+    
+    // Используем SmartRouteMap если есть новые поля ИЛИ если есть названия городов для fallback
+    return hasSmartRouteFields || (hasOldFormat && hasCityNames);
+  }, [currentRoute]);
 
   const hasAlternatives = useMemo(() => {
     return routes && routes.length > 1;
@@ -164,13 +209,44 @@ export const RouteMapSwitcher = memo(function RouteMapSwitcher({
       {/* Карта */}
       <div className="relative">
         {currentRoute ? (
-          <RouteMap
-            route={currentRoute}
-            height={height}
-            showLegend={showLegend}
-            providerType={providerType}
-            key={`route-map-${providerType}-${currentRoute.routeId}-${currentRouteIndex}`}
-          />
+          (() => {
+            // КРИТИЧЕСКИЙ ФИКС: Детальное логирование данных перед передачей в карту
+            console.log('[RouteMapSwitcher] Rendering map with route:', {
+              routeId: currentRoute.routeId,
+              isSmartRoute,
+              hasSegments: Array.isArray(currentRoute.segments),
+              segmentsCount: currentRoute.segments?.length || 0,
+              segmentsStructure: currentRoute.segments?.slice(0, 2).map((seg, i) => ({
+                index: i,
+                hasSegment: !!seg.segment,
+                segmentKeys: seg.segment ? Object.keys(seg.segment) : [],
+                hasPathGeometry: !!(seg.segment as any)?.pathGeometry,
+                hasViaHubs: !!(seg.segment as any)?.viaHubs,
+                hasIsHub: !!(seg.segment as any)?.isHub,
+              })),
+              fromCity: currentRoute.fromCity,
+              toCity: currentRoute.toCity,
+              routeKeys: Object.keys(currentRoute),
+            });
+            
+            return isSmartRoute ? (
+              <SmartRouteMap
+                routeData={currentRoute as any}
+                height={height}
+                showLegend={showLegend}
+                providerType={providerType}
+                key={`smart-route-map-${providerType}-${currentRoute.routeId}-${currentRouteIndex}`}
+              />
+            ) : (
+              <RouteMap
+                route={currentRoute}
+                height={height}
+                showLegend={showLegend}
+                providerType={providerType}
+                key={`route-map-${providerType}-${currentRoute.routeId}-${currentRouteIndex}`}
+              />
+            );
+          })()
         ) : (
           <div className="card p-lg" style={{ height }}>
             <div className="flex items-center justify-center h-full">
