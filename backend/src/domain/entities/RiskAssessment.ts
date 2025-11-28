@@ -6,6 +6,63 @@ export interface IRiskScore {
   value: number;
   level: RiskLevel;
   description: string;
+  /**
+   * Детальные факторы риска для сегмента (опционально)
+   */
+  factors?: ISegmentRiskFactors;
+}
+
+/**
+ * Факторы риска для сегмента маршрута
+ */
+export interface ISegmentRiskFactors {
+  /**
+   * Погодные условия
+   */
+  weather?: {
+    temperature?: number;
+    visibility?: number;
+    wind?: number;
+    storms?: boolean;
+  };
+  /**
+   * Исторические задержки
+   */
+  delays?: {
+    avg30: number;
+    avg60: number;
+    avg90: number;
+    delayFreq: number;
+  };
+  /**
+   * Отмены рейсов
+   */
+  cancellations?: {
+    rate30: number;
+    rate60: number;
+    rate90: number;
+    total: number;
+  };
+  /**
+   * Загруженность
+   */
+  occupancy?: {
+    avg: number;
+    highLoadPercent: number;
+  };
+  /**
+   * Сезонность
+   */
+  seasonality?: {
+    month: number;
+    riskFactor: number;
+  };
+  /**
+   * Регулярность расписания
+   */
+  schedule?: {
+    regularityScore: number;
+  };
 }
 
 export enum RiskLevel {

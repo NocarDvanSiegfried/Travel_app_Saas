@@ -127,3 +127,4 @@ import { TransportType } from '../../../domain/entities/RouteSegment';
 
 3. **Консистентность:** Все файлы risk-engine используют единый подход к импорту и использованию `TransportType`.
 
+

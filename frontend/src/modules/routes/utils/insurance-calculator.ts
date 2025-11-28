@@ -82,3 +82,4 @@ export function getInsuranceProductIcon(type: string): string {
   }
 }
 
+

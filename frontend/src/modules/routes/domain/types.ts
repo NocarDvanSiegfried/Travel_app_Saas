@@ -53,7 +53,51 @@ export interface IRouteSegmentDetails {
   /**
    * Оценка риска для сегмента (опционально)
    */
-  riskScore?: IRiskScore;
+  riskScore?: IRiskScore & {
+    factors?: {
+      weather?: {
+        temperature?: number;
+        visibility?: number;
+        wind?: number;
+        storms?: boolean;
+      };
+      delays?: {
+        avg30: number;
+        avg60: number;
+        avg90: number;
+        delayFreq: number;
+      };
+      cancellations?: {
+        rate30: number;
+        rate60: number;
+        rate90: number;
+        total: number;
+      };
+      occupancy?: {
+        avg: number;
+        highLoadPercent: number;
+      };
+      seasonality?: {
+        month: number;
+        riskFactor: number;
+      };
+      schedule?: {
+        regularityScore: number;
+      };
+    };
+  };
+  /**
+   * Предупреждения для сегмента (опционально)
+   */
+  warnings?: string[];
+  /**
+   * Валидация сегмента (опционально)
+   */
+  segmentValidation?: {
+    isValid: boolean;
+    errors: string[];
+    warnings: string[];
+  };
 }
 
 export interface IBuiltRoute {

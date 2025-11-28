@@ -72,3 +72,4 @@ COMMENT ON SCHEMA public IS 'Extended ID fields to VARCHAR(100) - Migration 006'
 
 
 
+

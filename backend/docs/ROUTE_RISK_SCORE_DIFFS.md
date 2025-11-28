@@ -235,3 +235,4 @@ const routes: Route[] = adaptedRoutes.map((route) => ({
 
 **Система полностью готова к использованию.**
 
+

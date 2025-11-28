@@ -7,3 +7,4 @@ export type { OpenWeatherMapData } from './OpenWeatherMapClient';
 export { YandexWeatherClient } from './YandexWeatherClient';
 export type { YandexWeatherData } from './YandexWeatherClient';
 
+

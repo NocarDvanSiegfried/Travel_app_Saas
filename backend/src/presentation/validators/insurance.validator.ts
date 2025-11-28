@@ -38,3 +38,4 @@ export const calculateInsurancePriceSchema = z.object({
   riskScore: riskScoreSchema,
 });
 
+

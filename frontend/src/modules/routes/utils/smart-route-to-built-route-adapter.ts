@@ -90,8 +90,47 @@ export interface SmartRouteSegment {
       end?: string
     }
   }
-  // ФАЗА 4: Backend может отдавать riskScore для сегмента
-  riskScore?: IRiskScore
+  // ФАЗА 4: Backend может отдавать riskScore для сегмента (включая factors)
+  riskScore?: IRiskScore & {
+    factors?: {
+      weather?: {
+        temperature?: number;
+        visibility?: number;
+        wind?: number;
+        storms?: boolean;
+      };
+      delays?: {
+        avg30: number;
+        avg60: number;
+        avg90: number;
+        delayFreq: number;
+      };
+      cancellations?: {
+        rate30: number;
+        rate60: number;
+        rate90: number;
+        total: number;
+      };
+      occupancy?: {
+        avg: number;
+        highLoadPercent: number;
+      };
+      seasonality?: {
+        month: number;
+        riskFactor: number;
+      };
+      schedule?: {
+        regularityScore: number;
+      };
+    };
+  };
+  // Предупреждения и валидация сегмента
+  warnings?: string[];
+  validation?: {
+    isValid: boolean;
+    errors: string[];
+    warnings: string[];
+  };
 }
 
 export interface SmartRoute {
@@ -599,8 +638,11 @@ export function adaptSmartRouteToIBuiltRoute(
         priceData: {
           display: priceDisplay,
         },
-        // ФАЗА 4: Добавляем riskScore из сегмента
+        // ФАЗА 4: Добавляем riskScore из сегмента (включая factors)
         riskScore: segment.riskScore,
+        // Добавляем warnings и validation из сегмента
+        warnings: (segment as any).warnings,
+        segmentValidation: (segment as any).validation,
       } as IRouteSegmentDetails & {
       viaHubs?: Array<{ level: 'federal' | 'regional' }>
       pathGeometry?: Array<[number, number]>
@@ -750,7 +792,11 @@ export function adaptSmartRouteToIBuiltRoute(
   // КРИТИЧЕСКИЙ ФИКС: Оборачиваем создание результата в try-catch для предотвращения падения
   try {
     const result: IBuiltRoute & {
-      validation?: SmartRoute['validation']
+      validation?: SmartRoute['validation'] | {
+        isValid: boolean;
+        errors: string[];
+        warnings: string[];
+      }
       totalDistance?: number
       totalDurationData?: { display: string }
       totalPriceData?: { display: string }
@@ -779,11 +825,17 @@ export function adaptSmartRouteToIBuiltRoute(
       totalDurationData: {
         display: totalDurationDisplay,
       },
-      totalPriceData: {
-        display: totalPriceDisplay,
-      },
-      // ФАЗА 4: Добавляем riskAssessment из riskScore маршрута
-      riskAssessment: smartRoute.riskScore ? {
+              totalPriceData: {
+                display: totalPriceDisplay,
+              },
+              // Добавляем validation из SmartRoute
+              validation: smartRoute.validation ? {
+                isValid: smartRoute.validation.isValid,
+                errors: smartRoute.validation.errors || [],
+                warnings: smartRoute.validation.warnings || [],
+              } : undefined,
+              // ФАЗА 4: Добавляем riskAssessment из riskScore маршрута
+              riskAssessment: smartRoute.riskScore ? {
         routeId: smartRoute.id || `route-${Date.now()}`,
         riskScore: smartRoute.riskScore,
         factors: {

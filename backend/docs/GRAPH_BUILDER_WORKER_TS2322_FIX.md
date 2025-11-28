@@ -85,3 +85,4 @@ let finalTransportType: TransportType | undefined = route?.transportType;
 
 Приложение должно компилироваться без ошибок. При запуске через ts-node/nodemon ошибка TS2322 должна исчезнуть.
 
+

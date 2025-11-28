@@ -10,6 +10,11 @@ import { formatDuration, formatTime, formatDate, formatPrice } from '@/shared/ut
 
 interface Route extends IBuiltRoute {
   riskAssessment?: IRiskAssessment
+  validation?: {
+    isValid: boolean;
+    errors: string[];
+    warnings: string[];
+  };
 }
 
 /**
@@ -513,6 +518,212 @@ function RoutesContent() {
                                           {seasonality.available ? '✅' : '❌'} {seasonality.season === 'summer' ? 'Лето' : seasonality.season === 'winter' ? 'Зима' : seasonality.season}
                                         </div>
                                       )}
+                                      {/* Отображение риска сегмента */}
+                                      {segment.riskScore && (
+                                        <div className="mt-xs">
+                                          <RouteRiskBadge riskScore={segment.riskScore} compact />
+                                        </div>
+                                      )}
+                                      
+                                      {/* Предупреждения сегмента */}
+                                      {segment.warnings && segment.warnings.length > 0 && (
+                                        <div className="text-xs text-warning mt-xs">
+                                          {segment.warnings.map((warning, wIdx) => (
+                                            <div key={wIdx} className="flex items-start gap-xs">
+                                              <span>⚠️</span>
+                                              <span>{warning}</span>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
+                                      
+                                      {/* Ошибки валидации сегмента */}
+                                      {segment.segmentValidation && !segment.segmentValidation.isValid && segment.segmentValidation.errors.length > 0 && (
+                                        <div className="text-xs text-error mt-xs">
+                                          {segment.segmentValidation.errors.map((error, eIdx) => (
+                                            <div key={eIdx} className="flex items-start gap-xs">
+                                              <span>❌</span>
+                                              <span>{error}</span>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
+                                      
+                                      {/* Предупреждения валидации сегмента */}
+                                      {segment.segmentValidation && segment.segmentValidation.warnings.length > 0 && (
+                                        <div className="text-xs text-warning mt-xs">
+                                          {segment.segmentValidation.warnings.map((warning, wIdx) => (
+                                            <div key={wIdx} className="flex items-start gap-xs">
+                                              <span>⚠️</span>
+                                              <span>{warning}</span>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
+                                      
+                                      {/* Интерактивный блок "Почему это риск?" */}
+                                      {segment.riskScore && segment.riskScore.factors && (
+                                        <details className="mt-xs text-xs">
+                                          <summary className="cursor-pointer text-primary hover:text-primary-dark">
+                                            Почему такой риск?
+                                          </summary>
+                                          <div className="mt-xs pl-md space-y-xs">
+                                            {segment.riskScore.factors.weather && (
+                                              <div>
+                                                <strong>Погода:</strong>{' '}
+                                                {segment.riskScore.factors.weather.temperature !== undefined && `Температура: ${segment.riskScore.factors.weather.temperature}°C`}
+                                                {segment.riskScore.factors.weather.visibility !== undefined && `, Видимость: ${segment.riskScore.factors.weather.visibility}м`}
+                                                {segment.riskScore.factors.weather.wind !== undefined && `, Ветер: ${segment.riskScore.factors.weather.wind}м/с`}
+                                                {segment.riskScore.factors.weather.storms && ', Штормы'}
+                                                {!segment.riskScore.factors.weather.temperature && !segment.riskScore.factors.weather.visibility && !segment.riskScore.factors.weather.wind && !segment.riskScore.factors.weather.storms && 'Данные отсутствуют'}
+                                              </div>
+                                            )}
+                                            {segment.riskScore.factors.delays && (
+                                              <div>
+                                                <strong>Задержки:</strong>{' '}
+                                                {segment.riskScore.factors.delays.avg30 > 0 || segment.riskScore.factors.delays.avg60 > 0 || segment.riskScore.factors.delays.avg90 > 0
+                                                  ? `Средние: 30д=${segment.riskScore.factors.delays.avg30}м, 60д=${segment.riskScore.factors.delays.avg60}м, 90д=${segment.riskScore.factors.delays.avg90}м, Частота: ${(segment.riskScore.factors.delays.delayFreq * 100).toFixed(1)}%`
+                                                  : 'Данные отсутствуют'}
+                                              </div>
+                                            )}
+                                            {segment.riskScore.factors.occupancy && (
+                                              <div>
+                                                <strong>Загруженность:</strong>{' '}
+                                                {segment.riskScore.factors.occupancy.avg > 0
+                                                  ? `Средняя: ${(segment.riskScore.factors.occupancy.avg * 100).toFixed(0)}%, Высокая загрузка: ${(segment.riskScore.factors.occupancy.highLoadPercent * 100).toFixed(0)}%`
+                                                  : 'Данные отсутствуют'}
+                                              </div>
+                                            )}
+                                            {segment.riskScore.factors.schedule && (
+                                              <div>
+                                                <strong>Регулярность расписания:</strong>{' '}
+                                                {segment.riskScore.factors.schedule.regularityScore > 0
+                                                  ? `${(segment.riskScore.factors.schedule.regularityScore * 100).toFixed(0)}%`
+                                                  : 'Данные отсутствуют'}
+                                              </div>
+                                            )}
+                                            {segment.riskScore.factors.seasonality && (
+                                              <div>
+                                                <strong>Сезонность:</strong>{' '}
+                                                Месяц: {segment.riskScore.factors.seasonality.month}, Фактор риска: {segment.riskScore.factors.seasonality.riskFactor.toFixed(2)}
+                                              </div>
+                                            )}
+                                            {segment.riskScore.factors.cancellations && (
+                                              <div>
+                                                <strong>Отмены:</strong>{' '}
+                                                {segment.riskScore.factors.cancellations.rate30 > 0 || segment.riskScore.factors.cancellations.rate60 > 0 || segment.riskScore.factors.cancellations.rate90 > 0
+                                                  ? `30д=${(segment.riskScore.factors.cancellations.rate30 * 100).toFixed(1)}%, 60д=${(segment.riskScore.factors.cancellations.rate60 * 100).toFixed(1)}%, 90д=${(segment.riskScore.factors.cancellations.rate90 * 100).toFixed(1)}%, Всего: ${segment.riskScore.factors.cancellations.total}`
+                                                  : 'Данные отсутствуют'}
+                                              </div>
+                                            )}
+                                          </div>
+                                        </details>
+                                      )}
+                                      
+                                      {/* Старая валидация (для обратной совместимости) */}
+                                      {/* Отображение риска сегмента */}
+                                      {segment.riskScore && (
+                                        <div className="mt-xs">
+                                          <RouteRiskBadge riskScore={segment.riskScore} compact />
+                                        </div>
+                                      )}
+                                      
+                                      {/* Предупреждения сегмента */}
+                                      {segment.warnings && segment.warnings.length > 0 && (
+                                        <div className="text-xs text-warning mt-xs">
+                                          {segment.warnings.map((warning, wIdx) => (
+                                            <div key={wIdx} className="flex items-start gap-xs">
+                                              <span>⚠️</span>
+                                              <span>{warning}</span>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
+                                      
+                                      {/* Ошибки валидации сегмента */}
+                                      {segment.segmentValidation && !segment.segmentValidation.isValid && segment.segmentValidation.errors.length > 0 && (
+                                        <div className="text-xs text-error mt-xs">
+                                          {segment.segmentValidation.errors.map((error, eIdx) => (
+                                            <div key={eIdx} className="flex items-start gap-xs">
+                                              <span>❌</span>
+                                              <span>{error}</span>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
+                                      
+                                      {/* Предупреждения валидации сегмента */}
+                                      {segment.segmentValidation && segment.segmentValidation.warnings.length > 0 && (
+                                        <div className="text-xs text-warning mt-xs">
+                                          {segment.segmentValidation.warnings.map((warning, wIdx) => (
+                                            <div key={wIdx} className="flex items-start gap-xs">
+                                              <span>⚠️</span>
+                                              <span>{warning}</span>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
+                                      
+                                      {/* Интерактивный блок "Почему это риск?" */}
+                                      {segment.riskScore && segment.riskScore.factors && (
+                                        <details className="mt-xs text-xs">
+                                          <summary className="cursor-pointer text-primary hover:text-primary-dark">
+                                            Почему такой риск?
+                                          </summary>
+                                          <div className="mt-xs pl-md space-y-xs">
+                                            {segment.riskScore.factors.weather && (
+                                              <div>
+                                                <strong>Погода:</strong>{' '}
+                                                {segment.riskScore.factors.weather.temperature !== undefined && `Температура: ${segment.riskScore.factors.weather.temperature}°C`}
+                                                {segment.riskScore.factors.weather.visibility !== undefined && `, Видимость: ${segment.riskScore.factors.weather.visibility}м`}
+                                                {segment.riskScore.factors.weather.wind !== undefined && `, Ветер: ${segment.riskScore.factors.weather.wind}м/с`}
+                                                {segment.riskScore.factors.weather.storms && ', Штормы'}
+                                                {!segment.riskScore.factors.weather.temperature && !segment.riskScore.factors.weather.visibility && !segment.riskScore.factors.weather.wind && !segment.riskScore.factors.weather.storms && 'Данные отсутствуют'}
+                                              </div>
+                                            )}
+                                            {segment.riskScore.factors.delays && (
+                                              <div>
+                                                <strong>Задержки:</strong>{' '}
+                                                {segment.riskScore.factors.delays.avg30 > 0 || segment.riskScore.factors.delays.avg60 > 0 || segment.riskScore.factors.delays.avg90 > 0
+                                                  ? `Средние: 30д=${segment.riskScore.factors.delays.avg30}м, 60д=${segment.riskScore.factors.delays.avg60}м, 90д=${segment.riskScore.factors.delays.avg90}м, Частота: ${(segment.riskScore.factors.delays.delayFreq * 100).toFixed(1)}%`
+                                                  : 'Данные отсутствуют'}
+                                              </div>
+                                            )}
+                                            {segment.riskScore.factors.occupancy && (
+                                              <div>
+                                                <strong>Загруженность:</strong>{' '}
+                                                {segment.riskScore.factors.occupancy.avg > 0
+                                                  ? `Средняя: ${(segment.riskScore.factors.occupancy.avg * 100).toFixed(0)}%, Высокая загрузка: ${(segment.riskScore.factors.occupancy.highLoadPercent * 100).toFixed(0)}%`
+                                                  : 'Данные отсутствуют'}
+                                              </div>
+                                            )}
+                                            {segment.riskScore.factors.schedule && (
+                                              <div>
+                                                <strong>Регулярность расписания:</strong>{' '}
+                                                {segment.riskScore.factors.schedule.regularityScore > 0
+                                                  ? `${(segment.riskScore.factors.schedule.regularityScore * 100).toFixed(0)}%`
+                                                  : 'Данные отсутствуют'}
+                                              </div>
+                                            )}
+                                            {segment.riskScore.factors.seasonality && (
+                                              <div>
+                                                <strong>Сезонность:</strong>{' '}
+                                                Месяц: {segment.riskScore.factors.seasonality.month}, Фактор риска: {segment.riskScore.factors.seasonality.riskFactor.toFixed(2)}
+                                              </div>
+                                            )}
+                                            {segment.riskScore.factors.cancellations && (
+                                              <div>
+                                                <strong>Отмены:</strong>{' '}
+                                                {segment.riskScore.factors.cancellations.rate30 > 0 || segment.riskScore.factors.cancellations.rate60 > 0 || segment.riskScore.factors.cancellations.rate90 > 0
+                                                  ? `30д=${(segment.riskScore.factors.cancellations.rate30 * 100).toFixed(1)}%, 60д=${(segment.riskScore.factors.cancellations.rate60 * 100).toFixed(1)}%, 90д=${(segment.riskScore.factors.cancellations.rate90 * 100).toFixed(1)}%, Всего: ${segment.riskScore.factors.cancellations.total}`
+                                                  : 'Данные отсутствуют'}
+                                              </div>
+                                            )}
+                                          </div>
+                                        </details>
+                                      )}
+                                      
+                                      {/* Старая валидация (для обратной совместимости) */}
                                       {validation && !validation.isValid && validation.errors.length > 0 && (
                                         <div className="text-xs text-error mt-xs">
                                           ⚠️ {validation.errors[0]}
@@ -525,6 +736,32 @@ function RoutesContent() {
                             </div>
                           </div>
                         )}
+
+                        {/* Предупреждение перед покупкой (если риск >= 5) */}
+                        {(() => {
+                          const routeRisk = route.riskAssessment?.riskScore || (route as any).riskScore;
+                          const hasHighRisk = routeRisk && routeRisk.value >= 5;
+                          const hasHighSegmentRisk = route.segments?.some(
+                            (seg) => seg.riskScore && seg.riskScore.value >= 5
+                          );
+                          
+                          if (hasHighRisk || hasHighSegmentRisk) {
+                            return (
+                              <div className="mb-sm p-sm rounded-sm bg-warning-light border border-warning">
+                                <div className="flex items-center gap-xs text-sm">
+                                  <span>⚠️</span>
+                                  <span className="text-warning font-medium">
+                                    Повышенный риск задержек/отмен
+                                  </span>
+                                </div>
+                                <p className="text-xs text-secondary mt-xs">
+                                  Рекомендуем внимательно проверить сегменты поездки и рассмотреть страховку.
+                                </p>
+                              </div>
+                            );
+                          }
+                          return null;
+                        })()}
 
                         {/* Информация о страховке (если риск высокий) */}
                         {route.riskAssessment?.riskScore && route.riskAssessment.riskScore.value >= 5 && (
@@ -541,6 +778,25 @@ function RoutesContent() {
                             <InsuranceOptions
                               riskScore={route.riskAssessment.riskScore}
                             />
+                          </div>
+                        )}
+                        
+                        {/* Общие предупреждения маршрута */}
+                        {(route as Route & { validation?: { isValid: boolean; errors: string[]; warnings: string[] } }).validation && (route as Route & { validation?: { isValid: boolean; errors: string[]; warnings: string[] } }).validation!.warnings && (route as Route & { validation?: { isValid: boolean; errors: string[]; warnings: string[] } }).validation!.warnings.length > 0 && (
+                          <div className="mb-sm p-sm rounded-sm bg-warning-light border border-warning">
+                            <div className="flex items-center gap-xs text-sm mb-xs">
+                              <span>⚠️</span>
+                              <span className="text-warning font-medium">
+                                Предупреждения по маршруту
+                              </span>
+                            </div>
+                            <div className="space-y-xs">
+                              {(route as Route & { validation?: { isValid: boolean; errors: string[]; warnings: string[] } }).validation!.warnings.map((warning: string, idx: number) => (
+                                <div key={idx} className="text-xs text-secondary">
+                                  {warning}
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         )}
 
@@ -729,6 +985,212 @@ function RoutesContent() {
                                           {seasonality.available ? '✅' : '❌'} {seasonality.season === 'summer' ? 'Лето' : seasonality.season === 'winter' ? 'Зима' : seasonality.season}
                                         </div>
                                       )}
+                                      {/* Отображение риска сегмента */}
+                                      {segment.riskScore && (
+                                        <div className="mt-xs">
+                                          <RouteRiskBadge riskScore={segment.riskScore} compact />
+                                        </div>
+                                      )}
+                                      
+                                      {/* Предупреждения сегмента */}
+                                      {segment.warnings && segment.warnings.length > 0 && (
+                                        <div className="text-xs text-warning mt-xs">
+                                          {segment.warnings.map((warning, wIdx) => (
+                                            <div key={wIdx} className="flex items-start gap-xs">
+                                              <span>⚠️</span>
+                                              <span>{warning}</span>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
+                                      
+                                      {/* Ошибки валидации сегмента */}
+                                      {segment.segmentValidation && !segment.segmentValidation.isValid && segment.segmentValidation.errors.length > 0 && (
+                                        <div className="text-xs text-error mt-xs">
+                                          {segment.segmentValidation.errors.map((error, eIdx) => (
+                                            <div key={eIdx} className="flex items-start gap-xs">
+                                              <span>❌</span>
+                                              <span>{error}</span>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
+                                      
+                                      {/* Предупреждения валидации сегмента */}
+                                      {segment.segmentValidation && segment.segmentValidation.warnings.length > 0 && (
+                                        <div className="text-xs text-warning mt-xs">
+                                          {segment.segmentValidation.warnings.map((warning, wIdx) => (
+                                            <div key={wIdx} className="flex items-start gap-xs">
+                                              <span>⚠️</span>
+                                              <span>{warning}</span>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
+                                      
+                                      {/* Интерактивный блок "Почему это риск?" */}
+                                      {segment.riskScore && segment.riskScore.factors && (
+                                        <details className="mt-xs text-xs">
+                                          <summary className="cursor-pointer text-primary hover:text-primary-dark">
+                                            Почему такой риск?
+                                          </summary>
+                                          <div className="mt-xs pl-md space-y-xs">
+                                            {segment.riskScore.factors.weather && (
+                                              <div>
+                                                <strong>Погода:</strong>{' '}
+                                                {segment.riskScore.factors.weather.temperature !== undefined && `Температура: ${segment.riskScore.factors.weather.temperature}°C`}
+                                                {segment.riskScore.factors.weather.visibility !== undefined && `, Видимость: ${segment.riskScore.factors.weather.visibility}м`}
+                                                {segment.riskScore.factors.weather.wind !== undefined && `, Ветер: ${segment.riskScore.factors.weather.wind}м/с`}
+                                                {segment.riskScore.factors.weather.storms && ', Штормы'}
+                                                {!segment.riskScore.factors.weather.temperature && !segment.riskScore.factors.weather.visibility && !segment.riskScore.factors.weather.wind && !segment.riskScore.factors.weather.storms && 'Данные отсутствуют'}
+                                              </div>
+                                            )}
+                                            {segment.riskScore.factors.delays && (
+                                              <div>
+                                                <strong>Задержки:</strong>{' '}
+                                                {segment.riskScore.factors.delays.avg30 > 0 || segment.riskScore.factors.delays.avg60 > 0 || segment.riskScore.factors.delays.avg90 > 0
+                                                  ? `Средние: 30д=${segment.riskScore.factors.delays.avg30}м, 60д=${segment.riskScore.factors.delays.avg60}м, 90д=${segment.riskScore.factors.delays.avg90}м, Частота: ${(segment.riskScore.factors.delays.delayFreq * 100).toFixed(1)}%`
+                                                  : 'Данные отсутствуют'}
+                                              </div>
+                                            )}
+                                            {segment.riskScore.factors.occupancy && (
+                                              <div>
+                                                <strong>Загруженность:</strong>{' '}
+                                                {segment.riskScore.factors.occupancy.avg > 0
+                                                  ? `Средняя: ${(segment.riskScore.factors.occupancy.avg * 100).toFixed(0)}%, Высокая загрузка: ${(segment.riskScore.factors.occupancy.highLoadPercent * 100).toFixed(0)}%`
+                                                  : 'Данные отсутствуют'}
+                                              </div>
+                                            )}
+                                            {segment.riskScore.factors.schedule && (
+                                              <div>
+                                                <strong>Регулярность расписания:</strong>{' '}
+                                                {segment.riskScore.factors.schedule.regularityScore > 0
+                                                  ? `${(segment.riskScore.factors.schedule.regularityScore * 100).toFixed(0)}%`
+                                                  : 'Данные отсутствуют'}
+                                              </div>
+                                            )}
+                                            {segment.riskScore.factors.seasonality && (
+                                              <div>
+                                                <strong>Сезонность:</strong>{' '}
+                                                Месяц: {segment.riskScore.factors.seasonality.month}, Фактор риска: {segment.riskScore.factors.seasonality.riskFactor.toFixed(2)}
+                                              </div>
+                                            )}
+                                            {segment.riskScore.factors.cancellations && (
+                                              <div>
+                                                <strong>Отмены:</strong>{' '}
+                                                {segment.riskScore.factors.cancellations.rate30 > 0 || segment.riskScore.factors.cancellations.rate60 > 0 || segment.riskScore.factors.cancellations.rate90 > 0
+                                                  ? `30д=${(segment.riskScore.factors.cancellations.rate30 * 100).toFixed(1)}%, 60д=${(segment.riskScore.factors.cancellations.rate60 * 100).toFixed(1)}%, 90д=${(segment.riskScore.factors.cancellations.rate90 * 100).toFixed(1)}%, Всего: ${segment.riskScore.factors.cancellations.total}`
+                                                  : 'Данные отсутствуют'}
+                                              </div>
+                                            )}
+                                          </div>
+                                        </details>
+                                      )}
+                                      
+                                      {/* Старая валидация (для обратной совместимости) */}
+                                      {/* Отображение риска сегмента */}
+                                      {segment.riskScore && (
+                                        <div className="mt-xs">
+                                          <RouteRiskBadge riskScore={segment.riskScore} compact />
+                                        </div>
+                                      )}
+                                      
+                                      {/* Предупреждения сегмента */}
+                                      {segment.warnings && segment.warnings.length > 0 && (
+                                        <div className="text-xs text-warning mt-xs">
+                                          {segment.warnings.map((warning, wIdx) => (
+                                            <div key={wIdx} className="flex items-start gap-xs">
+                                              <span>⚠️</span>
+                                              <span>{warning}</span>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
+                                      
+                                      {/* Ошибки валидации сегмента */}
+                                      {segment.segmentValidation && !segment.segmentValidation.isValid && segment.segmentValidation.errors.length > 0 && (
+                                        <div className="text-xs text-error mt-xs">
+                                          {segment.segmentValidation.errors.map((error, eIdx) => (
+                                            <div key={eIdx} className="flex items-start gap-xs">
+                                              <span>❌</span>
+                                              <span>{error}</span>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
+                                      
+                                      {/* Предупреждения валидации сегмента */}
+                                      {segment.segmentValidation && segment.segmentValidation.warnings.length > 0 && (
+                                        <div className="text-xs text-warning mt-xs">
+                                          {segment.segmentValidation.warnings.map((warning, wIdx) => (
+                                            <div key={wIdx} className="flex items-start gap-xs">
+                                              <span>⚠️</span>
+                                              <span>{warning}</span>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
+                                      
+                                      {/* Интерактивный блок "Почему это риск?" */}
+                                      {segment.riskScore && segment.riskScore.factors && (
+                                        <details className="mt-xs text-xs">
+                                          <summary className="cursor-pointer text-primary hover:text-primary-dark">
+                                            Почему такой риск?
+                                          </summary>
+                                          <div className="mt-xs pl-md space-y-xs">
+                                            {segment.riskScore.factors.weather && (
+                                              <div>
+                                                <strong>Погода:</strong>{' '}
+                                                {segment.riskScore.factors.weather.temperature !== undefined && `Температура: ${segment.riskScore.factors.weather.temperature}°C`}
+                                                {segment.riskScore.factors.weather.visibility !== undefined && `, Видимость: ${segment.riskScore.factors.weather.visibility}м`}
+                                                {segment.riskScore.factors.weather.wind !== undefined && `, Ветер: ${segment.riskScore.factors.weather.wind}м/с`}
+                                                {segment.riskScore.factors.weather.storms && ', Штормы'}
+                                                {!segment.riskScore.factors.weather.temperature && !segment.riskScore.factors.weather.visibility && !segment.riskScore.factors.weather.wind && !segment.riskScore.factors.weather.storms && 'Данные отсутствуют'}
+                                              </div>
+                                            )}
+                                            {segment.riskScore.factors.delays && (
+                                              <div>
+                                                <strong>Задержки:</strong>{' '}
+                                                {segment.riskScore.factors.delays.avg30 > 0 || segment.riskScore.factors.delays.avg60 > 0 || segment.riskScore.factors.delays.avg90 > 0
+                                                  ? `Средние: 30д=${segment.riskScore.factors.delays.avg30}м, 60д=${segment.riskScore.factors.delays.avg60}м, 90д=${segment.riskScore.factors.delays.avg90}м, Частота: ${(segment.riskScore.factors.delays.delayFreq * 100).toFixed(1)}%`
+                                                  : 'Данные отсутствуют'}
+                                              </div>
+                                            )}
+                                            {segment.riskScore.factors.occupancy && (
+                                              <div>
+                                                <strong>Загруженность:</strong>{' '}
+                                                {segment.riskScore.factors.occupancy.avg > 0
+                                                  ? `Средняя: ${(segment.riskScore.factors.occupancy.avg * 100).toFixed(0)}%, Высокая загрузка: ${(segment.riskScore.factors.occupancy.highLoadPercent * 100).toFixed(0)}%`
+                                                  : 'Данные отсутствуют'}
+                                              </div>
+                                            )}
+                                            {segment.riskScore.factors.schedule && (
+                                              <div>
+                                                <strong>Регулярность расписания:</strong>{' '}
+                                                {segment.riskScore.factors.schedule.regularityScore > 0
+                                                  ? `${(segment.riskScore.factors.schedule.regularityScore * 100).toFixed(0)}%`
+                                                  : 'Данные отсутствуют'}
+                                              </div>
+                                            )}
+                                            {segment.riskScore.factors.seasonality && (
+                                              <div>
+                                                <strong>Сезонность:</strong>{' '}
+                                                Месяц: {segment.riskScore.factors.seasonality.month}, Фактор риска: {segment.riskScore.factors.seasonality.riskFactor.toFixed(2)}
+                                              </div>
+                                            )}
+                                            {segment.riskScore.factors.cancellations && (
+                                              <div>
+                                                <strong>Отмены:</strong>{' '}
+                                                {segment.riskScore.factors.cancellations.rate30 > 0 || segment.riskScore.factors.cancellations.rate60 > 0 || segment.riskScore.factors.cancellations.rate90 > 0
+                                                  ? `30д=${(segment.riskScore.factors.cancellations.rate30 * 100).toFixed(1)}%, 60д=${(segment.riskScore.factors.cancellations.rate60 * 100).toFixed(1)}%, 90д=${(segment.riskScore.factors.cancellations.rate90 * 100).toFixed(1)}%, Всего: ${segment.riskScore.factors.cancellations.total}`
+                                                  : 'Данные отсутствуют'}
+                                              </div>
+                                            )}
+                                          </div>
+                                        </details>
+                                      )}
+                                      
+                                      {/* Старая валидация (для обратной совместимости) */}
                                       {validation && !validation.isValid && validation.errors.length > 0 && (
                                         <div className="text-xs text-error mt-xs">
                                           ⚠️ {validation.errors[0]}
@@ -741,6 +1203,32 @@ function RoutesContent() {
                             </div>
                           </div>
                         )}
+
+                        {/* Предупреждение перед покупкой (если риск >= 5) */}
+                        {(() => {
+                          const routeRisk = route.riskAssessment?.riskScore || (route as any).riskScore;
+                          const hasHighRisk = routeRisk && routeRisk.value >= 5;
+                          const hasHighSegmentRisk = route.segments?.some(
+                            (seg) => seg.riskScore && seg.riskScore.value >= 5
+                          );
+                          
+                          if (hasHighRisk || hasHighSegmentRisk) {
+                            return (
+                              <div className="mb-sm p-sm rounded-sm bg-warning-light border border-warning">
+                                <div className="flex items-center gap-xs text-sm">
+                                  <span>⚠️</span>
+                                  <span className="text-warning font-medium">
+                                    Повышенный риск задержек/отмен
+                                  </span>
+                                </div>
+                                <p className="text-xs text-secondary mt-xs">
+                                  Рекомендуем внимательно проверить сегменты поездки и рассмотреть страховку.
+                                </p>
+                              </div>
+                            );
+                          }
+                          return null;
+                        })()}
 
                         {/* Информация о страховке (если риск высокий) */}
                         {route.riskAssessment?.riskScore && route.riskAssessment.riskScore.value >= 5 && (
@@ -757,6 +1245,25 @@ function RoutesContent() {
                             <InsuranceOptions
                               riskScore={route.riskAssessment.riskScore}
                             />
+                          </div>
+                        )}
+                        
+                        {/* Общие предупреждения маршрута */}
+                        {(route as Route & { validation?: { isValid: boolean; errors: string[]; warnings: string[] } }).validation && (route as Route & { validation?: { isValid: boolean; errors: string[]; warnings: string[] } }).validation!.warnings && (route as Route & { validation?: { isValid: boolean; errors: string[]; warnings: string[] } }).validation!.warnings.length > 0 && (
+                          <div className="mb-sm p-sm rounded-sm bg-warning-light border border-warning">
+                            <div className="flex items-center gap-xs text-sm mb-xs">
+                              <span>⚠️</span>
+                              <span className="text-warning font-medium">
+                                Предупреждения по маршруту
+                              </span>
+                            </div>
+                            <div className="space-y-xs">
+                              {(route as Route & { validation?: { isValid: boolean; errors: string[]; warnings: string[] } }).validation!.warnings.map((warning: string, idx: number) => (
+                                <div key={idx} className="text-xs text-secondary">
+                                  {warning}
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         )}
 

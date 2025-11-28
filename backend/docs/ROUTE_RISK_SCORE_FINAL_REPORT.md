@@ -338,3 +338,4 @@ const { isBlocked, reason } = checkRouteRiskBlock(route);
 5. Проверить отображение риска в UI
 6. Проверить блокировку покупки при высоком риске
 
+

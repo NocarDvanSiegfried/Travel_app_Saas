@@ -227,3 +227,4 @@ import { Suspense, useMemo, useCallback, useState } from 'react'
 3. Пересобрать frontend и убедиться, что нет ошибок
 4. Запустить docker-compose и проверить, что оба сервиса стартуют без ошибок
 
+

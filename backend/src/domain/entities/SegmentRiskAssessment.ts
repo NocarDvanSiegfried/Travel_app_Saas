@@ -60,3 +60,4 @@ export interface ISegmentRiskAssessment {
   recommendations?: string[];
 }
 
+

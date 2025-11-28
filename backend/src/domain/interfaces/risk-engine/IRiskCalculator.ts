@@ -58,3 +58,4 @@ export interface IRiskCalculator {
   normalize(value: number, config?: Partial<IRiskCalculatorConfig>): number;
 }
 
+

@@ -161,3 +161,4 @@ isApplicable(_transportType: TransportType): boolean {
 
 3. **Интерфейс IRiskFactor:** Теперь полностью соответствует всем реализациям, включая `BaseRiskFactor` и все факторы риска.
 
+

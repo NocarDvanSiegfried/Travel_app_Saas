@@ -101,6 +101,44 @@ export interface BackendSmartRoute {
       value: number;
       level: string;
       description: string;
+      factors?: {
+        weather?: {
+          temperature?: number;
+          visibility?: number;
+          wind?: number;
+          storms?: boolean;
+        };
+        delays?: {
+          avg30: number;
+          avg60: number;
+          avg90: number;
+          delayFreq: number;
+        };
+        cancellations?: {
+          rate30: number;
+          rate60: number;
+          rate90: number;
+          total: number;
+        };
+        occupancy?: {
+          avg: number;
+          highLoadPercent: number;
+        };
+        seasonality?: {
+          month: number;
+          riskFactor: number;
+        };
+        schedule?: {
+          regularityScore: number;
+        };
+      };
+    };
+    // Предупреждения и валидация сегмента
+    warnings?: string[];
+    validation?: {
+      isValid: boolean;
+      errors: string[];
+      warnings: string[];
     };
   }>;
   // ФАЗА 4: Backend может отдавать riskScore для всего маршрута (максимум среди сегментов)

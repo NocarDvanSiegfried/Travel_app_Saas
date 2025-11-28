@@ -45,3 +45,4 @@ const weatherDataArray = await Promise.all(
 
 Приложение должно компилироваться без ошибок. При запуске через ts-node/nodemon ошибка TS2345 должна исчезнуть.
 
+

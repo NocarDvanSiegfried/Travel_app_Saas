@@ -75,3 +75,4 @@ import { TransportType } from '../../../domain/entities/RouteSegment';
 - Нет `import type { TransportType }` в местах, где он используется как значение
 - Все enum-значения доступны в runtime
 
+

@@ -524,9 +524,21 @@ export async function buildSmartRoute(req: Request, res: Response): Promise<void
               riskContext
             );
 
+            // Получаем validation для сегмента из результата валидации маршрута
+            const segmentValidation = validation.segmentValidations?.find(
+              (sv) => sv.segmentId === segment.id
+            );
+            
             return {
               ...routeJSON.segments[idx],
               riskScore: segmentAssessment.riskScore,
+              // Добавляем предупреждения и валидацию сегмента
+              warnings: segmentValidation?.warnings || [],
+              validation: segmentValidation ? {
+                isValid: segmentValidation.isValid,
+                errors: segmentValidation.errors || [],
+                warnings: segmentValidation.warnings || [],
+              } : undefined,
             };
           } catch (error) {
             console.warn('[SmartRouteController] Failed to assess segment risk', {
@@ -593,9 +605,21 @@ export async function buildSmartRoute(req: Request, res: Response): Promise<void
                     riskContext
                   );
 
+                  // Получаем validation для альтернативного сегмента
+                  const altSegmentValidation = validation.segmentValidations?.find(
+                    (sv) => sv.segmentId === (segmentJSON.id || `seg-alt-${idx}`)
+                  );
+                  
                   return {
                     ...segmentJSON,
                     riskScore: segmentAssessment.riskScore,
+                    // Добавляем предупреждения и валидацию сегмента
+                    warnings: altSegmentValidation?.warnings || [],
+                    validation: altSegmentValidation ? {
+                      isValid: altSegmentValidation.isValid,
+                      errors: altSegmentValidation.errors || [],
+                      warnings: altSegmentValidation.warnings || [],
+                    } : undefined,
                   };
                 } catch (error) {
                   console.warn('[SmartRouteController] Failed to assess alternative segment risk', {
