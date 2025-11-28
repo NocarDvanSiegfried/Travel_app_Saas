@@ -6,6 +6,7 @@ import { ZodError } from 'zod'
 import { CityAutocomplete } from '@/shared/ui/city-autocomplete'
 import { DatePicker } from '@/shared/ui/date-picker'
 import { TripClassSelect } from './trip-class-select'
+import { TravelInsuranceOptions } from './travel-insurance-options'
 import { useCities } from '@/shared/hooks/use-cities'
 import { RouteSearchParamsWithValidationSchema } from '@/modules/routes/schemas/route.schema'
 
@@ -39,6 +40,7 @@ export function SearchForm() {
     to?: string
     date?: string
   }>({})
+  const [insuranceTotal, setInsuranceTotal] = useState(0)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -299,17 +301,29 @@ export function SearchForm() {
         </div>
       </div>
 
-      {/* Кнопка поиска */}
-      <div className="flex justify-center md:justify-start relative z-20 mt-sm">
-        <button
-          type="submit"
-          disabled={!isFormValid()}
-          aria-label="Найти маршрут"
-          aria-disabled={!isFormValid()}
-          className="btn-primary w-full md:w-auto px-2xl py-sm"
-        >
-          Найти маршрут
-        </button>
+      {/* Страховые опции */}
+      <div className="mt-lg pt-lg border-t border-light">
+        <TravelInsuranceOptions onTotalChange={setInsuranceTotal} />
+      </div>
+
+      {/* Кнопка поиска с общей стоимостью */}
+      <div className="flex flex-col sm:flex-row gap-sm items-center justify-between mt-lg">
+        {insuranceTotal > 0 && (
+          <div className="text-sm text-secondary order-2 sm:order-1">
+            Страховка: <span className="font-semibold text-primary">{insuranceTotal} ₽</span>
+          </div>
+        )}
+        <div className="flex justify-center md:justify-start relative z-20 order-1 sm:order-2 w-full sm:w-auto">
+          <button
+            type="submit"
+            disabled={!isFormValid()}
+            aria-label="Найти маршрут"
+            aria-disabled={!isFormValid()}
+            className="btn-primary w-full md:w-auto px-2xl py-sm"
+          >
+            Найти маршрут
+          </button>
+        </div>
       </div>
     </form>
   )

@@ -2,7 +2,7 @@
 
 import { memo } from 'react'
 import Link from 'next/link'
-import { ProfileIcon, SettingsIcon } from '@/shared/icons'
+import { ProfileIcon, SettingsIcon, ShieldIcon } from '@/shared/icons'
 import { BrandLogo } from '@/shared/ui'
 
 /**
@@ -21,15 +21,23 @@ export const Header = memo(function Header() {
           {/* Brand Block */}
           <BrandLogo link={true} className="shrink-0" />
 
-          {/* Right side - Profile and Settings */}
+          {/* Right side - Insurance, Profile and Settings */}
           <div className="flex items-center gap-sm">
+            <Link
+              href="/insurance"
+              className="flex items-center gap-sm px-sm py-xs rounded-sm hover-header bg-blue-600 hover:bg-blue-700 transition-colors"
+              aria-label="Страхование"
+            >
+              <ShieldIcon className="w-4 h-4 text-white" />
+              <span className="text-sm text-white font-medium tracking-tight hidden md:inline">Страхование</span>
+            </Link>
             <Link
               href="/profile"
               className="flex items-center gap-sm px-sm py-xs rounded-sm hover-header"
               aria-label="Профиль"
             >
               <ProfileIcon className="w-4 h-4 text-inverse hover-header-icon" color="var(--color-text-inverse)" />
-              <span className="text-sm text-inverse font-medium tracking-tight">Профиль</span>
+              <span className="text-sm text-inverse font-medium tracking-tight hidden md:inline">Профиль</span>
             </Link>
             <Link
               href="/settings"
@@ -37,7 +45,7 @@ export const Header = memo(function Header() {
               aria-label="Настройки"
             >
               <SettingsIcon className="w-4 h-4 text-inverse hover-header-icon" color="var(--color-text-inverse)" />
-              <span className="text-sm text-inverse font-medium tracking-tight">Настройки</span>
+              <span className="text-sm text-inverse font-medium tracking-tight hidden md:inline">Настройки</span>
             </Link>
           </div>
         </div>

@@ -259,7 +259,7 @@ export async function buildRoute(req: Request, res: Response): Promise<void> {
     const fromCity = req.query.from as string;
     const toCity = req.query.to as string;
     const dateStr = req.query.date as string | undefined;
-    const passengers = (req.query.passengers as number | undefined) || 1;
+    const passengers = Number(req.query.passengers) || 1;
 
     // Парсим дату (по умолчанию сегодня)
     const date = dateStr ? new Date(dateStr) : new Date();

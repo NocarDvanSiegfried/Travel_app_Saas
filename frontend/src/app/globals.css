@@ -1128,3 +1128,130 @@
     margin: var(--spacing-lg) 0;
   }
 }
+
+/* ============================================
+   SHADCN/UI INTEGRATION
+   Совместимость с shadcn/ui компонентами
+   ============================================ */
+
+:root {
+  /* shadcn/ui variables - интеграция с существующей палитрой */
+  --background: var(--color-surface);
+  --foreground: var(--color-text-primary);
+
+  --card: var(--color-card-bg);
+  --card-foreground: var(--color-text-primary);
+
+  --popover: var(--color-surface);
+  --popover-foreground: var(--color-text-primary);
+
+  --primary: var(--brand-primary);
+  --primary-foreground: var(--color-text-inverse);
+
+  --secondary: var(--color-surface-alt);
+  --secondary-foreground: var(--color-text-primary);
+
+  --muted: var(--color-surface-alt);
+  --muted-foreground: var(--color-text-secondary);
+
+  --accent: var(--brand-primary-light);
+  --accent-foreground: var(--brand-primary);
+
+  --destructive: var(--color-error);
+  --destructive-foreground: var(--color-text-inverse);
+
+  --border: var(--color-border);
+  --input: var(--color-input-bg);
+  --ring: var(--brand-primary);
+
+  --radius: 0.5rem;
+}
+
+.dark {
+  --background: var(--color-surface-dark);
+  --foreground: var(--color-text-primary);
+
+  --card: var(--color-surface-dark);
+  --card-foreground: var(--color-text-primary);
+
+  --popover: var(--color-surface-dark);
+  --popover-foreground: var(--color-text-primary);
+
+  --primary: var(--brand-primary);
+  --primary-foreground: var(--color-text-inverse);
+
+  --secondary: var(--color-surface-hover);
+  --secondary-foreground: var(--color-text-primary);
+
+  --muted: var(--color-surface-hover);
+  --muted-foreground: var(--color-text-secondary);
+
+  --accent: var(--color-surface-hover);
+  --accent-foreground: var(--color-text-primary);
+
+  --destructive: var(--color-error);
+  --destructive-foreground: var(--color-text-inverse);
+
+  --border: var(--color-border);
+  --input: var(--color-input-bg-dark);
+  --ring: var(--brand-primary);
+}
+
+/* ============================================
+   SHEET ANIMATIONS
+   Кастомные анимации для Sheet/Drawer
+   ============================================ */
+
+@keyframes slideInFromRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideOutToRight {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* Применяем анимации к компонентам Sheet */
+[data-state="open"] > [data-side="right"] {
+  animation: slideInFromRight 0.3s ease-out;
+}
+
+[data-state="closed"] > [data-side="right"] {
+  animation: slideOutToRight 0.3s ease-out;
+}
+
+/* Плавное появление оверлея */
+[data-state="open"] > [data-radix-sheet-overlay] {
+  animation: fadeIn 0.2s ease-out;
+}
+
+[data-state="closed"] > [data-radix-sheet-overlay] {
+  animation: fadeOut 0.2s ease-out;
+}

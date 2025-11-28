@@ -1,0 +1,126 @@
+import { StorageManager } from '../../storage/StorageManager';
+import { MinIOStorage } from '../../storage/MinIOStorage';
+import { LocalStorage } from '../../storage/LocalStorage';
+import { TourImageRepository } from '../../database/repositories/TourImageRepository';
+import { UserRepository } from '../../database/repositories/UserRepository';
+import { TourImageService } from '../../../application/services/TourImageService';
+import { AuthService } from '../../../application/services/AuthService';
+import { TourImageController } from '../../presentation/controllers/TourImageController';
+import { AuthController } from '../../presentation/controllers/AuthController';
+
+/**
+ * Service Container / Dependency Injection
+ *
+ * Manages all service instances and their dependencies
+ */
+export class ServiceContainer {
+  private static instance: ServiceContainer | null = null;
+
+  private _storageManager: StorageManager | null = null;
+  private _tourImageRepository: TourImageRepository | null = null;
+  private _userRepository: UserRepository | null = null;
+  private _tourImageService: TourImageService | null = null;
+  private _authService: AuthService | null = null;
+  private _tourImageController: TourImageController | null = null;
+  private _authController: AuthController | null = null;
+
+  private constructor() {}
+
+  static getInstance(): ServiceContainer {
+    if (!ServiceContainer.instance) {
+      ServiceContainer.instance = new ServiceContainer();
+    }
+    return ServiceContainer.instance;
+  }
+
+  async initialize(): Promise<void> {
+    // Initialize storage providers
+    const minioStorage = new MinIOStorage();
+    const localStorage = new LocalStorage();
+
+    // Initialize storage manager with primary and fallback providers
+    this._storageManager = new StorageManager(minioStorage, localStorage);
+
+    // Initialize repositories
+    this._tourImageRepository = new TourImageRepository();
+    this._userRepository = new UserRepository();
+
+    // Initialize services
+    this._tourImageService = new TourImageService(
+      this._tourImageRepository,
+      this._storageManager
+    );
+
+    this._authService = new AuthService(
+      this._userRepository
+    );
+
+    // Initialize controllers
+    this._tourImageController = new TourImageController(
+      this._tourImageService
+    );
+
+    this._authController = new AuthController(
+      this._authService
+    );
+
+    console.log('✅ Service container initialized successfully');
+  }
+
+  // Getters
+  get storageManager(): StorageManager {
+    if (!this._storageManager) {
+      throw new Error('Service container not initialized');
+    }
+    return this._storageManager;
+  }
+
+  get tourImageRepository(): TourImageRepository {
+    if (!this._tourImageRepository) {
+      throw new Error('Service container not initialized');
+    }
+    return this._tourImageRepository;
+  }
+
+  get userRepository(): UserRepository {
+    if (!this._userRepository) {
+      throw new Error('Service container not initialized');
+    }
+    return this._userRepository;
+  }
+
+  get tourImageService(): TourImageService {
+    if (!this._tourImageService) {
+      throw new Error('Service container not initialized');
+    }
+    return this._tourImageService;
+  }
+
+  get authService(): AuthService {
+    if (!this._authService) {
+      throw new Error('Service container not initialized');
+    }
+    return this._authService;
+  }
+
+  get tourImageController(): TourImageController {
+    if (!this._tourImageController) {
+      throw new Error('Service container not initialized');
+    }
+    return this._tourImageController;
+  }
+
+  get authController(): AuthController {
+    if (!this._authController) {
+      throw new Error('Service container not initialized');
+    }
+    return this._authController;
+  }
+
+  async shutdown(): Promise<void> {
+    if (this._storageManager) {
+      await this._storageManager.shutdown();
+    }
+    console.log('✅ Service container shut down successfully');
+  }
+}
