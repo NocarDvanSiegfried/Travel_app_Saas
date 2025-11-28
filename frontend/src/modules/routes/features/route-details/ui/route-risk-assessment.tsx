@@ -105,11 +105,11 @@ export function RouteRiskAssessment({
   const { riskScore, factors, recommendations } = finalRiskAssessment;
 
   const getRiskClass = (score: number) => {
-    if (score <= 2) return 'risk-badge-success';
-    if (score <= 4) return 'risk-badge-info';
-    if (score <= 6) return 'risk-badge-warning';
-    if (score <= 8) return 'risk-badge-warning';
-    return 'risk-badge-error';
+    if (score <= 2) return 'risk-badge-success badge-risk-very-low';
+    if (score <= 4) return 'risk-badge-info badge-risk-low';
+    if (score <= 6) return 'risk-badge-warning badge-risk-medium';
+    if (score <= 8) return 'risk-badge-warning-high badge-risk-high';
+    return 'risk-badge-error badge-risk-very-high';
   };
 
   const getRiskLabel = (score: number) => {

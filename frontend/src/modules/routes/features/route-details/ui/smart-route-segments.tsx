@@ -1,5 +1,8 @@
 'use client'
 
+import { RouteRiskBadge } from '@/modules/routes/ui/route-risk-badge'
+import type { IRiskScore } from '@/modules/routes/domain/types'
+
 /**
  * Расширенный интерфейс сегмента с поддержкой новых полей SmartRoute
  */
@@ -63,6 +66,10 @@ interface SmartRouteSegment {
     errors?: string[]
     warnings?: string[]
   }
+  /**
+   * Оценка риска для сегмента (опционально)
+   */
+  riskScore?: IRiskScore
 }
 
 interface SmartRouteSegmentsProps {
@@ -218,6 +225,15 @@ export function SmartRouteSegments({ segments, showValidation = true }: SmartRou
                         return `${priceValue.toFixed(0)} ${currency}`;
                       })()}
                     </span>
+                    {segment.riskScore && (
+                      <>
+                        <span>•</span>
+                        <div className="flex items-center gap-xs">
+                          <span className="text-xs">Риск:</span>
+                          <RouteRiskBadge riskScore={segment.riskScore} compact />
+                        </div>
+                      </>
+                    )}
                   </div>
                   
                   {/* Сезонность */}

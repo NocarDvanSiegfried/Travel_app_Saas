@@ -237,6 +237,34 @@ export function useSmartRouteSearch({
           (adaptedRoute as Route & { validation?: any }).validation = data.validation
         }
         
+        // ФАЗА 4: Валидация и логирование riskScore для сегментов
+        if (adaptedRoute.segments) {
+          adaptedRoute.segments.forEach((segment, index) => {
+            if (segment.riskScore) {
+              // Валидация riskScore
+              if (typeof segment.riskScore.value !== 'number' || 
+                  segment.riskScore.value < 1 || 
+                  segment.riskScore.value > 10) {
+                console.warn(`[useSmartRouteSearch] Invalid riskScore.value for segment ${index}:`, {
+                  segmentId: segment.segment.segmentId,
+                  riskScore: segment.riskScore,
+                })
+                // Удаляем невалидный riskScore
+                delete segment.riskScore
+              } else {
+                // Логируем успешную загрузку riskScore (только в dev режиме)
+                if (process.env.NODE_ENV === 'development') {
+                  console.log(`[useSmartRouteSearch] Segment ${index} has valid riskScore:`, {
+                    segmentId: segment.segment.segmentId,
+                    riskValue: segment.riskScore.value,
+                    riskLevel: segment.riskScore.level,
+                  })
+                }
+              }
+            }
+          })
+        }
+        
         // ФАЗА 5 ФИКС: Добавляем предупреждения в validation, если они есть
         if (validationWarnings.length > 0 && adaptedRoute.validation) {
           adaptedRoute.validation.warnings = [
@@ -364,6 +392,26 @@ export function useSmartRouteSearch({
             if (data.validation) {
               (adapted as Route & { validation?: any }).validation = data.validation
             }
+            
+            // ФАЗА 4: Валидация и логирование riskScore для альтернативных сегментов
+            if (adapted.segments) {
+              adapted.segments.forEach((segment, segIndex) => {
+                if (segment.riskScore) {
+                  // Валидация riskScore
+                  if (typeof segment.riskScore.value !== 'number' || 
+                      segment.riskScore.value < 1 || 
+                      segment.riskScore.value > 10) {
+                    console.warn(`[useSmartRouteSearch] Invalid riskScore.value for alternative route ${index}, segment ${segIndex}:`, {
+                      segmentId: segment.segment.segmentId,
+                      riskScore: segment.riskScore,
+                    })
+                    // Удаляем невалидный riskScore
+                    delete segment.riskScore
+                  }
+                }
+              })
+            }
+            
             return adapted
           } catch (err) {
             // ФАЗА 5 ФИКС: Логируем ошибку адаптации альтернативного маршрута, но не блокируем остальные

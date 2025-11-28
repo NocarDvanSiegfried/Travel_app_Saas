@@ -50,6 +50,10 @@ export interface IRouteSegmentDetails {
   duration: number;
   price: number;
   transferTime?: number;
+  /**
+   * Оценка риска для сегмента (опционально)
+   */
+  riskScore?: IRiskScore;
 }
 
 export interface IBuiltRoute {
@@ -121,6 +125,51 @@ export interface IRiskAssessment {
   riskScore: IRiskScore;
   factors: IRiskFactors;
   recommendations?: string[];
+}
+
+/**
+ * Типы страховых продуктов
+ */
+export enum InsuranceProductType {
+  /** Страхование багажа */
+  BAGGAGE = 'baggage',
+  /** Страхование всей семьи */
+  FAMILY = 'family',
+  /** Страхование поездки (Travel Insurance) */
+  TRAVEL = 'travel',
+  /** Страхование отмены поездки (Trip Cancellation) */
+  TRIP_CANCELLATION = 'trip_cancellation',
+  /** Страхование задержки рейса (Delay Coverage) */
+  DELAY_COVERAGE = 'delay_coverage',
+}
+
+/**
+ * Интерфейс страхового продукта
+ */
+export interface IInsuranceProduct {
+  id: string;
+  type: InsuranceProductType;
+  name: string;
+  description: string;
+  basePrice: number; // в копейках
+  minPrice: number; // в копейках
+  maxPrice: number; // в копейках
+  riskMultiplier: number;
+  minRiskLevel: RiskLevel;
+  maxRiskLevel?: RiskLevel;
+  isActive: boolean;
+  displayOrder: number;
+}
+
+/**
+ * Интерфейс предложения страхового продукта
+ */
+export interface IInsuranceOffer {
+  product: IInsuranceProduct;
+  price: number; // в копейках
+  riskScore: IRiskScore;
+  isRecommended: boolean;
+  priority: number;
 }
 
 export enum DataSourceMode {

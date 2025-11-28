@@ -1,7 +1,7 @@
 import type { Pool } from 'pg';
 import type { IFlightRepository } from '../../domain/repositories/IFlightRepository';
 import { Flight } from '../../domain/entities';
-import type { TransportType } from '../../domain/entities';
+import { TransportType } from '../../domain/entities';
 
 /**
  * PostgreSQL implementation of IFlightRepository

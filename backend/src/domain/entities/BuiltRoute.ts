@@ -2,9 +2,12 @@
  * Построенный маршрут - результат работы route-builder
  */
 
-import { IRouteSegment, TransportType } from './RouteSegment';
-import { IAvailableFlight } from './RouteEdge';
-import { IRiskAssessment } from './RiskAssessment';
+import type { IRouteSegment } from './RouteSegment';
+import { TransportType } from './RouteSegment';
+import type { IAvailableFlight } from './RouteEdge';
+import type { IRiskAssessment } from './RiskAssessment';
+
+import type { IRiskScore } from './RiskAssessment';
 
 export interface IRouteSegmentDetails {
   segment: IRouteSegment;
@@ -14,6 +17,10 @@ export interface IRouteSegmentDetails {
   duration: number;
   price: number;
   transferTime?: number;
+  /**
+   * Оценка риска для сегмента (опционально)
+   */
+  riskScore?: IRiskScore;
 }
 
 export interface IBuiltRoute {

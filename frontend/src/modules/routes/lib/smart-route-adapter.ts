@@ -96,7 +96,19 @@ export interface BackendSmartRoute {
       available: boolean;
       season: string;
     };
+    // ФАЗА 4: Backend может отдавать riskScore для сегмента
+    riskScore?: {
+      value: number;
+      level: string;
+      description: string;
+    };
   }>;
+  // ФАЗА 4: Backend может отдавать riskScore для всего маршрута (максимум среди сегментов)
+  riskScore?: {
+    value: number;
+    level: string;
+    description: string;
+  };
   totalDistance: {
     value: number;
     unit: string;
@@ -864,6 +876,8 @@ export function adaptSmartRouteToFrontend(
         price: backendSegment.price?.total ?? 0,
         departureTime: backendSegment.schedule?.departureTime,
         arrivalTime: backendSegment.schedule?.arrivalTime,
+        // ФАЗА 4: Добавляем riskScore в metadata для доступа в UI
+        riskScore: backendSegment.riskScore,
       },
     };
 

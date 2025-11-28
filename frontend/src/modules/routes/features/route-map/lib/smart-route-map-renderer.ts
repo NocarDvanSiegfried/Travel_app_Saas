@@ -97,6 +97,12 @@ export interface SmartRouteSegmentData {
     price?: number;
     departureTime?: string;
     arrivalTime?: string;
+    // ФАЗА 4: Оценка риска для сегмента
+    riskScore?: {
+      value: number;
+      level: string;
+      description: string;
+    };
   };
 }
 

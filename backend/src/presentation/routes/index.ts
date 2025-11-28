@@ -3,6 +3,7 @@ import { check, live, ready } from '../controllers/HealthController';
 import * as RouteBuilderController from '../controllers/RouteBuilderController';
 import * as RouteMapController from '../controllers/RouteMapController';
 import * as RiskController from '../controllers/RiskController';
+import * as InsuranceController from '../controllers/InsuranceController';
 import * as DiagnosticsController from '../controllers/DiagnosticsController';
 import * as CitiesController from '../controllers/CitiesController';
 import * as GraphRebuildController from '../controllers/GraphRebuildController';
@@ -11,8 +12,10 @@ import { getMetrics } from '../controllers/MetricsController';
 import { routeSearchLimiter, routeRiskLimiter } from '../middleware/rate-limiter';
 import { validateRequest } from '../middleware/validation.middleware';
 import { routeSearchSchema, routeDetailsSchema, routeBuildSchema, routeMapDataQuerySchema, routeMapDataBodySchema } from '../validators';
-import { riskAssessmentSchema } from '../validators';
+import { riskAssessmentSchema, segmentRiskAssessmentSchema } from '../validators';
 import { paginationSchema } from '../validators';
+import { routeInsuranceOffersSchema, segmentInsuranceOffersSchema, calculateInsurancePriceSchema } from '../validators/insurance.validator';
+import { z } from 'zod';
 // Временное логирование для проверки резолва SmartRouteController
 // Будет удалено после подтверждения правильного резолва
 if (process.env.NODE_ENV === 'development') {
@@ -148,6 +151,39 @@ router.post(
   routeRiskLimiter,
   validateRequest({ body: riskAssessmentSchema }),
   RiskController.assessRouteRisk
+);
+router.post(
+  '/routes/risk/segment',
+  routeRiskLimiter,
+  validateRequest({ body: segmentRiskAssessmentSchema }),
+  RiskController.assessSegmentRisk
+);
+
+// Insurance endpoints
+router.get(
+  '/insurance/products',
+  InsuranceController.getInsuranceProducts
+);
+
+router.post(
+  '/insurance/offers/route',
+  routeRiskLimiter,
+  validateRequest({ body: routeInsuranceOffersSchema }),
+  InsuranceController.getOffersForRoute
+);
+
+router.post(
+  '/insurance/offers/segment',
+  routeRiskLimiter,
+  validateRequest({ body: segmentInsuranceOffersSchema }),
+  InsuranceController.getOffersForSegment
+);
+
+router.post(
+  '/insurance/calculate',
+  routeRiskLimiter,
+  validateRequest({ body: calculateInsurancePriceSchema }),
+  InsuranceController.calculateInsurancePrice
 );
 
 // Diagnostics endpoints

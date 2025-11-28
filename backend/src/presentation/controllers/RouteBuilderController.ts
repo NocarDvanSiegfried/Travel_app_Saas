@@ -68,6 +68,59 @@ import { getStartupResult } from '../../index';
  *                   type: array
  *                   items:
  *                     type: object
+ *                     properties:
+ *                       segments:
+ *                         type: array
+ *                         items:
+ *                           type: object
+ *                           properties:
+ *                             fromStopId:
+ *                               type: string
+ *                             toStopId:
+ *                               type: string
+ *                             distance:
+ *                               type: number
+ *                             duration:
+ *                               type: number
+ *                             transportType:
+ *                               type: string
+ *                             price:
+ *                               type: number
+ *                             departureTime:
+ *                               type: string
+ *                             arrivalTime:
+ *                               type: string
+ *                             riskScore:
+ *                               type: object
+ *                               description: Оценка риска для сегмента (опционально)
+ *                               properties:
+ *                                 value:
+ *                                   type: number
+ *                                   minimum: 1
+ *                                   maximum: 10
+ *                                 level:
+ *                                   type: string
+ *                                   enum: [very_low, low, medium, high, very_high]
+ *                                 description:
+ *                                   type: string
+ *                       totalDistance:
+ *                         type: number
+ *                       totalDuration:
+ *                         type: number
+ *                       totalPrice:
+ *                         type: number
+ *                       fromCity:
+ *                         type: string
+ *                       toCity:
+ *                         type: string
+ *                 riskAssessment:
+ *                   type: object
+ *                   description: Оценка риска для всего маршрута (опционально)
+ *                 alternatives:
+ *                   type: array
+ *                   description: Альтернативные маршруты (опционально)
+ *                   items:
+ *                     type: object
  *                 executionTimeMs:
  *                   type: integer
  *                 graphAvailable:
@@ -237,6 +290,33 @@ export async function getRouteGraphDiagnostics(req: Request, res: Response): Pro
  *                   type: boolean
  *                 routes:
  *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       segments:
+ *                         type: array
+ *                         items:
+ *                           type: object
+ *                           properties:
+ *                             riskScore:
+ *                               type: object
+ *                               description: Оценка риска для сегмента (опционально)
+ *                               properties:
+ *                                 value:
+ *                                   type: number
+ *                                   minimum: 1
+ *                                   maximum: 10
+ *                                 level:
+ *                                   type: string
+ *                                   enum: [very_low, low, medium, high, very_high]
+ *                                 description:
+ *                                   type: string
+ *                 riskAssessment:
+ *                   type: object
+ *                   description: Оценка риска для всего маршрута (опционально)
+ *                 alternatives:
+ *                   type: array
+ *                   description: Альтернативные маршруты с оценкой риска (опционально)
  *                   items:
  *                     type: object
  *                 executionTimeMs:

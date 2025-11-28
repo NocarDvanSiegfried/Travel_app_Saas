@@ -1,5 +1,8 @@
 'use client';
 
+import { RouteRiskBadge } from '@/modules/routes/ui/route-risk-badge';
+import type { IRiskScore } from '@/modules/routes/domain/types';
+
 /**
  * TODO: Этот компонент использует старый формат данных.
  * Для новых маршрутов SmartRoute используйте SmartRouteSegments.
@@ -41,6 +44,10 @@ interface Segment {
     departureTime?: string;
     arrivalTime?: string;
   };
+  /**
+   * Оценка риска для сегмента (опционально)
+   */
+  riskScore?: IRiskScore;
 }
 
 interface RouteSegmentsProps {
@@ -173,12 +180,23 @@ export function RouteSegments({ segments }: RouteSegmentsProps) {
                     )}
                   </div>
                   <div className="text-secondary text-sm mt-sm space-y-xs">
-                    <div>
-                      {segment.to?.Адрес}
-                      {segment.duration && (
-                        <span className="ml-sm text-xs">
-                          ({Math.floor(segment.duration / 60)}ч {segment.duration % 60}м)
-                        </span>
+                    <div className="flex items-center gap-sm flex-wrap">
+                      <span>
+                        {segment.to?.Адрес}
+                        {segment.duration && (
+                          <span className="ml-sm text-xs">
+                            ({Math.floor(segment.duration / 60)}ч {segment.duration % 60}м)
+                          </span>
+                        )}
+                      </span>
+                      {segment.riskScore && (
+                        <>
+                          <span className="text-xs">•</span>
+                          <div className="flex items-center gap-xs">
+                            <span className="text-xs">Риск:</span>
+                            <RouteRiskBadge riskScore={segment.riskScore} compact />
+                          </div>
+                        </>
                       )}
                     </div>
                     

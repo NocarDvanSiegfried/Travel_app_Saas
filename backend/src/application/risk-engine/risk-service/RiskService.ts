@@ -1,128 +1,48 @@
 /**
  * Сервис для оценки риска маршрута
+ * 
+ * @deprecated Используйте RouteRiskService для оценки риска маршрутов
+ * Этот класс оставлен для обратной совместимости
  */
 
-import { IBuiltRoute } from '../../../domain/entities/BuiltRoute';
-import { IRiskAssessment } from '../../../domain/entities/RiskAssessment';
+import type { IBuiltRoute } from '../../../domain/entities/BuiltRoute';
+import type { IRiskAssessment } from '../../../domain/entities/RiskAssessment';
 import { HistoricalDataCollector } from '../data-collector/HistoricalDataCollector';
 import { ScheduleRegularityCollector } from '../data-collector/ScheduleRegularityCollector';
 import { WeatherDataCollector } from '../data-collector/WeatherDataCollector';
 import { RiskFeatureBuilder } from '../feature-builder/RiskFeatureBuilder';
-import { IRiskModel } from '../risk-model/IRiskModel';
+import type { IRiskModel } from '../risk-model/IRiskModel';
+import { RouteRiskService } from './RouteRiskService';
 
+/**
+ * @deprecated Используйте RouteRiskService
+ */
 export class RiskService {
+  private readonly routeRiskService: RouteRiskService;
+  
   constructor(
-    private readonly historicalDataCollector: HistoricalDataCollector,
-    private readonly scheduleRegularityCollector: ScheduleRegularityCollector,
-    private readonly weatherDataCollector: WeatherDataCollector,
-    private readonly featureBuilder: RiskFeatureBuilder,
-    private readonly riskModel: IRiskModel
-  ) {}
-
-  /**
-   * Оценить риск маршрута
-   */
-  async assessRisk(route: IBuiltRoute): Promise<IRiskAssessment> {
-    const [
-      historicalData,
-      scheduleRegularity,
-      weatherData,
-      seasonality,
-    ] = await Promise.all([
-      this.historicalDataCollector.collectHistoricalData(route),
-      this.scheduleRegularityCollector.calculateRegularity(route),
-      this.weatherDataCollector.collectWeatherData(route),
-      Promise.resolve(this.featureBuilder.calculateSeasonality(route.date)),
-    ]);
-
-    const features = this.featureBuilder.buildFeatures(
-      route,
-      historicalData,
-      scheduleRegularity,
-      weatherData.riskLevel,
-      seasonality
+    historicalDataCollector: HistoricalDataCollector,
+    scheduleRegularityCollector: ScheduleRegularityCollector,
+    weatherDataCollector: WeatherDataCollector,
+    featureBuilder: RiskFeatureBuilder,
+    riskModel: IRiskModel
+  ) {
+    this.routeRiskService = new RouteRiskService(
+      historicalDataCollector,
+      scheduleRegularityCollector,
+      weatherDataCollector,
+      featureBuilder,
+      riskModel
     );
-
-    const riskScore = await this.riskModel.predict(features);
-
-    const recommendations = this.generateRecommendations(
-      features,
-      riskScore.value
-    );
-
-    return {
-      routeId: route.routeId,
-      riskScore,
-      factors: {
-        transferCount: features.transferCount ?? 0,
-        transportTypes: (features.transportTypes ?? []).map((t) => t.toString()),
-        totalDuration: features.totalDuration ?? 0,
-        historicalDelays: historicalData.delays,
-        cancellations: historicalData.cancellations,
-        occupancy: historicalData.occupancy,
-        weather: weatherData,
-        seasonality,
-        scheduleRegularity: scheduleRegularity ?? 0,
-      },
-      recommendations: recommendations.length > 0 ? recommendations : undefined,
-    };
   }
 
   /**
-   * Сгенерировать рекомендации на основе оценки риска
+   * Оценить риск маршрута
+   * 
+   * @deprecated Используйте RouteRiskService.assessRisk()
    */
-  private generateRecommendations(
-    features: {
-      transferCount?: number;
-      hasFerry?: boolean;
-      hasRiverTransport?: boolean;
-      averageOccupancy?: number;
-      scheduleRegularity?: number;
-      cancellationRate90?: number;
-    },
-    riskScore: number
-  ): string[] {
-    const recommendations: string[] = [];
-
-    if (riskScore >= 7) {
-      recommendations.push(
-        'Рекомендуем оформить страховку на случай задержек и отмен'
-      );
-    }
-
-    const transferCount = features.transferCount ?? 0;
-    if (transferCount > 2) {
-      recommendations.push(
-        'Маршрут содержит много пересадок, рекомендуем прибыть заранее'
-      );
-    }
-
-    if (features.hasFerry || features.hasRiverTransport) {
-      recommendations.push(
-        'Маршрут включает водный транспорт, возможны задержки из-за погоды'
-      );
-    }
-
-    const averageOccupancy = features.averageOccupancy ?? 0;
-    if (averageOccupancy > 0.9) {
-      recommendations.push('Высокая загруженность, бронируйте места заранее');
-    }
-
-    const scheduleRegularity = features.scheduleRegularity ?? 1;
-    if (scheduleRegularity < 0.6) {
-      recommendations.push(
-        'Нерегулярное расписание, уточняйте актуальное время отправления'
-      );
-    }
-
-    const cancellationRate90 = features.cancellationRate90 ?? 0;
-    if (cancellationRate90 > 0.1) {
-      recommendations.push(
-        'Высокий процент отмен на данном направлении, рассмотрите альтернативы'
-      );
-    }
-
-    return recommendations;
+  async assessRisk(route: IBuiltRoute): Promise<IRiskAssessment> {
+    return this.routeRiskService.assessRisk(route);
   }
 }
 

@@ -1,9 +1,5 @@
 import type { BaseEntity } from './BaseEntity';
-
-/**
- * Transport types for routes
- */
-export type TransportType = 'BUS' | 'TRAIN' | 'PLANE' | 'WATER' | 'FERRY';
+import { TransportType } from './RouteSegment';
 
 /**
  * Stop in route sequence with timing
@@ -23,10 +19,11 @@ export type RouteStop = {
  * 
  * @example
  * ```typescript
+ * import { TransportType } from './RouteSegment';
  * const route = new Route({
  *   id: 'route-yakutsk-moscow',
  *   routeNumber: 'ЯК-001',
- *   transportType: 'PLANE',
+ *   transportType: TransportType.AIRPLANE,
  *   fromStopId: 'yakutsk-airport',
  *   toStopId: 'moscow-airport',
  *   stopsSequence: [
@@ -76,7 +73,8 @@ export class Route implements BaseEntity {
       throw new Error('Route: stopsSequence must have at least 2 stops');
     }
 
-    const validTransportTypes: TransportType[] = ['BUS', 'TRAIN', 'PLANE', 'WATER', 'FERRY'];
+    // Validate transportType is a valid enum value
+    const validTransportTypes = Object.values(TransportType);
     if (!validTransportTypes.includes(this.transportType)) {
       throw new Error(`Route: invalid transportType ${this.transportType}`);
     }

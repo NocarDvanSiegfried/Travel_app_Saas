@@ -141,6 +141,8 @@ export function adaptRouteToDetailsFormat(
       validation: (route as any)?.validation?.segmentValidations?.find(
         (v: any) => v.segmentId === segment.segment.segmentId
       ),
+      // ФАЗА 4: Добавляем riskScore из сегмента
+      riskScore: segment.riskScore,
     };
   });
 

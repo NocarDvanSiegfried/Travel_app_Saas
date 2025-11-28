@@ -21,7 +21,8 @@ import type { IRouteRepository } from '../../domain/repositories/IRouteRepositor
 import type { IFlightRepository } from '../../domain/repositories/IFlightRepository';
 import type { IDatasetRepository } from '../../domain/repositories/IDatasetRepository';
 import { RealStop } from '../../domain/entities/RealStop';
-import { Route, type RouteStop, type TransportType } from '../../domain/entities/Route';
+import { Route, type RouteStop } from '../../domain/entities/Route';
+import { TransportType } from '../../domain/entities/RouteSegment';
 import { Flight } from '../../domain/entities/Flight';
 import { Dataset } from '../../domain/entities/Dataset';
 import { extractCityFromStopName, normalizeCityName } from '../../shared/utils/city-normalizer';
@@ -433,7 +434,7 @@ export class ODataSyncWorker extends BaseBackgroundWorker {
         const toStopId = stopsSequence[stopsSequence.length - 1].stopId;
 
         // Normalize transportType to domain type
-        const transportType = this.normalizeTransportType(routeData.transportType) || 'BUS';
+        const transportType = this.normalizeTransportType(routeData.transportType) || TransportType.BUS;
 
         return new Route(
           routeData.id,
@@ -516,7 +517,7 @@ export class ODataSyncWorker extends BaseBackgroundWorker {
 
   /**
    * Normalize transport type to domain TransportType
-   * Handles various input formats: "airplane", "bus", "train" -> "PLANE", "BUS", "TRAIN"
+   * Handles various input formats: "airplane", "bus", "train" -> TransportType.AIRPLANE, TransportType.BUS, TransportType.TRAIN
    */
   private normalizeTransportType(input: string | undefined | null): TransportType | undefined {
     if (!input) {
@@ -527,28 +528,58 @@ export class ODataSyncWorker extends BaseBackgroundWorker {
 
     // Map common variations to domain types
     if (normalized === 'AIRPLANE' || normalized === 'PLANE' || normalized === 'АВИА') {
-      return 'PLANE';
+      return TransportType.AIRPLANE;
     }
     if (normalized === 'BUS' || normalized === 'АВТОБУС') {
-      return 'BUS';
+      return TransportType.BUS;
     }
     if (normalized === 'TRAIN' || normalized === 'ПОЕЗД') {
-      return 'TRAIN';
+      return TransportType.TRAIN;
     }
     if (normalized === 'FERRY' || normalized === 'ПАРОМ' || normalized === 'ПАРОМНАЯ ПЕРЕПРАВА') {
-      return 'FERRY';
+      return TransportType.FERRY;
     }
     if (normalized === 'WATER') {
-      return 'WATER';
+      return TransportType.FERRY; // WATER maps to FERRY
+    }
+    if (normalized === 'TAXI' || normalized === 'ТАКСИ') {
+      return TransportType.TAXI;
+    }
+    if (normalized === 'WINTER_ROAD' || normalized === 'ЗИМНИК') {
+      return TransportType.WINTER_ROAD;
     }
 
-    // If already a valid domain type, return as is
-    if (normalized === 'PLANE' || normalized === 'BUS' || normalized === 'TRAIN' || normalized === 'WATER' || normalized === 'FERRY') {
-      return normalized as TransportType;
+    // If already a valid domain type (lowercase), try to match
+    const lowerNormalized = input.trim().toLowerCase();
+    if (lowerNormalized === 'airplane' || lowerNormalized === 'plane') {
+      return TransportType.AIRPLANE;
+    }
+    if (lowerNormalized === 'bus') {
+      return TransportType.BUS;
+    }
+    if (lowerNormalized === 'train') {
+      return TransportType.TRAIN;
+    }
+    if (lowerNormalized === 'ferry') {
+      return TransportType.FERRY;
+    }
+    if (lowerNormalized === 'taxi' || lowerNormalized === 'car') {
+      return TransportType.TAXI; // car maps to TAXI
+    }
+    if (lowerNormalized === 'winter_road' || lowerNormalized === 'winter road') {
+      return TransportType.WINTER_ROAD;
+    }
+    if (lowerNormalized === 'water') {
+      return TransportType.FERRY; // water maps to FERRY
     }
 
-    // Default to BUS for unknown types
-    return 'BUS';
+    // If already a valid enum value, return as is
+    if (Object.values(TransportType).includes(lowerNormalized as TransportType)) {
+      return lowerNormalized as TransportType;
+    }
+
+    // Default to UNKNOWN for unknown types (not BUS)
+    return TransportType.UNKNOWN;
   }
 
   /**

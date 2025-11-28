@@ -5,6 +5,7 @@ import type { Hub } from './Hub';
 import type { DistanceModel } from '../value-objects/DistanceModel';
 import type { PriceModel } from '../value-objects/PriceModel';
 import type { Seasonality } from '../value-objects/Seasonality';
+import type { IRiskScore } from '../../entities/RiskAssessment';
 
 /**
  * Метаданные сегмента маршрута
@@ -152,6 +153,11 @@ export interface ISmartRouteSegment extends BaseEntity {
    * Метаданные сегмента
    */
   readonly metadata?: SegmentMetadata;
+
+  /**
+   * Оценка риска для сегмента (опционально)
+   */
+  readonly riskScore?: IRiskScore;
 }
 
 /**
@@ -171,7 +177,8 @@ export class SmartRouteSegment implements ISmartRouteSegment {
     public readonly isDirect: boolean,
     public readonly intermediateStops?: IStop[],
     public readonly viaHubs?: Hub[],
-    public readonly metadata?: SegmentMetadata
+    public readonly metadata?: SegmentMetadata,
+    public readonly riskScore?: IRiskScore
   ) {
     this.validate();
   }
@@ -280,6 +287,7 @@ export class SmartRouteSegment implements ISmartRouteSegment {
       viaHubs: this.viaHubs?.map((hub) => hub.toJSON()),
       isDirect: this.isDirect,
       metadata: this.metadata,
+      riskScore: this.riskScore,
     };
   }
 }

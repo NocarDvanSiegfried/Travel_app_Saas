@@ -24,6 +24,7 @@ import type { IDatasetRepository } from '../../domain/repositories/IDatasetRepos
 import { VirtualStop } from '../../domain/entities/VirtualStop';
 import { VirtualRoute } from '../../domain/entities/VirtualRoute';
 import { Flight } from '../../domain/entities/Flight';
+import { TransportType } from '../../domain/entities/RouteSegment';
 import {
   getAllFederalCities,
   getAllYakutiaCitiesUnified,
@@ -850,7 +851,7 @@ export class VirtualEntitiesGeneratorWorker extends BaseBackgroundWorker {
                   generationMethod: 'federal-to-yakutia-hub',
                   sourceCity: city1Name,
                   targetCity: city2Name,
-                  transportType: 'PLANE', // Actual transport type in metadata
+                  transportType: TransportType.AIRPLANE, // Actual transport type in metadata
                 },
                 new Date()
               )
@@ -869,7 +870,7 @@ export class VirtualEntitiesGeneratorWorker extends BaseBackgroundWorker {
                   generationMethod: 'federal-to-yakutia-hub',
                   sourceCity: city2Name,
                   targetCity: city1Name,
-                  transportType: 'PLANE', // Actual transport type in metadata
+                  transportType: TransportType.AIRPLANE, // Actual transport type in metadata
                 },
                 new Date()
               )
@@ -895,7 +896,7 @@ export class VirtualEntitiesGeneratorWorker extends BaseBackgroundWorker {
                   generationMethod: 'federal-to-yakutia-hub',
                   sourceCity: city1Name,
                   targetCity: this.hubCityName,
-                  transportType: 'PLANE', // Actual transport type in metadata
+                  transportType: TransportType.AIRPLANE, // Actual transport type in metadata
                 },
                 new Date()
               )
@@ -916,7 +917,7 @@ export class VirtualEntitiesGeneratorWorker extends BaseBackgroundWorker {
                   generationMethod: 'federal-to-yakutia-hub',
                   sourceCity: this.hubCityName,
                   targetCity: city2Name,
-                  transportType: 'BUS', // Actual transport type in metadata
+                  transportType: TransportType.BUS, // Actual transport type in metadata
                 },
                 new Date()
               )
@@ -937,7 +938,7 @@ export class VirtualEntitiesGeneratorWorker extends BaseBackgroundWorker {
                   generationMethod: 'federal-to-yakutia-hub',
                   sourceCity: this.hubCityName,
                   targetCity: city1Name,
-                  transportType: 'PLANE', // Actual transport type in metadata
+                  transportType: TransportType.AIRPLANE, // Actual transport type in metadata
                 },
                 new Date()
               )
@@ -957,7 +958,7 @@ export class VirtualEntitiesGeneratorWorker extends BaseBackgroundWorker {
                   generationMethod: 'federal-to-yakutia-hub',
                   sourceCity: city2Name,
                   targetCity: this.hubCityName,
-                  transportType: 'BUS', // Actual transport type in metadata
+                  transportType: TransportType.BUS, // Actual transport type in metadata
                 },
                 new Date()
               )
@@ -982,7 +983,7 @@ export class VirtualEntitiesGeneratorWorker extends BaseBackgroundWorker {
                 generationMethod: 'federal-to-federal',
                 sourceCity: city1Name,
                 targetCity: city2Name,
-                transportType: 'PLANE', // Actual transport type in metadata
+                transportType: TransportType.AIRPLANE, // Actual transport type in metadata
               },
               new Date()
             )
@@ -1001,7 +1002,7 @@ export class VirtualEntitiesGeneratorWorker extends BaseBackgroundWorker {
                 generationMethod: 'federal-to-federal',
                 sourceCity: city2Name,
                 targetCity: city1Name,
-                transportType: 'PLANE', // Actual transport type in metadata
+                transportType: TransportType.AIRPLANE, // Actual transport type in metadata
               },
               new Date()
             )
@@ -1026,7 +1027,7 @@ export class VirtualEntitiesGeneratorWorker extends BaseBackgroundWorker {
                 generationMethod: 'yakutia-connectivity',
                 sourceCity: city1Name,
                 targetCity: city2Name,
-                transportType: 'BUS', // Actual transport type in metadata
+                transportType: TransportType.BUS, // Actual transport type in metadata
               },
               new Date()
             )
@@ -1045,7 +1046,7 @@ export class VirtualEntitiesGeneratorWorker extends BaseBackgroundWorker {
                 generationMethod: 'yakutia-connectivity',
                 sourceCity: city2Name,
                 targetCity: city1Name,
-                transportType: 'BUS', // Actual transport type in metadata
+                transportType: TransportType.BUS, // Actual transport type in metadata
               },
               new Date()
             )

@@ -44,10 +44,7 @@ function toRadians(degrees: number): number {
   return degrees * (Math.PI / 180);
 }
 
-/**
- * Тип транспорта для расчета оценок
- */
-export type TransportType = 'PLANE' | 'BUS' | 'TRAIN' | 'FERRY';
+import { TransportType } from '../../domain/entities/RouteSegment';
 
 /**
  * Параметры расчета для разных типов транспорта
@@ -58,23 +55,23 @@ interface TransportParams {
   overheadTime: number; // минуты (взлет/посадка, остановки)
 }
 
-const TRANSPORT_PARAMS: Record<TransportType, TransportParams> = {
-  PLANE: {
+const TRANSPORT_PARAMS: Partial<Record<TransportType, TransportParams>> = {
+  [TransportType.AIRPLANE]: {
     averageSpeed: 550, // Средняя скорость региональных рейсов
     pricePerKm: { min: 10, max: 15 }, // Региональные рейсы дороже
     overheadTime: 30, // Взлет, посадка, руление
   },
-  BUS: {
+  [TransportType.BUS]: {
     averageSpeed: 65, // С учетом остановок и дорожных условий
     pricePerKm: { min: 3, max: 4 }, // Типичная цена для автобусов Якутии
     overheadTime: 0, // Остановки уже учтены в скорости
   },
-  TRAIN: {
+  [TransportType.TRAIN]: {
     averageSpeed: 80, // Средняя скорость для региональных поездов
     pricePerKm: { min: 2, max: 3 }, // Поезда обычно дешевле
     overheadTime: 5, // Остановки на станциях
   },
-  FERRY: {
+  [TransportType.FERRY]: {
     averageSpeed: 22, // Речной транспорт медленнее
     pricePerKm: { min: 2, max: 3 }, // Схоже с поездами
     overheadTime: 10, // Погрузка/разгрузка
@@ -109,6 +106,18 @@ export function estimateRoutePrice(
   transportType: TransportType
 ): { min: number; max: number; average: number } {
   const params = TRANSPORT_PARAMS[transportType];
+  if (!params) {
+    // Default to BUS if transport type not found
+    const defaultParams = TRANSPORT_PARAMS[TransportType.BUS]!;
+    const minPrice = Math.round(distance * defaultParams.pricePerKm.min);
+    const maxPrice = Math.round(distance * defaultParams.pricePerKm.max);
+    const averagePrice = Math.round((minPrice + maxPrice) / 2);
+    return {
+      min: minPrice,
+      max: maxPrice,
+      average: averagePrice,
+    };
+  }
   const minPrice = Math.round(distance * params.pricePerKm.min);
   const maxPrice = Math.round(distance * params.pricePerKm.max);
   const averagePrice = Math.round((minPrice + maxPrice) / 2);
@@ -129,17 +138,17 @@ export function estimateRoutePrice(
 export function getOptimalTransportType(distance: number): TransportType {
   // Для коротких расстояний (< 200 км) - автобус
   if (distance < 200) {
-    return 'BUS';
+    return TransportType.BUS;
   }
 
   // Для средних расстояний (200-500 км) - автобус или самолет (зависит от доступности)
   if (distance < 500) {
     // В Якутии для средних расстояний часто используется автобус
-    return 'BUS';
+    return TransportType.BUS;
   }
 
   // Для длинных расстояний (> 500 км) - самолет (в Якутии это основной вид транспорта)
-  return 'PLANE';
+  return TransportType.AIRPLANE;
 }
 
 /**
@@ -153,17 +162,17 @@ export function generateTypicalDepartureTimes(
   transportType: TransportType,
   frequency: 'daily' | 'weekly' | 'seasonal' = 'daily'
 ): string[] {
-  if (transportType === 'PLANE') {
+  if (transportType === TransportType.AIRPLANE) {
     // Авиарейсы обычно утром и днем
     return ['06:00', '10:30', '14:00', '18:00'];
   }
 
-  if (transportType === 'BUS') {
+  if (transportType === TransportType.BUS) {
     // Автобусы обычно рано утром
     return ['07:00', '08:30', '12:00', '16:00'];
   }
 
-  if (transportType === 'TRAIN') {
+  if (transportType === TransportType.TRAIN) {
     // Поезда обычно вечером
     return ['18:00', '20:00', '22:00'];
   }
@@ -209,6 +218,7 @@ export function estimateRoute(
     typicalDepartureTimes,
   };
 }
+
 
 
 

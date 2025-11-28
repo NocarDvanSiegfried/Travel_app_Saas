@@ -156,6 +156,25 @@ export function useRoutesSearch({
           let adaptedRoute: IBuiltRoute
           try {
             adaptedRoute = adaptSmartRouteToIBuiltRoute(route, normalizedDate, Number(passengers) || 1)
+            
+            // ФАЗА 4: Валидация и логирование riskScore для сегментов
+            if (adaptedRoute.segments) {
+              adaptedRoute.segments.forEach((segment, index) => {
+                if (segment.riskScore) {
+                  // Валидация riskScore
+                  if (typeof segment.riskScore.value !== 'number' || 
+                      segment.riskScore.value < 1 || 
+                      segment.riskScore.value > 10) {
+                    console.warn(`[useRoutesSearch] Invalid riskScore.value for segment ${index}:`, {
+                      segmentId: segment.segment.segmentId,
+                      riskScore: segment.riskScore,
+                    })
+                    // Удаляем невалидный riskScore
+                    delete segment.riskScore
+                  }
+                }
+              })
+            }
           } catch (err) {
             // КРИТИЧЕСКИЙ ФИКС: Если адаптация основного маршрута не удалась, пробрасываем ошибку
             const errorMessage = err instanceof Error ? err.message : String(err)
@@ -163,9 +182,30 @@ export function useRoutesSearch({
             throw new Error(`Ошибка при обработке маршрута: ${errorMessage}`)
           }
           
-          const adaptedAlternatives = (smartRouteResponse.alternatives || []).map((altRoute) => {
+          const adaptedAlternatives = (smartRouteResponse.alternatives || []).map((altRoute, altIndex) => {
             try {
-              return adaptSmartRouteToIBuiltRoute(altRoute, normalizedDate, Number(passengers) || 1)
+              const adapted = adaptSmartRouteToIBuiltRoute(altRoute, normalizedDate, Number(passengers) || 1)
+              
+              // ФАЗА 4: Валидация и логирование riskScore для альтернативных сегментов
+              if (adapted.segments) {
+                adapted.segments.forEach((segment, segIndex) => {
+                  if (segment.riskScore) {
+                    // Валидация riskScore
+                    if (typeof segment.riskScore.value !== 'number' || 
+                        segment.riskScore.value < 1 || 
+                        segment.riskScore.value > 10) {
+                      console.warn(`[useRoutesSearch] Invalid riskScore.value for alternative route ${altIndex}, segment ${segIndex}:`, {
+                        segmentId: segment.segment.segmentId,
+                        riskScore: segment.riskScore,
+                      })
+                      // Удаляем невалидный riskScore
+                      delete segment.riskScore
+                    }
+                  }
+                })
+              }
+              
+              return adapted
             } catch (err) {
               console.error('[useRoutesSearch] Error adapting alternative route:', err)
               return null
@@ -412,16 +452,17 @@ export function useRoutesSearch({
   }
 
   // Добавляем riskAssessment и validation к каждому маршруту
+  // ФАЗА 4: riskAssessment уже создан в адаптере из route.riskScore, используем его
   const routes: Route[] = adaptedRoutes.map((route) => ({
     ...route,
-    riskAssessment: data?.riskAssessment,
+    // riskAssessment уже есть в route из adaptSmartRouteToIBuiltRoute
     // Добавляем validation из SmartRoute API (если доступна)
     validation: (data as RouteSearchResponse & { validation?: any })?.validation,
   } as Route & { validation?: any }))
 
   const alternatives: Route[] = adaptedAlternatives.map((route) => ({
     ...route,
-    riskAssessment: data?.riskAssessment,
+    // riskAssessment уже есть в route из adaptSmartRouteToIBuiltRoute
     // Добавляем validation из SmartRoute API (если доступна)
     validation: (data as RouteSearchResponse & { validation?: any })?.validation,
   } as Route & { validation?: any }))

@@ -15,10 +15,12 @@ import type { IStopRepository } from '../../../domain/repositories/IStopReposito
 import type { IRouteRepository } from '../../../domain/repositories/IRouteRepository';
 import { getLogger } from '../../../shared/logger/Logger';
 import { extractCityFromStopName } from '../../../shared/utils/city-normalizer';
-import { AssessRouteRiskUseCase } from '../../risk-engine/AssessRouteRiskUseCase';
+import { AssessRouteRiskUseCase, AssessSegmentRiskUseCase } from '../../risk-engine';
 import type { IBuiltRoute } from '../../../domain/entities/BuiltRoute';
 import type { IRiskAssessment } from '../../../domain/entities/RiskAssessment';
 import { TransportType } from '../../../domain/entities/RouteSegment';
+import { RiskContext } from '../../risk-engine/base/RiskContext';
+import type { IRiskDataContext } from '../../../domain/interfaces/risk-engine/IRiskDataProvider';
 
 /**
  * Route search request
@@ -29,6 +31,8 @@ export type BuildRouteRequest = {
   date: Date;
   passengers: number;
 };
+
+import type { IRiskScore } from '../../../domain/entities/RiskAssessment';
 
 /**
  * Route segment in the path
@@ -43,6 +47,10 @@ export type RouteSegment = {
   price?: number;
   departureTime?: string;
   arrivalTime?: string;
+  /**
+   * Оценка риска для сегмента (опционально)
+   */
+  riskScore?: IRiskScore;
 };
 
 /**
@@ -270,7 +278,7 @@ export class OptimizedBuildRouteUseCase {
       );
 
       // ====================================================================
-      // Step 6: Assess Route Risk
+      // Step 6: Assess Route Risk (for main route and alternatives)
       // ====================================================================
       let riskAssessment: IRiskAssessment | undefined;
       try {
@@ -315,9 +323,124 @@ export class OptimizedBuildRouteUseCase {
 
         const riskUseCase = new AssessRouteRiskUseCase();
         riskAssessment = await riskUseCase.execute(builtRoute);
+        
+        const segmentRiskUseCase = new AssessSegmentRiskUseCase();
+        const riskContext = new RiskContext(
+          request.date.toISOString().split('T')[0],
+          request.passengers
+        );
+        
+        const segmentsWithRisk = await Promise.all(
+          builtRoute.segments.map(async (segmentDetail) => {
+            try {
+              const segmentAssessment = await segmentRiskUseCase.execute(
+                segmentDetail.segment,
+                riskContext as IRiskDataContext
+              );
+              return {
+                ...segmentDetail,
+                riskScore: segmentAssessment.riskScore,
+              };
+            } catch (error) {
+              this.logger.warn('Failed to assess segment risk', {
+                segmentId: segmentDetail.segment.segmentId,
+                error,
+              });
+              return segmentDetail;
+            }
+          })
+        );
+        
+        builtRoute.segments = segmentsWithRisk;
+        
+        route.segments = route.segments.map((seg, idx) => {
+          const segmentDetail = segmentsWithRisk[idx];
+          return {
+            ...seg,
+            riskScore: segmentDetail?.riskScore,
+          };
+        });
+        
+        const alternativesWithRisk = await Promise.all(
+          alternatives.map(async (altRoute) => {
+            try {
+              const altBuiltRoute: IBuiltRoute = {
+                routeId: `route-alt-${Date.now()}-${Math.random()}`,
+                fromCity: altRoute.fromCity,
+                toCity: altRoute.toCity,
+                date: request.date.toISOString(),
+                passengers: request.passengers,
+                segments: altRoute.segments.map((seg, idx) => ({
+                  segment: {
+                    segmentId: `seg-alt-${idx}`,
+                    fromStopId: seg.fromStopId,
+                    toStopId: seg.toStopId,
+                    routeId: seg.routeId || '',
+                    transportType: this.mapTransportType(seg.transportType),
+                    distance: seg.distance,
+                    estimatedDuration: seg.duration,
+                    basePrice: seg.price,
+                  },
+                  departureTime: seg.departureTime || '',
+                  arrivalTime: seg.arrivalTime || '',
+                  duration: seg.duration,
+                  price: seg.price || 0,
+                })),
+                totalDuration: altRoute.totalDuration,
+                totalPrice: altRoute.totalPrice,
+                transferCount: altRoute.segments.length - 1,
+                transportTypes: altRoute.segments.map(seg => this.mapTransportType(seg.transportType)),
+                departureTime: altRoute.segments[0]?.departureTime || '',
+                arrivalTime: altRoute.segments[altRoute.segments.length - 1]?.arrivalTime || '',
+              };
+              
+              const segmentRiskUseCase = new AssessSegmentRiskUseCase();
+              const riskContext = new RiskContext(
+                request.date.toISOString().split('T')[0],
+                request.passengers
+              );
+              
+              const altSegmentsWithRisk = await Promise.all(
+                altBuiltRoute.segments.map(async (segmentDetail) => {
+                  try {
+                    const segmentAssessment = await segmentRiskUseCase.execute(
+                      segmentDetail.segment,
+                      riskContext as IRiskDataContext
+                    );
+                    return {
+                      ...segmentDetail,
+                      riskScore: segmentAssessment.riskScore,
+                    };
+                  } catch (error) {
+                    this.logger.warn('Failed to assess alternative segment risk', {
+                      segmentId: segmentDetail.segment.segmentId,
+                      error,
+                    });
+                    return segmentDetail;
+                  }
+                })
+              );
+              
+              return {
+                ...altRoute,
+                segments: altRoute.segments.map((seg, idx) => {
+                  const segmentDetail = altSegmentsWithRisk[idx];
+                  return {
+                    ...seg,
+                    riskScore: segmentDetail?.riskScore,
+                  };
+                }),
+              };
+            } catch (error) {
+              this.logger.warn('Failed to assess alternative route risk', { error });
+              return altRoute;
+            }
+          })
+        );
+        
+        alternatives.splice(0, alternatives.length, ...alternativesWithRisk);
       } catch (error) {
         this.logger.warn('Failed to assess route risk', { error });
-        // Continue without risk assessment
       }
 
       const executionTimeMs = Date.now() - startTime;
@@ -526,7 +649,7 @@ export class OptimizedBuildRouteUseCase {
             toStopId,
             distance: metadata?.distance || 0,
             duration: weight,
-            transportType: metadata?.transportType || 'BUS',
+            transportType: metadata?.transportType || TransportType.BUS,
             routeId: metadata?.routeId,
             price: flight?.priceRub,
             departureTime: flight?.departureTime,

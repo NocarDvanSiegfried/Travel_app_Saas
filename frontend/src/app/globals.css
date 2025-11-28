@@ -426,6 +426,19 @@
     outline-offset: 2px;
   }
 
+  [class^="btn-"]:disabled,
+  [class^="btn-"].disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  /* Дополнительные стили для заблокированных кнопок */
+  .cursor-not-allowed {
+    cursor: not-allowed !important;
+  }
+
+  /* Старый стиль для обратной совместимости */
   [class^="btn-"]:disabled {
     opacity: 0.5;
     cursor: not-allowed;
@@ -970,6 +983,123 @@
     color: var(--color-text-secondary);
     background-color: var(--color-surface-alt);
     border-color: var(--color-border-light);
+  }
+
+  /* ============================================
+     RISK BADGE SYSTEM
+     Специализированные стили для отображения уровней риска
+     ============================================ */
+
+  /* Very Low Risk (1-2) - Success Green */
+  .risk-badge-success,
+  .badge-risk-very-low {
+    color: var(--color-success);
+    background-color: var(--color-success-light);
+    border-color: var(--color-success);
+    position: relative;
+  }
+
+  .risk-badge-success::before,
+  .badge-risk-very-low::before {
+    content: '✓';
+    margin-right: var(--spacing-xs);
+    font-weight: var(--font-weight-bold);
+  }
+
+  /* Low Risk (3-4) - Primary Blue */
+  .risk-badge-info,
+  .badge-risk-low {
+    color: var(--color-primary);
+    background-color: var(--color-primary-light);
+    border-color: var(--color-primary);
+    position: relative;
+  }
+
+  .risk-badge-info::before,
+  .badge-risk-low::before {
+    content: 'ℹ';
+    margin-right: var(--spacing-xs);
+    font-weight: var(--font-weight-bold);
+  }
+
+  /* Medium Risk (5-6) - Warning Yellow */
+  .risk-badge-warning,
+  .badge-risk-medium {
+    color: #d97706; /* Более насыщенный оранжевый для лучшей видимости */
+    background-color: rgba(255, 193, 7, 0.15);
+    border-color: #ffc107;
+    position: relative;
+  }
+
+  .risk-badge-warning::before,
+  .badge-risk-medium::before {
+    content: '⚠';
+    margin-right: var(--spacing-xs);
+    font-weight: var(--font-weight-bold);
+  }
+
+  /* High Risk (7-8) - Warning Orange */
+  .risk-badge-warning-high,
+  .badge-risk-high {
+    color: #ea580c; /* Оранжево-красный */
+    background-color: rgba(234, 88, 12, 0.15);
+    border-color: #ea580c;
+    position: relative;
+  }
+
+  .risk-badge-warning-high::before,
+  .badge-risk-high::before {
+    content: '⚠';
+    margin-right: var(--spacing-xs);
+    font-weight: var(--font-weight-bold);
+  }
+
+  /* Very High Risk (9-10) - Danger Red */
+  .risk-badge-error,
+  .badge-risk-very-high {
+    color: var(--color-error);
+    background-color: var(--color-error-light);
+    border-color: var(--color-error);
+    position: relative;
+    animation: pulse-warning 2s ease-in-out infinite;
+  }
+
+  .risk-badge-error::before,
+  .badge-risk-very-high::before {
+    content: '⚠';
+    margin-right: var(--spacing-xs);
+    font-weight: var(--font-weight-bold);
+  }
+
+  /* Анимация пульсации для очень высокого риска */
+  @keyframes pulse-warning {
+    0%, 100% {
+      opacity: 1;
+      box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.4);
+    }
+    50% {
+      opacity: 0.9;
+      box-shadow: 0 0 0 4px rgba(220, 53, 69, 0);
+    }
+  }
+
+  /* Компактный режим для risk badge - без иконок */
+  .badge.risk-badge-success.compact,
+  .badge.risk-badge-info.compact,
+  .badge.risk-badge-warning.compact,
+  .badge.risk-badge-warning-high.compact,
+  .badge.risk-badge-error.compact {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: var(--font-xs);
+    line-height: 1.2;
+  }
+
+  .badge.risk-badge-success.compact::before,
+  .badge.risk-badge-info.compact::before,
+  .badge.risk-badge-warning.compact::before,
+  .badge.risk-badge-warning-high.compact::before,
+  .badge.risk-badge-error.compact::before {
+    display: none;
   }
 
   /* ============================================

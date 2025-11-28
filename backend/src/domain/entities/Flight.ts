@@ -1,5 +1,5 @@
 import type { BaseEntity } from './BaseEntity';
-import type { TransportType } from './Route';
+import { TransportType } from './RouteSegment';
 
 /**
  * Flight entity - represents a scheduled flight (real or virtual)
@@ -18,7 +18,7 @@ import type { TransportType } from './Route';
  *   arrivalTime: '14:00',
  *   daysOfWeek: [1, 2, 3, 4, 5], // Mon-Fri
  *   priceRub: 15000,
- *   transportType: 'PLANE',
+ *   transportType: TransportType.AIRPLANE,
  *   isVirtual: false
  * });
  * ```

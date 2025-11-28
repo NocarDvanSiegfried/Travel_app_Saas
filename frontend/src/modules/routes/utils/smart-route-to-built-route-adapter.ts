@@ -10,7 +10,7 @@
  * @module routes/utils
  */
 
-import type { IBuiltRoute, IRouteSegmentDetails, IRouteSegment } from '../domain/types'
+import type { IBuiltRoute, IRouteSegmentDetails, IRouteSegment, IRiskScore, IRiskAssessment, IRiskFactors } from '../domain/types'
 import { TransportType } from '../domain/types'
 
 /**
@@ -90,6 +90,8 @@ export interface SmartRouteSegment {
       end?: string
     }
   }
+  // ФАЗА 4: Backend может отдавать riskScore для сегмента
+  riskScore?: IRiskScore
 }
 
 export interface SmartRoute {
@@ -112,6 +114,8 @@ export interface SmartRoute {
     }
   }
   segments?: SmartRouteSegment[]
+  // ФАЗА 4: Backend может отдавать riskScore для всего маршрута (максимум среди сегментов)
+  riskScore?: IRiskScore
   totalDistance?: {
     value?: number
     unit?: string
@@ -578,6 +582,7 @@ export function adaptSmartRouteToIBuiltRoute(
       }
 
       // ФАЗА 1 ФИКС: Используем сгенерированные departureTime и arrivalTime
+      // ФАЗА 4: Добавляем riskScore из сегмента, если он есть
       return {
         segment: routeSegment as IRouteSegment,
         departureTime: departureTime,
@@ -594,6 +599,8 @@ export function adaptSmartRouteToIBuiltRoute(
         priceData: {
           display: priceDisplay,
         },
+        // ФАЗА 4: Добавляем riskScore из сегмента
+        riskScore: segment.riskScore,
       } as IRouteSegmentDetails & {
       viaHubs?: Array<{ level: 'federal' | 'regional' }>
       pathGeometry?: Array<[number, number]>
@@ -674,6 +681,8 @@ export function adaptSmartRouteToIBuiltRoute(
         priceData: {
           display: fallbackPriceDisplay,
         },
+        // ФАЗА 4: Сохраняем riskScore даже при ошибке адаптации
+        riskScore: segment.riskScore,
       } as IRouteSegmentDetails
     }
   })
@@ -747,6 +756,7 @@ export function adaptSmartRouteToIBuiltRoute(
       totalPriceData?: { display: string }
       fromCityId?: string
       toCityId?: string
+      riskAssessment?: IRiskAssessment
     } = {
       routeId: smartRoute.id || `route-${Date.now()}`,
       fromCity: fromCityName,
@@ -772,6 +782,39 @@ export function adaptSmartRouteToIBuiltRoute(
       totalPriceData: {
         display: totalPriceDisplay,
       },
+      // ФАЗА 4: Добавляем riskAssessment из riskScore маршрута
+      riskAssessment: smartRoute.riskScore ? {
+        routeId: smartRoute.id || `route-${Date.now()}`,
+        riskScore: smartRoute.riskScore,
+        factors: {
+          transferCount,
+          transportTypes: transportTypes.map(t => t),
+          totalDuration: totalDurationValue,
+          historicalDelays: {
+            averageDelay30Days: 0,
+            averageDelay60Days: 0,
+            averageDelay90Days: 0,
+            delayFrequency: 0,
+          },
+          cancellations: {
+            cancellationRate30Days: 0,
+            cancellationRate60Days: 0,
+            cancellationRate90Days: 0,
+            totalCancellations: 0,
+          },
+          occupancy: {
+            averageOccupancy: 0,
+            highOccupancySegments: 0,
+            lowAvailabilitySegments: 0,
+          },
+          seasonality: {
+            month: new Date(routeDate).getMonth() + 1,
+            dayOfWeek: new Date(routeDate).getDay(),
+            seasonFactor: 1,
+          },
+          scheduleRegularity: 0,
+        },
+      } : undefined,
     }
     
     return result

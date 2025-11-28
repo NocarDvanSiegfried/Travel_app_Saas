@@ -255,5 +255,74 @@ export class CacheKeyBuilder {
      */
     pattern: () => `${this.PREFIX}:odata:*`,
   };
+
+  /**
+   * Ключи для модуля оценки риска
+   */
+  static risk = {
+    /**
+     * Кеш оценки риска маршрута
+     * @param routeId - ID маршрута
+     */
+    route: (routeId: string) => `${this.PREFIX}:risk:route:${routeId}`,
+
+    /**
+     * Кеш оценки риска сегмента
+     * @param segmentId - ID сегмента
+     */
+    segment: (segmentId: string) => `${this.PREFIX}:risk:segment:${segmentId}`,
+
+    /**
+     * Кеш данных о погоде
+     * @param location - Локация (город или координаты)
+     * @param date - Дата
+     */
+    weather: (location: string, date?: string) =>
+      date
+        ? `${this.PREFIX}:risk:weather:${location}:${date}`
+        : `${this.PREFIX}:risk:weather:${location}`,
+
+    /**
+     * Кеш дорожных условий
+     * @param from - Координаты отправления
+     * @param to - Координаты назначения
+     */
+    roadConditions: (from: string, to: string) =>
+      `${this.PREFIX}:risk:road-conditions:${from}:${to}`,
+
+    /**
+     * Кеш исторических данных о задержках
+     * @param routeId - ID маршрута
+     * @param days - Количество дней
+     */
+    historicalDelays: (routeId: string, days: number) =>
+      `${this.PREFIX}:risk:historical-delays:${routeId}:${days}`,
+
+    /**
+     * Кеш данных о загруженности
+     * @param segmentId - ID сегмента
+     * @param date - Дата
+     */
+    occupancy: (segmentId: string, date: string) =>
+      `${this.PREFIX}:risk:occupancy:${segmentId}:${date}`,
+
+    /**
+     * Кеш регулярности расписания
+     * @param routeId - ID маршрута
+     */
+    scheduleRegularity: (routeId: string) =>
+      `${this.PREFIX}:risk:schedule-regularity:${routeId}`,
+
+    /**
+     * Паттерн для удаления всех кешей риска маршрута
+     * @param routeId - ID маршрута
+     */
+    routePattern: (routeId: string) => `${this.PREFIX}:risk:route:${routeId}:*`,
+
+    /**
+     * Паттерн для удаления всех кешей риска
+     */
+    pattern: () => `${this.PREFIX}:risk:*`,
+  };
 }
 

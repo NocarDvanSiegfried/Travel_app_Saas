@@ -9,7 +9,10 @@ import { RoutePricing } from './route-pricing';
 import { RouteAlternatives } from './route-alternatives';
 import { RouteRiskAssessment } from './route-risk-assessment';
 import { RouteMapWithAlternatives } from '@/modules/routes/features/route-map/ui';
-import { OccupancyData } from '@/modules/routes/domain/types';
+import { OccupancyData, IRiskScore, RiskLevel } from '@/modules/routes/domain/types';
+import { InsuranceOptions } from '@/modules/routes/ui';
+import { useState, useMemo } from 'react';
+import type { IInsuranceOffer } from '@/modules/routes/domain/types';
 
 /**
  * Данные для отображения детальной информации о маршруте
@@ -260,7 +263,96 @@ export function RouteDetailsView({ data }: RouteDetailsViewProps) {
         routeId={routeId}
         riskAssessment={data.riskAssessment}
       />
+
+      {/* Страховые продукты */}
+      {data.riskAssessment?.riskScore && (() => {
+        const riskScore: IRiskScore = {
+          value: data.riskAssessment.riskScore.value,
+          level: data.riskAssessment.riskScore.level as RiskLevel,
+          description: data.riskAssessment.riskScore.description,
+        };
+        
+        return (
+          <RouteInsuranceOptions
+            riskScore={riskScore}
+            routeId={routeId}
+          />
+        );
+      })()}
     </div>
   );
+}
+
+/**
+ * Компонент для отображения страховых продуктов на странице деталей маршрута
+ */
+function RouteInsuranceOptions({
+  riskScore,
+  routeId,
+}: {
+  riskScore: IRiskScore;
+  routeId: string;
+}) {
+  const [selectedOffers, setSelectedOffers] = useState<IInsuranceOffer[]>([]);
+
+  // Загружаем выбранные страховые продукты из localStorage
+  useMemo(() => {
+    try {
+      const routeData = localStorage.getItem(`route-${routeId}`);
+      if (routeData) {
+        const parsed = JSON.parse(routeData);
+        if (parsed.selectedInsuranceOffers) {
+          setSelectedOffers(parsed.selectedInsuranceOffers);
+        }
+      }
+    } catch (err) {
+      console.error('[RouteInsuranceOptions] Error loading selected insurance:', err);
+    }
+  }, [routeId]);
+
+  const handleSelectOffer = (offer: IInsuranceOffer) => {
+    const newSelected = [...selectedOffers, offer];
+    setSelectedOffers(newSelected);
+    saveSelectedInsurance(routeId, newSelected);
+  };
+
+  const handleDeselectOffer = (offer: IInsuranceOffer) => {
+    const newSelected = selectedOffers.filter((o) => o.product.id !== offer.product.id);
+    setSelectedOffers(newSelected);
+    saveSelectedInsurance(routeId, newSelected);
+  };
+
+  // Определяем, нужно ли автоматически рекомендовать страховку
+  const autoRecommend = riskScore.value >= 5;
+
+  return (
+    <InsuranceOptions
+      riskScore={riskScore}
+      selectedOffers={selectedOffers}
+      onSelectOffer={handleSelectOffer}
+      onDeselectOffer={handleDeselectOffer}
+      autoRecommend={autoRecommend}
+      title="Страховые продукты"
+      showEmptyState={true}
+    />
+  );
+}
+
+/**
+ * Сохраняет выбранные страховые продукты в localStorage
+ */
+function saveSelectedInsurance(routeId: string, offers: IInsuranceOffer[]): void {
+  try {
+    if (typeof window !== 'undefined') {
+      const routeData = localStorage.getItem(`route-${routeId}`);
+      if (routeData) {
+        const parsed = JSON.parse(routeData);
+        parsed.selectedInsuranceOffers = offers;
+        localStorage.setItem(`route-${routeId}`, JSON.stringify(parsed));
+      }
+    }
+  } catch (err) {
+    console.error('[RouteInsuranceOptions] Error saving selected insurance:', err);
+  }
 }
 

@@ -1,15 +1,77 @@
 'use client'
 
-import { Suspense, useMemo, useCallback } from 'react'
+import { Suspense, useMemo, useCallback, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Header, ErrorBoundary } from '@/shared/ui'
-import { RouteRiskBadge, useRoutesSearch } from '@/modules/routes'
-import { IBuiltRoute, IRiskAssessment, TransportType } from '@/modules/routes/domain'
+import { RouteRiskBadge, useRoutesSearch, InsuranceOptions } from '@/modules/routes'
+import { IBuiltRoute, IRiskAssessment, TransportType, RiskLevel, IRiskScore, IInsuranceOffer } from '@/modules/routes/domain'
 import { safeLocalStorage } from '@/shared/utils/storage'
 import { formatDuration, formatTime, formatDate, formatPrice } from '@/shared/utils/format'
 
 interface Route extends IBuiltRoute {
   riskAssessment?: IRiskAssessment
+}
+
+/**
+ * Проверяет, должен ли маршрут быть заблокирован на основе риска
+ * 
+ * @param route - Маршрут для проверки
+ * @returns Объект с информацией о блокировке
+ */
+function checkRouteRiskBlock(route: Route): {
+  isBlocked: boolean;
+  reason: string | null;
+  riskScore: IRiskScore | null;
+} {
+  // Проверяем риск маршрута (из riskAssessment или напрямую из route.riskScore)
+  const routeRiskScore = route.riskAssessment?.riskScore || (route as any).riskScore;
+  if (routeRiskScore) {
+    const riskValue = routeRiskScore.value;
+    const riskLevel = routeRiskScore.level;
+
+    // Блокируем при высоком (7-8) или очень высоком (9-10) риске
+    if (riskValue >= 7 || riskLevel === RiskLevel.HIGH || riskLevel === RiskLevel.VERY_HIGH) {
+      return {
+        isBlocked: true,
+        reason: riskValue >= 9
+          ? 'Маршрут заблокирован из-за очень высокого риска задержек и отмен'
+          : 'Маршрут заблокирован из-за высокого риска задержек и отмен',
+        riskScore: routeRiskScore,
+      };
+    }
+  }
+
+  // Проверяем риск сегментов
+  if (route.segments && Array.isArray(route.segments)) {
+    const highRiskSegments = route.segments.filter((segment) => {
+      const segmentRisk = segment.riskScore;
+      if (!segmentRisk) return false;
+      
+      return segmentRisk.value >= 7 || 
+             segmentRisk.level === RiskLevel.HIGH || 
+             segmentRisk.level === RiskLevel.VERY_HIGH;
+    });
+
+    if (highRiskSegments.length > 0) {
+      const maxSegmentRisk = highRiskSegments.reduce((max, seg) => {
+        return (seg.riskScore?.value ?? 0) > (max?.value ?? 0) ? seg.riskScore! : max;
+      }, null as IRiskScore | null);
+
+      return {
+        isBlocked: true,
+        reason: maxSegmentRisk && maxSegmentRisk.value >= 9
+          ? 'Маршрут заблокирован: один или несколько сегментов имеют очень высокий риск'
+          : 'Маршрут заблокирован: один или несколько сегментов имеют высокий риск',
+        riskScore: maxSegmentRisk,
+      };
+    }
+  }
+
+  return {
+    isBlocked: false,
+    reason: null,
+    riskScore: null,
+  };
 }
 
 /**
@@ -464,17 +526,58 @@ function RoutesContent() {
                           </div>
                         )}
 
+                        {/* Информация о страховке (если риск высокий) */}
+                        {route.riskAssessment?.riskScore && route.riskAssessment.riskScore.value >= 5 && (
+                          <div className="mb-sm p-sm rounded-sm bg-warning-light border border-warning">
+                            <div className="flex items-center gap-xs text-sm">
+                              <span>🛡️</span>
+                              <span className="text-warning font-medium">
+                                Рекомендуем оформить страховку
+                              </span>
+                            </div>
+                            <p className="text-xs text-secondary mt-xs">
+                              При выборе маршрута вы сможете выбрать подходящие страховые продукты
+                            </p>
+                            <InsuranceOptions
+                              riskScore={route.riskAssessment.riskScore}
+                            />
+                          </div>
+                        )}
+
                         {/* Кнопка выбора */}
-                        <div className="flex justify-end pt-sm">
-                          <button
-                            onClick={() => handleSelectRoute(route)}
-                            aria-label={`Выбрать маршрут из ${route.fromCity} в ${route.toCity}`}
-                            className="btn-primary px-xl py-sm transition-fast"
-                            data-testid={`select-route-${route.routeId}`}
-                          >
-                            Выбрать маршрут
-                          </button>
-                        </div>
+                        {(() => {
+                          const riskBlock = checkRouteRiskBlock(route);
+                          return (
+                            <div className="flex flex-col items-end gap-sm pt-sm">
+                              {riskBlock.isBlocked && riskBlock.reason && (
+                                <div className="text-xs text-error text-right max-w-md">
+                                  <span className="inline-flex items-center gap-xs">
+                                    <span>⚠️</span>
+                                    <span>{riskBlock.reason}</span>
+                                  </span>
+                                </div>
+                              )}
+                              <button
+                                onClick={() => !riskBlock.isBlocked && handleSelectRoute(route)}
+                                aria-label={
+                                  riskBlock.isBlocked
+                                    ? `Маршрут заблокирован: ${riskBlock.reason}`
+                                    : `Выбрать маршрут из ${route.fromCity} в ${route.toCity}`
+                                }
+                                disabled={riskBlock.isBlocked}
+                                className={`px-xl py-sm transition-fast ${
+                                  riskBlock.isBlocked
+                                    ? 'btn-secondary opacity-50 cursor-not-allowed'
+                                    : 'btn-primary'
+                                }`}
+                                data-testid={`select-route-${route.routeId}`}
+                                title={riskBlock.isBlocked ? riskBlock.reason || undefined : undefined}
+                              >
+                                {riskBlock.isBlocked ? 'Маршрут недоступен' : 'Выбрать маршрут'}
+                              </button>
+                            </div>
+                          );
+                        })()}
                       </div>
                     </div>
                   )
@@ -639,17 +742,58 @@ function RoutesContent() {
                           </div>
                         )}
 
+                        {/* Информация о страховке (если риск высокий) */}
+                        {route.riskAssessment?.riskScore && route.riskAssessment.riskScore.value >= 5 && (
+                          <div className="mb-sm p-sm rounded-sm bg-warning-light border border-warning">
+                            <div className="flex items-center gap-xs text-sm">
+                              <span>🛡️</span>
+                              <span className="text-warning font-medium">
+                                Рекомендуем оформить страховку
+                              </span>
+                            </div>
+                            <p className="text-xs text-secondary mt-xs">
+                              При выборе маршрута вы сможете выбрать подходящие страховые продукты
+                            </p>
+                            <InsuranceOptions
+                              riskScore={route.riskAssessment.riskScore}
+                            />
+                          </div>
+                        )}
+
                         {/* Кнопка выбора */}
-                        <div className="flex justify-end pt-sm">
-                          <button
-                            onClick={() => handleSelectRoute(route)}
-                            aria-label={`Выбрать маршрут из ${route.fromCity} в ${route.toCity}`}
-                            className="btn-primary px-xl py-sm transition-fast"
-                            data-testid={`select-route-${route.routeId}`}
-                          >
-                            Выбрать маршрут
-                          </button>
-                        </div>
+                        {(() => {
+                          const riskBlock = checkRouteRiskBlock(route);
+                          return (
+                            <div className="flex flex-col items-end gap-sm pt-sm">
+                              {riskBlock.isBlocked && riskBlock.reason && (
+                                <div className="text-xs text-error text-right max-w-md">
+                                  <span className="inline-flex items-center gap-xs">
+                                    <span>⚠️</span>
+                                    <span>{riskBlock.reason}</span>
+                                  </span>
+                                </div>
+                              )}
+                              <button
+                                onClick={() => !riskBlock.isBlocked && handleSelectRoute(route)}
+                                aria-label={
+                                  riskBlock.isBlocked
+                                    ? `Маршрут заблокирован: ${riskBlock.reason}`
+                                    : `Выбрать маршрут из ${route.fromCity} в ${route.toCity}`
+                                }
+                                disabled={riskBlock.isBlocked}
+                                className={`px-xl py-sm transition-fast ${
+                                  riskBlock.isBlocked
+                                    ? 'btn-secondary opacity-50 cursor-not-allowed'
+                                    : 'btn-primary'
+                                }`}
+                                data-testid={`select-route-${route.routeId}`}
+                                title={riskBlock.isBlocked ? riskBlock.reason || undefined : undefined}
+                              >
+                                {riskBlock.isBlocked ? 'Маршрут недоступен' : 'Выбрать маршрут'}
+                              </button>
+                            </div>
+                          );
+                        })()}
                       </div>
                     </div>
                   )

@@ -8,6 +8,7 @@
  */
 
 import type { GraphNode, GraphNeighbor } from '../../domain/repositories/IGraphRepository';
+import { TransportType } from '../../domain/entities/RouteSegment';
 import { normalizeCityName } from '../utils/city-normalizer';
 import type { ValidationResult } from './stop-validator';
 
@@ -211,7 +212,7 @@ export function validateTransferEdges(
     nodeMap.set(node.id, node);
   }
   
-  const transferEdges = edges.filter(e => e.transportType === 'TRANSFER');
+  const transferEdges = edges.filter(e => e.transportType === TransportType.UNKNOWN);
   
   for (const edge of transferEdges) {
     const fromNode = nodeMap.get(edge.fromStopId);
@@ -278,7 +279,7 @@ export function validateFerryEdges(
     nodeMap.set(node.id, node);
   }
   
-  const ferryEdges = edges.filter(e => e.transportType === 'FERRY');
+  const ferryEdges = edges.filter(e => e.transportType === TransportType.FERRY);
   
   for (const edge of ferryEdges) {
     const fromNode = nodeMap.get(edge.fromStopId);

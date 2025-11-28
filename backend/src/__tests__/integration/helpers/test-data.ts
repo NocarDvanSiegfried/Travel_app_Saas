@@ -9,7 +9,7 @@ import { VirtualStop } from '../../../domain/entities/VirtualStop';
 import { Route } from '../../../domain/entities/Route';
 import { Flight } from '../../../domain/entities/Flight';
 import type { GraphNeighbor } from '../../../domain/repositories/IGraphRepository';
-import type { TransportType } from '../../../domain/entities/Route';
+import { TransportType } from '../../../domain/entities/RouteSegment';
 
 /**
  * Options for creating a test RealStop
@@ -92,7 +92,7 @@ export type TestRouteOptions = {
 export function createTestRoute(options: TestRouteOptions = {}): Route {
   return new Route(
     options.id || 'test-route-1',
-    options.transportType || 'BUS',
+    options.transportType || TransportType.BUS,
     options.fromStopId || 'stop-1',
     options.toStopId || 'stop-2',
     options.stopsSequence || [
@@ -138,7 +138,7 @@ export function createTestFlight(options: TestFlightOptions = {}): Flight {
     options.routeId,
     options.priceRub ?? 1000,
     options.isVirtual ?? false,
-    options.transportType || 'BUS',
+    options.transportType || TransportType.BUS,
     options.metadata
   );
 }
@@ -166,7 +166,7 @@ export function createTestGraphStructure(options: TestGraphStructureOptions = {}
         weight: 60,
         metadata: {
           distance: 50,
-          transportType: 'BUS',
+          transportType: TransportType.BUS,
           routeId: 'route-1',
         },
       },
@@ -177,7 +177,7 @@ export function createTestGraphStructure(options: TestGraphStructureOptions = {}
         weight: 120,
         metadata: {
           distance: 100,
-          transportType: 'TRAIN',
+          transportType: TransportType.TRAIN,
           routeId: 'route-2',
         },
       },
@@ -233,7 +233,7 @@ export function createTestGraph(options: TestGraphOptions = {}): {
           weight: 360,
           metadata: {
             distance: 4900,
-            transportType: 'PLANE',
+            transportType: TransportType.AIRPLANE,
             routeId: 'route-1',
           },
         },

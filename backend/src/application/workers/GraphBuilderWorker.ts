@@ -25,7 +25,7 @@ import type { IFlightRepository } from '../../domain/repositories/IFlightReposit
 import type { IDatasetRepository } from '../../domain/repositories/IDatasetRepository';
 import type { IGraphRepository, GraphNode, GraphNeighbor } from '../../domain/repositories/IGraphRepository';
 import { Graph } from '../../domain/entities/Graph';
-import type { TransportType } from '../../domain/entities/Route';
+import { TransportType } from '../../domain/entities/RouteSegment';
 import { validateGraphStructure, validateTransferEdges, validateFerryEdges } from '../../shared/validators/graph-validator';
 import { getAllFederalCities, isCityInUnifiedReference } from '../../shared/utils/unified-cities-loader';
 import { normalizeCityName } from '../../shared/utils/city-normalizer';
@@ -38,7 +38,7 @@ type GraphEdge = {
   toStopId: string;
   weight: number; // duration in minutes
   distance?: number; // km
-  transportType?: string;
+  transportType?: TransportType;
   routeId?: string;
 };
 
@@ -178,7 +178,7 @@ export class GraphBuilderWorker extends BaseBackgroundWorker {
             fromStopId: route.fromStopId,
             toStopId: route.toStopId,
             stopsSequence: route.stopsSequence.map(s => ({ stopId: s.stopId })), // Convert RouteStop[] to { stopId }[]
-            transportType: String(route.transportType), // Convert TransportType to string
+            transportType: route.transportType, // TransportType enum
             durationMinutes: route.durationMinutes,
             distanceKm: route.distanceKm,
             metadata: 'metadata' in route ? route.metadata : undefined,
@@ -191,7 +191,7 @@ export class GraphBuilderWorker extends BaseBackgroundWorker {
             fromStopId: route.fromStopId,
             toStopId: route.toStopId,
             stopsSequence: [{ stopId: route.fromStopId }, { stopId: route.toStopId }],
-            transportType: 'SHUTTLE', // Default for virtual routes
+            transportType: TransportType.UNKNOWN, // Default for virtual routes (SHUTTLE is not a TransportType)
             durationMinutes: route.durationMinutes,
             distanceKm: route.distanceKm,
             metadata: 'metadata' in route ? route.metadata : undefined,
@@ -629,7 +629,7 @@ export class GraphBuilderWorker extends BaseBackgroundWorker {
    */
   private buildGraphStructure(
     stops: Array<{ id: string; name?: string; latitude: number; longitude: number; cityId?: string; isAirport?: boolean; isRailwayStation?: boolean; metadata?: Record<string, unknown> }>,
-    routes: Array<{ id: string; fromStopId: string; toStopId: string; stopsSequence: Array<{ stopId: string }>; transportType: string; durationMinutes?: number; distanceKm?: number; metadata?: Record<string, unknown> }>,
+    routes: Array<{ id: string; fromStopId: string; toStopId: string; stopsSequence: Array<{ stopId: string }>; transportType: TransportType; durationMinutes?: number; distanceKm?: number; metadata?: Record<string, unknown> }>,
     flights: Array<{ id: string; routeId?: string; fromStopId: string; toStopId: string; departureTime: string; arrivalTime: string; isVirtual?: boolean }>
   ): { nodes: GraphNode[]; edges: GraphEdge[] } {
     // Build nodes from stops
@@ -689,9 +689,9 @@ export class GraphBuilderWorker extends BaseBackgroundWorker {
 
         // For ferry routes: validate that both stops are ferry terminals
         let finalWeight: number;
-        let finalTransportType = route?.transportType as TransportType | undefined;
+        let finalTransportType: TransportType | undefined = route?.transportType;
         
-        if (route?.transportType === 'FERRY') {
+        if (route?.transportType === TransportType.FERRY) {
           // Find stops to check if they are ferry terminals
           const fromStop = stops.find(s => s.id === flight.fromStopId);
           const toStop = stops.find(s => s.id === flight.toStopId);
@@ -773,7 +773,7 @@ export class GraphBuilderWorker extends BaseBackgroundWorker {
           
           if (!edgesMap.has(edgeKey)) {
             // For ferry routes: validate that both stops are ferry terminals
-            if (route.transportType === 'FERRY') {
+            if (route.transportType === TransportType.FERRY) {
               // Find stops to check if they are ferry terminals
               const fromStop = stops.find(s => s.id === fromStopId);
               const toStop = stops.find(s => s.id === toStopId);
@@ -880,7 +880,7 @@ export class GraphBuilderWorker extends BaseBackgroundWorker {
               fromStopId: stop1Id,
               toStopId: stop2Id,
               weight: transferWeight,
-              transportType: 'TRANSFER',
+              transportType: TransportType.UNKNOWN, // TRANSFER is not a TransportType, use UNKNOWN
             });
             transferEdgesCount++;
           }
@@ -890,7 +890,7 @@ export class GraphBuilderWorker extends BaseBackgroundWorker {
               fromStopId: stop2Id,
               toStopId: stop1Id,
               weight: transferWeight,
-              transportType: 'TRANSFER',
+              transportType: TransportType.UNKNOWN, // TRANSFER is not a TransportType, use UNKNOWN
             });
             transferEdgesCount++;
           }

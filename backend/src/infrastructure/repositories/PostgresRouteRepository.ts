@@ -1,7 +1,64 @@
 import type { Pool } from 'pg';
 import type { IRouteRepository } from '../../domain/repositories/IRouteRepository';
 import { Route, VirtualRoute } from '../../domain/entities';
-import type { RouteStop, TransportType, VirtualRouteType, VirtualTransportMode } from '../../domain/entities';
+import type { RouteStop, VirtualRouteType, VirtualTransportMode } from '../../domain/entities';
+import { TransportType } from '../../domain/entities';
+
+/**
+ * Преобразует TransportType enum в значение для PostgreSQL
+ * PostgreSQL constraint ожидает UPPERCASE значения: 'BUS', 'TRAIN', 'PLANE', 'WATER', 'FERRY'
+ */
+function transportTypeToPostgres(transportType: TransportType): string {
+  switch (transportType) {
+    case TransportType.AIRPLANE:
+      return 'PLANE'; // PostgreSQL ожидает 'PLANE', не 'AIRPLANE'
+    case TransportType.BUS:
+      return 'BUS';
+    case TransportType.TRAIN:
+      return 'TRAIN';
+    case TransportType.FERRY:
+      return 'FERRY';
+    case TransportType.TAXI:
+      return 'BUS'; // TAXI маппится в BUS для PostgreSQL (constraint не поддерживает TAXI)
+    case TransportType.WINTER_ROAD:
+      return 'BUS'; // WINTER_ROAD маппится в BUS для PostgreSQL
+    case TransportType.UNKNOWN:
+      return 'BUS'; // UNKNOWN маппится в BUS для PostgreSQL
+    default:
+      return 'BUS'; // Fallback
+  }
+}
+
+/**
+ * Преобразует значение из PostgreSQL в TransportType enum
+ * PostgreSQL возвращает UPPERCASE значения: 'BUS', 'TRAIN', 'PLANE', 'WATER', 'FERRY'
+ */
+function transportTypeFromPostgres(postgresValue: string | unknown): TransportType {
+  if (typeof postgresValue !== 'string') {
+    return TransportType.UNKNOWN;
+  }
+
+  const normalized = postgresValue.trim().toUpperCase();
+
+  switch (normalized) {
+    case 'PLANE':
+    case 'AIRPLANE':
+      return TransportType.AIRPLANE;
+    case 'BUS':
+      return TransportType.BUS;
+    case 'TRAIN':
+      return TransportType.TRAIN;
+    case 'FERRY':
+    case 'WATER':
+      return TransportType.FERRY;
+    default:
+      // Если значение уже в формате enum (lowercase), попробуем использовать как есть
+      if (Object.values(TransportType).includes(normalized.toLowerCase() as TransportType)) {
+        return normalized.toLowerCase() as TransportType;
+      }
+      return TransportType.UNKNOWN;
+  }
+}
 
 /**
  * PostgreSQL implementation of IRouteRepository
@@ -36,7 +93,7 @@ export class PostgresRouteRepository implements IRouteRepository {
     return result.rows.map(row => this.mapRowToRoute(row));
   }
 
-  async getRoutesByTransportType(transportType: string): Promise<Route[]> {
+  async getRoutesByTransportType(transportType: TransportType): Promise<Route[]> {
     const result = await this.pool.query(
       'SELECT id, route_number, transport_type, from_stop_id, to_stop_id, stops_sequence, duration_minutes, distance_km, operator, metadata, created_at, updated_at FROM routes WHERE transport_type = $1 ORDER BY route_number',
       [transportType]
@@ -94,7 +151,7 @@ export class PostgresRouteRepository implements IRouteRepository {
     const result = await this.pool.query(query, [
       route.id,
       route.routeNumber,
-      route.transportType,
+      transportTypeToPostgres(route.transportType), // Преобразуем enum в значение для PostgreSQL
       route.fromStopId,
       route.toStopId,
       JSON.stringify(route.stopsSequence),
@@ -143,7 +200,7 @@ export class PostgresRouteRepository implements IRouteRepository {
         const result = await client.query(query, [
           route.id,
           route.routeNumber,
-          route.transportType,
+          transportTypeToPostgres(route.transportType), // Преобразуем enum в значение для PostgreSQL
           route.fromStopId,
           route.toStopId,
           JSON.stringify(route.stopsSequence),
@@ -360,7 +417,7 @@ export class PostgresRouteRepository implements IRouteRepository {
 
     return new Route(
       row.id as string,
-      row.transport_type as TransportType,
+      transportTypeFromPostgres(row.transport_type), // Преобразуем значение из PostgreSQL в enum
       row.from_stop_id as string,
       row.to_stop_id as string,
       stopsSequence,

@@ -16,6 +16,81 @@ import { getCityById, searchCities, type CityReference } from '../../domain/smar
 import { getStopsByCity } from '../../domain/smart-routing/data/stops-reference';
 import { getUnifiedCity } from '../../shared/utils/unified-cities-loader';
 import { normalizeCityName } from '../../shared/utils/city-normalizer';
+import { AssessSegmentRiskUseCase } from '../../application/risk-engine';
+import { RiskContext } from '../../application/risk-engine/base/RiskContext';
+import type { IRouteSegment } from '../../domain/entities/RouteSegment';
+import { TransportType } from '../../domain/entities/RouteSegment';
+import type { IRiskScore } from '../../domain/entities/RiskAssessment';
+import { RiskLevel } from '../../domain/entities/RiskAssessment';
+
+/**
+ * Нормализует строковое значение типа транспорта в enum TransportType
+ */
+function normalizeTransportType(input: string | unknown): TransportType {
+  if (typeof input !== 'string') {
+    return TransportType.UNKNOWN;
+  }
+
+  const normalized = input.trim().toUpperCase();
+
+  if (normalized === 'AIRPLANE' || normalized === 'PLANE' || normalized === 'АВИА') {
+    return TransportType.AIRPLANE;
+  }
+  if (normalized === 'BUS' || normalized === 'АВТОБУС') {
+    return TransportType.BUS;
+  }
+  if (normalized === 'TRAIN' || normalized === 'ПОЕЗД') {
+    return TransportType.TRAIN;
+  }
+  if (normalized === 'FERRY' || normalized === 'ПАРОМ' || normalized === 'ПАРОМНАЯ ПЕРЕПРАВА' || normalized === 'WATER') {
+    return TransportType.FERRY;
+  }
+  if (normalized === 'TAXI' || normalized === 'ТАКСИ') {
+    return TransportType.TAXI;
+  }
+  if (normalized === 'WINTER_ROAD' || normalized === 'ЗИМНИК') {
+    return TransportType.WINTER_ROAD;
+  }
+
+  // Если уже валидное enum-значение
+  if (Object.values(TransportType).includes(normalized as TransportType)) {
+    return normalized as TransportType;
+  }
+
+  return TransportType.UNKNOWN;
+}
+
+/**
+ * Тип для сегмента из JSON
+ */
+interface SegmentJSON {
+  id?: string;
+  type?: string | TransportType;
+  from?: { id?: string };
+  to?: { id?: string };
+  metadata?: { routeNumber?: string };
+  distance?: { value?: number };
+  duration?: { value?: number };
+  price?: { total?: number };
+  riskScore?: IRiskScore;
+  [key: string]: unknown;
+}
+
+/**
+ * Тип для маршрута из JSON
+ */
+interface RouteJSON {
+  id: string;
+  fromCity: Record<string, unknown>;
+  toCity: Record<string, unknown>;
+  segments: SegmentJSON[];
+  totalDistance: Record<string, unknown>;
+  totalDuration: Record<string, unknown>;
+  totalPrice: Record<string, unknown>;
+  validation: Record<string, unknown>;
+  visualization: Record<string, unknown>;
+  [key: string]: unknown;
+}
 
 /**
  * @swagger
@@ -77,9 +152,32 @@ import { normalizeCityName } from '../../shared/utils/city-normalizer';
  *                 route:
  *                   type: object
  *                   description: Умный маршрут с сегментами, ценами, расстояниями и визуализацией
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                     riskScore:
+ *                       $ref: '#/components/schemas/RiskScore'
+ *                       description: Общий риск маршрута (максимум среди всех сегментов, опционально)
+ *                     segments:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           id:
+ *                             type: string
+ *                           type:
+ *                             type: string
+ *                           riskScore:
+ *                             $ref: '#/components/schemas/RiskScore'
+ *                             description: Оценка риска для сегмента (опционально)
  *                 validation:
  *                   type: object
  *                   description: Результаты валидации маршрута
+ *                 alternatives:
+ *                   type: array
+ *                   description: Альтернативные маршруты с оценкой риска (опционально)
+ *                   items:
+ *                     type: object
  *                 executionTimeMs:
  *                   type: integer
  *       400:
@@ -281,9 +379,11 @@ export async function buildSmartRoute(req: Request, res: Response): Promise<void
     // Парсим предпочтительный тип транспорта
     let preferredTransportType: BuildRouteParams['preferredTransport'] | undefined;
     if (preferredTransport) {
-      const validTypes = ['airplane', 'train', 'bus', 'ferry', 'winter_road', 'taxi'];
-      if (validTypes.includes(preferredTransport)) {
-        preferredTransportType = preferredTransport as BuildRouteParams['preferredTransport'];
+      // Нормализуем строку в enum, если это строка
+      if (typeof preferredTransport === 'string') {
+        preferredTransportType = normalizeTransportType(preferredTransport);
+      } else if (Object.values(TransportType).includes(preferredTransport as TransportType)) {
+        preferredTransportType = preferredTransport as TransportType;
       }
     }
 
@@ -396,19 +496,168 @@ export async function buildSmartRoute(req: Request, res: Response): Promise<void
     const validator = new RouteValidator();
     const validation = validator.validateRoute(result.route, travelDate);
 
+    // Оцениваем риск для каждого сегмента основного маршрута
+    const segmentRiskUseCase = new AssessSegmentRiskUseCase();
+    const riskContext = new RiskContext(
+      buildParams.date,
+      req.body.passengers || 1
+    );
+
+    const routeJSON = result.route.toJSON() as RouteJSON;
+    if (routeJSON.segments && Array.isArray(routeJSON.segments)) {
+      const segmentsWithRisk = await Promise.all(
+        result.route.segments.map(async (segment, idx) => {
+          try {
+            const routeSegment: IRouteSegment = {
+              segmentId: segment.id,
+              fromStopId: segment.from.id,
+              toStopId: segment.to.id,
+              routeId: segment.metadata?.routeNumber || '',
+              transportType: typeof segment.type === 'string' ? normalizeTransportType(segment.type) : segment.type,
+              distance: segment.distance.value,
+              estimatedDuration: segment.duration.value,
+              basePrice: segment.price.total,
+            };
+
+            const segmentAssessment = await segmentRiskUseCase.execute(
+              routeSegment,
+              riskContext
+            );
+
+            return {
+              ...routeJSON.segments[idx],
+              riskScore: segmentAssessment.riskScore,
+            };
+          } catch (error) {
+            console.warn('[SmartRouteController] Failed to assess segment risk', {
+              segmentId: segment.id,
+              error,
+            });
+            return routeJSON.segments[idx];
+          }
+        })
+      );
+      routeJSON.segments = segmentsWithRisk;
+
+      // Вычисляем общий маршрутный риск как максимум среди всех сегментов
+      const segmentRiskScores = segmentsWithRisk
+        .map((seg) => seg.riskScore)
+        .filter((riskScore): riskScore is IRiskScore => riskScore !== undefined && riskScore !== null);
+
+      if (segmentRiskScores.length > 0) {
+        // Находим максимальное значение riskScore.value
+        const maxRiskValue = Math.max(...segmentRiskScores.map((rs) => rs.value));
+        const maxRiskScore = segmentRiskScores.find((rs) => rs.value === maxRiskValue)!;
+
+        // Вычисляем level на основе значения (на случай, если level не совпадает с value)
+        const getRiskLevelFromValue = (value: number): RiskLevel => {
+          if (value <= 2) return RiskLevel.VERY_LOW;
+          if (value <= 4) return RiskLevel.LOW;
+          if (value <= 6) return RiskLevel.MEDIUM;
+          if (value <= 8) return RiskLevel.HIGH;
+          return RiskLevel.VERY_HIGH;
+        };
+
+        // Добавляем общий риск маршрута
+        routeJSON.riskScore = {
+          value: maxRiskValue,
+          level: getRiskLevelFromValue(maxRiskValue),
+          description: `Общий риск маршрута: ${maxRiskScore.description}`,
+        };
+      }
+    }
+
+    // Оцениваем риск для альтернативных маршрутов
+    let alternativesWithRisk = result.alternatives?.map((alt) => alt.toJSON() as RouteJSON);
+    if (alternativesWithRisk) {
+      alternativesWithRisk = await Promise.all(
+        alternativesWithRisk.map(async (altRoute) => {
+          const altSegments = altRoute.segments;
+          if (altSegments && Array.isArray(altSegments)) {
+            const altSegmentsWithRisk = await Promise.all(
+              altSegments.map(async (segmentJSON: SegmentJSON, idx: number) => {
+                try {
+                  const routeSegment: IRouteSegment = {
+                    segmentId: segmentJSON.id || `seg-alt-${idx}`,
+                    fromStopId: segmentJSON.from?.id || '',
+                    toStopId: segmentJSON.to?.id || '',
+                    routeId: segmentJSON.metadata?.routeNumber || '',
+                    transportType: normalizeTransportType(segmentJSON.type),
+                    distance: segmentJSON.distance?.value || 0,
+                    estimatedDuration: segmentJSON.duration?.value || 0,
+                    basePrice: segmentJSON.price?.total || 0,
+                  };
+
+                  const segmentAssessment = await segmentRiskUseCase.execute(
+                    routeSegment,
+                    riskContext
+                  );
+
+                  return {
+                    ...segmentJSON,
+                    riskScore: segmentAssessment.riskScore,
+                  };
+                } catch (error) {
+                  console.warn('[SmartRouteController] Failed to assess alternative segment risk', {
+                    segmentId: segmentJSON.id,
+                    error,
+                  });
+                  return segmentJSON;
+                }
+              })
+            );
+            // Вычисляем общий риск для альтернативного маршрута
+            const altSegmentRiskScores = altSegmentsWithRisk
+              .map((seg) => seg.riskScore)
+              .filter((riskScore): riskScore is IRiskScore => riskScore !== undefined && riskScore !== null);
+
+            if (altSegmentRiskScores.length > 0) {
+              const maxRiskValue = Math.max(...altSegmentRiskScores.map((rs) => rs.value));
+              const maxRiskScore = altSegmentRiskScores.find((rs) => rs.value === maxRiskValue)!;
+
+              // Вычисляем level на основе значения
+              const getRiskLevelFromValue = (value: number): RiskLevel => {
+                if (value <= 2) return RiskLevel.VERY_LOW;
+                if (value <= 4) return RiskLevel.LOW;
+                if (value <= 6) return RiskLevel.MEDIUM;
+                if (value <= 8) return RiskLevel.HIGH;
+                return RiskLevel.VERY_HIGH;
+              };
+
+              return {
+                ...altRoute,
+                segments: altSegmentsWithRisk,
+                riskScore: {
+                  value: maxRiskValue,
+                  level: getRiskLevelFromValue(maxRiskValue),
+                  description: `Общий риск маршрута: ${maxRiskScore.description}`,
+                },
+              };
+            }
+
+            return {
+              ...altRoute,
+              segments: altSegmentsWithRisk,
+            };
+          }
+          return altRoute;
+        })
+      );
+    }
+
     // Формируем ответ
     const totalExecutionTime = Date.now() - requestStartTime;
 
     res.status(200).json({
       success: true,
-      route: result.route.toJSON(),
+      route: routeJSON,
       validation: {
         isValid: validation.isValid,
         errors: validation.errors,
         warnings: validation.warnings,
         segmentValidations: validation.segmentValidations,
       },
-      alternatives: result.alternatives?.map((alt) => alt.toJSON()),
+      alternatives: alternativesWithRisk,
       executionTimeMs: totalExecutionTime,
     });
   } catch (error: any) {

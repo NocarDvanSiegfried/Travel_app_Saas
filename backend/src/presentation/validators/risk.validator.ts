@@ -5,7 +5,23 @@ import { z } from 'zod';
  */
 
 /**
- * Schema for route segment
+ * Schema for route segment (для оценки риска сегмента)
+ */
+export const routeSegmentForRiskSchema = z.object({
+  segmentId: z.string().min(1, 'segmentId обязателен'),
+  fromStopId: z.string().min(1, 'fromStopId обязателен'),
+  toStopId: z.string().min(1, 'toStopId обязателен'),
+  routeId: z.string().min(1, 'routeId обязателен'),
+  transportType: z.enum(['airplane', 'train', 'bus', 'ferry', 'taxi', 'winter_road', 'unknown'], {
+    errorMap: () => ({ message: 'Недопустимый тип транспорта' }),
+  }),
+  distance: z.number().positive().optional(),
+  estimatedDuration: z.number().positive().optional(),
+  basePrice: z.number().positive().optional(),
+});
+
+/**
+ * Schema for route segment (для обратной совместимости)
  */
 const routeSegmentSchema = z.object({
   segmentId: z.string().min(1),
@@ -41,5 +57,21 @@ export const riskAssessmentSchema = z.union([
     route: builtRouteSchema,
   }),
   builtRouteSchema,
+]);
+
+/**
+ * Schema for segment risk assessment request body
+ * Supports both { segment: { ... } } and { ... } formats
+ */
+export const segmentRiskAssessmentSchema = z.union([
+  z.object({
+    segment: routeSegmentForRiskSchema,
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Дата должна быть в формате YYYY-MM-DD').optional(),
+    passengers: z.number().int().positive().max(10).optional(),
+  }),
+  routeSegmentForRiskSchema.extend({
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Дата должна быть в формате YYYY-MM-DD').optional(),
+    passengers: z.number().int().positive().max(10).optional(),
+  }),
 ]);
 

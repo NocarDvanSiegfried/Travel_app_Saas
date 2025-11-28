@@ -23,6 +23,7 @@ import type { IFlightRepository } from '../../domain/repositories/IFlightReposit
 import type { IDatasetRepository } from '../../domain/repositories/IDatasetRepository';
 import { Route, type RouteStop } from '../../domain/entities/Route';
 import { Flight } from '../../domain/entities/Flight';
+import { TransportType } from '../../domain/entities/RouteSegment';
 import { normalizeCityName } from '../../shared/utils/city-normalizer';
 import { getAllFederalCities, isCityInUnifiedReference } from '../../shared/utils/unified-cities-loader';
 
@@ -358,7 +359,7 @@ export class AirRouteGeneratorWorker extends BaseBackgroundWorker {
     // Air route: 240 minutes (4 hours), 2000 km
     return new Route(
       routeId,
-      'PLANE',
+      TransportType.AIRPLANE,
       fromStopId,
       toStopId,
       stopsSequence,
@@ -397,7 +398,7 @@ export class AirRouteGeneratorWorker extends BaseBackgroundWorker {
             routeId,
             15000, // priceRub
             false, // isVirtual
-            'PLANE',
+            TransportType.AIRPLANE,
             { generatedBy: 'AirRouteGeneratorWorker' }, // metadata
             undefined // createdAt
           )
